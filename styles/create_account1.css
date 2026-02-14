@@ -1,0 +1,890 @@
+/* Reset and Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: #ffffff;
+    color: #333333;
+    line-height: 1.6;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Container */
+.container {
+    width: 100%;
+    max-width: 450px;
+    padding: 20px;
+}
+
+/* Registration Card */
+.registration-card {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 30px 25px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    border: 1px solid #f0f0f0;
+    margin-bottom: 20px;
+}
+
+/* Header */
+.header {
+    margin-bottom: 30px;
+}
+
+.nav-section {
+    margin-bottom: 20px;
+}
+
+.back-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 8px;
+    transition: background-color 0.3s ease;
+    color: #1a1a1a;
+}
+
+.back-btn:hover {
+    background-color: #f5f5f5;
+}
+
+/* Progress Bar */
+.progress-section {
+    margin-bottom: 25px;
+}
+
+.progress-bar {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+}
+
+.progress-step {
+    width: 60px;
+    height: 4px;
+    border-radius: 2px;
+    background-color: #e5e7eb;
+    transition: background-color 0.3s ease;
+}
+
+.progress-step.active {
+    background-color: #2563eb;
+}
+
+/* Logo Section */
+.logo-section {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.logo {
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+}
+
+.rich {
+    color: #2563eb;
+}
+
+.bigte {
+    color: #2563eb;
+}
+
+/* Page Title */
+.page-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1a1a1a;
+    text-align: center;
+    margin-bottom: 30px;
+    letter-spacing: -0.5px;
+}
+
+/* Registration Form */
+.registration-form {
+    margin-bottom: 20px;
+}
+
+/* Form Sections */
+.form-section {
+    display: none;
+}
+
+.form-section.active {
+    display: block;
+    animation: fadeInUp 0.6s ease-out;
+}
+
+.form-section-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1a1a1a;
+    text-align: center;
+    margin-bottom: 30px;
+    letter-spacing: -0.5px;
+}
+
+.form-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    align-items: flex-start;
+}
+
+.input-group {
+    position: relative;
+    flex: 1;
+}
+
+.input-group.first-name {
+    flex: 2;
+}
+
+.input-group.suffix {
+    flex: 1;
+    min-width: 80px;
+}
+
+.input-group.middle-name {
+    flex: 2;
+    min-width: 150px;
+}
+
+.input-group.last-name {
+    flex: 1;
+}
+
+.input-group.email {
+    flex: 1;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 16px 20px;
+    border: 1px solid #939393;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 500;
+    background: #ffffff;
+    transition: all 0.3s ease;
+    outline: none;
+   
+}
+
+.input-group input:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.input-group input::placeholder {
+    color: #9ca3af;
+    font-weight: 400;
+}
+
+/* Suffix Select */
+.suffix-select {
+    width: 100%;
+    padding: 16px 10px;
+    border: 1px solid 939393;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 500;
+    background: #ffffff;
+    color: #9ca3af;
+    transition: all 0.3s ease;
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 12px center;
+    background-repeat: no-repeat;
+    background-size: 16px;
+    padding-right: 40px;
+}
+
+.suffix-select.has-selection {
+    color: #000000;
+}
+
+.suffix-select:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.suffix-select option {
+    padding: 8px;
+    color: #000000;
+}
+
+/* Checkbox Group */
+.checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    flex-shrink: 0;
+    min-width: 180px;
+    max-width: 200px;
+}
+
+.checkbox {
+    width: 18px;
+    height: 18px;
+    border: 1px solid #939393;
+    border-radius: 4px;
+    cursor: pointer;
+    appearance: none;
+    background: #ffffff;
+    transition: all 0.3s ease;
+}
+
+.checkbox:checked {
+    background: #2563eb;
+    border-color: #2563eb;
+    background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='m13.854 3.646-7.5 7.5a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6 10.293l7.146-7.147a.5.5 0 0 1 .708.708z'/%3e%3c/svg%3e");
+    background-size: 12px;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.checkbox-label {
+    font-size: 14px;
+    color: #000000;
+    font-weight: 400;
+    cursor: pointer;
+    user-select: none;
+}
+
+/* Terms Section */
+.terms-section {
+    margin: 25px 0;
+    text-align: center;
+}
+
+.terms-text {
+    font-size: 14px;
+    color: #6b7280;
+    line-height: 1.5;
+}
+
+.terms-link {
+    color: #2563eb;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.terms-link:hover {
+    color: #1d4ed8;
+    text-decoration: underline;
+}
+
+/* Action Buttons */
+.action-buttons {
+    margin-top: 30px;
+}
+
+.create-btn {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: #ffffff;
+    border: none;
+    border-radius: 20px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 20px;
+}
+
+.create-btn:hover {
+    background: linear-gradient(135deg, #007bffcc 0%, #0057b3cd 100%);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+
+.create-btn.loading {
+    background: #9ca3af;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Navigation Buttons */
+.next-btn,
+.prev-btn {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: #ffffff;
+    border: none;
+    border-radius: 20px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 20px;
+}
+
+.next-btn:hover,
+.prev-btn:hover {
+    background: linear-gradient(135deg, #007bffcc 0%, #0057b3cd 100%);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.prev-btn {
+    background: #ffffff;
+    color: #2563eb;
+    border: 1px solid #2563eb;
+    margin-bottom: 12px;
+}
+
+.prev-btn:hover {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+}
+
+
+
+/* Separator */
+.separator {
+    text-align: center;
+    margin: 20px 0;
+    position: relative;
+}
+
+.separator::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: #e5e7eb;
+    z-index: 1;
+}
+
+.or-text {
+    background: #ffffff;
+    padding: 0 20px;
+    color: #9ca3af;
+    font-size: 14px;
+    font-weight: 500;
+    position: relative;
+    z-index: 2;
+}
+
+/* Login Section */
+.login-section {
+    text-align: center;
+}
+
+.login-text {
+    color: #6b7280;
+    font-size: 14px;
+    margin-bottom: 12px;
+    font-weight: 500;
+}
+
+.login-btn {
+    width: 60%;
+    padding: 16px;
+    background: #ffffff;
+    color: #2563eb;
+    border: 1px solid #2563eb;
+    border-radius: 20px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.login-btn:hover {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+}
+
+.login-btn:active {
+    transform: translateY(0);
+}
+
+/* Error Messages */
+.error-message {
+    color: #ef4444;
+    font-size: 12px;
+    margin-top: 4px;
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Input Error State */
+.input-group input.error,
+.suffix-select.error {
+    border-color: #ef4444;
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+    .container {
+        padding: 16px;
+    }
+    
+    .registration-card {
+        padding: 25px 20px;
+        border-radius: 12px;
+    }
+    
+    .page-title {
+        font-size: 24px;
+    }
+    
+    .logo {
+        font-size: 28px;
+    }
+    
+    .form-row {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .input-group.first-name,
+    .input-group.middle-name,
+    .input-group.last-name,
+    .input-group.suffix,
+    .input-group.email,
+    .input-group.contact-number,
+    .input-group.birthday,
+    .input-group.age,
+    .input-group.sex,
+    .input-group.status {
+        flex: 1;
+        width: 100%;
+    }
+    
+    .checkbox-group {
+        margin-top: 0;
+        justify-content: flex-start;
+        width: 100%;
+        max-width: 100%;
+    }
+    
+    .input-group input,
+    .input-group select {
+        width: 100%;
+    }
+}
+
+@media (max-width: 360px) {
+    .page-title {
+        font-size: 22px;
+    }
+    
+    .registration-card {
+        padding: 20px 16px;
+    }
+    
+    .progress-step {
+        width: 40px;
+    }
+}
+
+
+
+/* Animation for form appearance */
+.registration-form {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* New Form Fields Styles */
+
+/* Age and Sex Row */
+.input-group.age {
+    flex: 1;
+}
+
+.input-group.age input {
+    background-color: #f9fafb;
+    color: #6b7280;
+    cursor: not-allowed;
+}
+
+.input-group.age input:focus {
+    border-color: #939393;
+    box-shadow: none;
+    cursor: not-allowed;
+}
+
+.input-group.sex {
+    flex: 1;
+    min-width: 100px;
+}
+
+/* Birthday Row */
+.input-group.birthday {
+    flex: 1;
+}
+
+.input-group.birthday input[type="date"] {
+    width: 100%;
+    padding: 16px 20px;
+    border: 1px solid #939393;
+    color: #9ca3af;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 500;
+    background: #ffffff;
+    transition: all 0.3s ease;
+    outline: none;
+    cursor: pointer;
+}
+
+.input-group.birthday input[type="date"]:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* Birthday color switches to black once it has a value */
+.input-group.birthday input[type="date"].has-selection {
+    color: #000000;
+}
+
+/* Status Row */
+.input-group.status {
+    flex: 1;
+}
+
+/* Address Fields */
+.input-group.barangay,
+.input-group.municipality,
+.input-group.province {
+    flex: 1;
+}
+
+.input-group.barangay input[readonly],
+.input-group.municipality input[readonly],
+.input-group.province input[readonly] {
+    width: 100%;
+    padding: 16px 20px;
+    border: 1px solid #939393;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 500;
+    background: #f9fafb;
+    color: #000000;
+    cursor: not-allowed;
+    outline: none;
+}
+
+.input-group.sitio {
+    flex: 1;
+}
+
+.input-group.street {
+    flex: 2;
+}
+
+.input-group.house-number {
+    flex: 1;
+    min-width: 120px;
+}
+
+/* Sex, Status, Valid ID, and Sitio Select Styles */
+.sex-select,
+.status-select,
+.valid-id-select,
+.sitio-select {
+    width: 100%;
+    padding: 16px 20px;
+    border: 1px solid #939393;
+    color: #9ca3af;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 500;
+    background: #ffffff;
+    transition: all 0.3s ease;
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 12px center;
+    background-repeat: no-repeat;
+    background-size: 16px;
+    padding-right: 40px;
+}
+
+.sex-select:focus,
+.status-select:focus,
+.valid-id-select:focus,
+.sitio-select:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.sex-select.has-selection,
+.status-select.has-selection,
+.valid-id-select.has-selection,
+.sitio-select.has-selection {
+    color: #000000;
+}
+
+.sex-select option,
+.status-select option,
+.valid-id-select option,
+.sitio-select option {
+    padding: 8px;
+    color: #000000;
+}
+
+
+/* ID Upload Section */
+.id-upload-section {
+    margin: 20px 0;
+}
+
+.id-upload-label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 12px;
+}
+
+.id-upload-container {
+    border: 2px dashed #d1d5db;
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    transition: all 0.3s ease;
+    background: #f9fafb;
+}
+
+.id-upload-container:hover {
+    border-color: #2563eb;
+    background: #f0f9ff;
+}
+
+.upload-area {
+    cursor: pointer;
+    margin-bottom: 16px;
+}
+
+.upload-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.upload-icon {
+    color: #6b7280;
+    transition: color 0.3s ease;
+}
+
+.id-upload-container:hover .upload-icon {
+    color: #2563eb;
+}
+
+.upload-text {
+    font-size: 16px;
+    font-weight: 500;
+    color: #374151;
+    margin: 0;
+}
+
+.upload-subtext {
+    font-size: 14px;
+    color: #6b7280;
+    margin: 0;
+}
+
+.upload-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.camera-btn,
+.gallery-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #374151;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.camera-btn:hover,
+.gallery-btn:hover {
+    border-color: #2563eb;
+    color: #2563eb;
+    background: #f0f9ff;
+}
+
+.camera-btn svg,
+.gallery-btn svg {
+    flex-shrink: 0;
+}
+
+/* Image Preview */
+.image-preview {
+    position: relative;
+    margin-top: 16px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 2px solid #e5e7eb;
+}
+
+.image-preview img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    display: block;
+}
+
+.remove-image {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    border: none;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.3s ease;
+}
+
+.remove-image:hover {
+    background: rgba(0, 0, 0, 0.9);
+}
+
+/* Error States for New Fields */
+.input-group.age input.error,
+.input-group.birthday input.error,
+.sex-select.error,
+.status-select.error,
+.valid-id-select.error,
+.sitio-select.error,
+.input-group.street input.error,
+.input-group.house-number input.error {
+    border-color: #ef4444;
+}
+
+.id-upload-container.error {
+    border-color: #ef4444;
+    background: #fef2f2;
+}
+
+/* Responsive Design for New Fields */
+@media (max-width: 480px) {
+    .form-row {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .input-group.age,
+    .input-group.sex,
+    .input-group.birthday,
+    .input-group.status,
+    .input-group.barangay,
+    .input-group.municipality,
+    .input-group.province,
+    .input-group.sitio,
+    .input-group.street,
+    .input-group.house-number {
+        flex: 1;
+        width: 100%;
+    }
+    
+    .input-group.age input,
+    .input-group.sex select,
+    .input-group.birthday input,
+    .input-group.status select,
+    .input-group.barangay input,
+    .input-group.municipality input,
+    .input-group.province input,
+    .input-group.sitio select,
+    .input-group.street input,
+    .input-group.house-number input {
+        width: 100%;
+    }
+    
+    .upload-actions {
+        flex-direction: column;
+    }
+    
+    .camera-btn,
+    .gallery-btn {
+        justify-content: center;
+    }
+    
+    .image-preview img {
+        height: 150px;
+    }
+}
+
+@media (max-width: 360px) {
+    .id-upload-container {
+        padding: 16px;
+    }
+    
+    .upload-text {
+        font-size: 14px;
+    }
+    
+    .upload-subtext {
+        font-size: 12px;
+    }
+    
+    .camera-btn,
+    .gallery-btn {
+        padding: 10px 12px;
+        font-size: 13px;
+    }
+}

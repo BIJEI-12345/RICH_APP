@@ -1,0 +1,2488 @@
+/* Request Page Styles - Matching Image Design */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    overflow: hidden;
+    height: 100%;
+    width: 100%;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: #f3f4f6;
+    color: #1a1a1a;
+    line-height: 1.6;
+    overflow: hidden; /* Prevent scrollbar outside */
+    width: 100%;
+    max-width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 20px;
+    box-sizing: border-box;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+/* Mobile Container - Main Wrapper */
+.mobile-container {
+    width: 100%;
+    max-width: 400px;
+    height: 90vh;
+    max-height: 800px;
+    background-color: #ffffff;
+    border: 2px solid #d1d5db;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    overflow-y: auto; /* Scrollbar inside mobile-container */
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    position: relative;
+    /* Show scrollbar inside mobile-container */
+    scrollbar-width: thin; /* Firefox - show scrollbar */
+    -ms-overflow-style: auto; /* Internet Explorer 10+ - show scrollbar */
+}
+
+/* Show scrollbar for mobile container */
+.mobile-container::-webkit-scrollbar {
+    display: block; /* Show scrollbar */
+    width: 8px;
+}
+
+.mobile-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.mobile-container::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px;
+}
+
+.mobile-container::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Header Styles */
+.header {
+    background-color: #ffffff;
+    border-bottom: 1px solid #f0f0f0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    position: relative;
+    z-index: 1000;
+    padding: 15px 20px;
+    flex-shrink: 0;
+}
+
+.header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.logo-image {
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+    border-radius: 8px;
+}
+
+.logo-text {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1a1a1a;
+}
+
+/* Main Layout */
+.main-layout {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: visible; /* Allow scrollbar to be fully visible */
+    min-height: 0;
+}
+
+/* Sidebar Styles */
+.sidebar {
+    width: 100%;
+    background: linear-gradient(135deg, #2c5aa0, #1e3a5f);
+    color: white;
+    position: relative;
+    overflow-y: auto;
+    overflow-x: hidden;
+    z-index: 999;
+    transition: all 0.3s ease;
+    /* Hide scrollbar */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+.sidebar.collapsed {
+    width: 60px;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Hide scrollbar for WebKit browsers (Chrome, Safari, Edge) */
+.sidebar::-webkit-scrollbar {
+    display: none;
+}
+
+.sidebar-content {
+    padding: 1rem 0;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Back to selection button - Hidden by default, shown in collapsed sidebar */
+.back-to-selection-btn {
+    display: none; /* Hidden by default */
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    background: linear-gradient(135deg, rgb(23, 162, 184) 0%, rgb(19, 132, 150) 100%);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    z-index: 1001;
+    flex-shrink: 0;
+}
+
+/* Show back-to-selection-btn when sidebar is collapsed and make it sticky */
+.sidebar.collapsed .back-to-selection-btn {
+    display: flex;
+    position: sticky;
+    top: 80px; /* Maintain current top position */
+    left: 0;
+    margin: 0;
+    align-self: flex-start; /* Align to left side */
+    margin-left: 15px; /* Add left margin for spacing */
+}
+
+/* Sidebar Toggle Button - Hidden */
+.sidebar-toggle {
+    display: none;
+}
+
+.toggle-btn {
+    display: none;
+}
+
+/* Home Item */
+.sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 2rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-left: 4px solid transparent;
+}
+
+.home-item {
+    font-weight: 700;
+    font-size: 1.2rem;
+    color: #ffffff;
+    margin-bottom: 1rem;
+    margin-left: 1rem;
+    position: relative;
+    z-index: 10;
+    background: linear-gradient(135deg, #2677e1 0%, #1e5bb8 100%);
+    border-radius: 10px;
+    padding: 0.4rem 0.6rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    width: fit-content;
+    min-width: fit-content;
+    height: fit-content;
+}
+
+.sidebar.collapsed .home-item,
+.sidebar.collapsed .documents-section,
+.sidebar.collapsed .document-btn {
+    display: none;
+}
+
+/* Show back-to-selection-btn in sidebar-content when sidebar is collapsed */
+.sidebar.collapsed .sidebar-content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start; /* Align items to left */
+    padding: 1rem 0;
+}
+
+.home-item:hover {
+    background: linear-gradient(135deg, #2d85f0 0%, #2568c7 100%);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15), 0 4px 6px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.home-item:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.home-item i {
+    color: #ffffff;
+    font-size: 1.2rem;
+}
+
+/* Documents Section */
+.documents-section {
+    padding: 0 1rem;
+}
+
+.documents-title {
+    color: white;
+    font-size: 0.9rem;
+    font-weight: bold;
+    margin-bottom: 0.75rem;
+    padding: 0 0.5rem;
+}
+
+.document-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.document-btn {
+    background: white;
+    color: #2c3e50;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.9rem;
+    border-left: 4px solid transparent;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.document-btn:hover {
+    background: #f8f9fa;
+}
+
+.document-btn.active {
+    background: #3498db;
+    color: white;
+    border-left: 4px solid #2980b9;
+}
+
+.emergency-btn {
+    background: #dc3545 !important;
+    color: white !important;
+    border-left: 4px solid #c82333 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+}
+
+.emergency-btn:hover {
+    background: #c82333 !important;
+    transform: translateX(3px) !important;
+}
+
+.emergency-btn i {
+    font-size: 1.1rem;
+}
+
+/* Main Content */
+.main-content {
+    flex: 1;
+    background: #f3f4f6;
+    padding: 10px;
+    overflow: hidden; /* Completely remove scrollbar */
+    display: flex;
+    flex-direction: column;
+    position: relative; /* Make it a positioning context for absolute children */
+}
+
+/* Sidebar collapsed display handled in main styles above */
+
+/* Back Button */
+.back-section {
+    margin-bottom: 2rem;
+}
+
+.back-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: white;
+    border: 2px solid #e0e0e0;
+    padding: 0.75rem 1.5rem;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 1rem;
+    color: #333;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.back-btn:hover {
+    background: #f8f9fa;
+    border-color: #3498db;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+/* Documents Button Section */
+.documents-button-section {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 3rem;
+}
+
+.documents-button {
+    background: white;
+    border: none;
+    border-radius: 15px;
+    padding: 2rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    min-width: 200px;
+}
+
+.documents-button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+}
+
+.documents-icon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.documents-icon-bg {
+    width: 60px;
+    height: 60px;
+    background: #3498db;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+    position: relative;
+}
+
+.documents-icon-bg::after {
+    content: '';
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid rgba(255,255,255,0.3);
+    border-top: 8px solid rgba(255,255,255,0.3);
+}
+
+.documents-text {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #333;
+    text-align: center;
+}
+
+/* Emblem Section */
+.emblem-section {
+    text-align: center;
+    margin: 0;
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+    box-shadow: none;
+    overflow: hidden;
+    max-width: 100%;
+    width: 100%;
+    flex-shrink: 0;
+    position: absolute; /* Fixed inside main-content */
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    height: auto;
+    will-change: auto;
+}
+
+.barangay-emblem {
+    position: relative;
+    z-index: 100;
+    background: transparent;
+    padding: 0.5rem;
+    box-shadow: none;
+    margin-bottom: 0;
+    margin-top: 0;
+    overflow: hidden;
+    flex-shrink: 0;
+    height: auto;
+    will-change: auto;
+    /* Hide scrollbar */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+/* Hide scrollbar for WebKit browsers (Chrome, Safari, Edge) */
+.barangay-emblem::-webkit-scrollbar {
+    display: none;
+}
+
+.emblem-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto;
+    width: 180px;
+    height: 180px;
+    overflow: hidden;
+    border-radius: 50%;
+    flex-shrink: 0;
+    position: relative;
+    will-change: auto;
+    /* Hide scrollbar */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+/* Hide scrollbar for WebKit browsers (Chrome, Safari, Edge) */
+.emblem-container::-webkit-scrollbar {
+    display: none;
+}
+
+.barangay-logo-image {
+    width: 180px;
+    height: 180px;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 50%;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+    transform: scale(1);
+}
+
+.barangay-logo-image:hover {
+    transform: scale(1.05);
+}
+
+.emblem-instructions h2 {
+    color: #2c3e50;
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.emblem-instructions p {
+    color: #7f8c8d;
+    font-size: 1rem;
+}
+
+/* Request Section */
+.request-section {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    margin-bottom: 2rem;
+}
+
+.request-header {
+    text-align: center;
+    margin-bottom: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 2px solid #f8f9fa;
+}
+
+.document-icon {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    color: white;
+    font-size: 2rem;
+}
+
+.request-header h1 {
+    font-size: 2rem;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+}
+
+.request-header p {
+    color: #7f8c8d;
+    font-size: 1.1rem;
+}
+
+/* Form Styles */
+.request-form-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.form-section {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-radius: 15px;
+    border-left: 4px solid #667eea;
+}
+
+.form-section h3 {
+    color: #2c3e50;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.2rem;
+}
+
+.form-section h3 i {
+    color: #667eea;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    padding: 0.75rem;
+    border: 1px solid #c8c8cc;
+    border-radius: 10px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    background: white;
+    
+}
+/* Age input field styling for COE form */
+#coeAge {
+    width: 80px !important;
+    max-width: 80px;
+}
+
+/* Age input field styling for Indigency form */
+#indAge {
+    width: 80px !important;
+    max-width: 80px;
+}
+
+/* Age input field styling for Clearance form */
+#clearAge {
+    width: 80px !important;
+    max-width: 80px;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+/* Placeholder styling for Municipality and Barangay fields */
+#province::placeholder,
+#municipality::placeholder,
+#barangay::placeholder,
+#postalCode::placeholder {
+    color: #000000 !important;
+    font-weight: normal;
+}
+
+/* Required indicator styling */
+.required-indicator {
+    color: #e74c3c;
+    font-weight: bold;
+    margin-left: 2px;
+}
+
+/* Requirements List */
+.requirements-list {
+    background: white;
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border: 2px solid #e9ecef;
+}
+
+.requirement-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f1f3f4;
+}
+
+.requirement-item:last-child {
+    border-bottom: none;
+}
+
+.requirement-item i {
+    color: #28a745;
+    font-size: 0.9rem;
+}
+
+.requirement-item span {
+    font-size: 0.9rem;
+    color: #495057;
+}
+
+
+
+
+.submit-section h3 {
+    color: white;
+}
+
+.pricing-info {
+    background: rgba(255,255,255,0.1);
+    padding: 1rem;
+    border-radius: 10px;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.price-display {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+}
+
+.price-label {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.price-amount {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #4CAF50;
+    background: white;
+    padding: 0.5rem 1rem;
+    border-radius: 25px;
+    color: #2c3e50;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.btn-primary, .btn-secondary {
+    padding: 0.75rem 2rem;
+    border: none;
+    border-radius: 25px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-primary {
+    background: #4CAF50;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #45a049;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+}
+
+.btn-secondary {
+    background: rgba(255,255,255,0.2);
+    color: white;
+    border: 2px solid rgba(255,255,255,0.3);
+}
+
+.btn-secondary:hover {
+    background: rgba(255,255,255,0.3);
+    transform: translateY(-2px);
+}
+
+
+
+/* Responsive Design - Mobile Container for different screen resolutions */
+
+/* Very small phones (below 360px) */
+@media screen and (max-width: 359px) {
+    body {
+        padding: 10px;
+    }
+    
+    .mobile-container {
+        width: 100%;
+        max-width: 100%;
+        height: calc(100vh - 20px);
+        max-height: calc(100vh - 20px);
+    }
+}
+
+/* Small phones (360px-480px) */
+@media screen and (min-width: 360px) and (max-width: 480px) {
+    body {
+        padding: 15px;
+    }
+    
+    .mobile-container {
+        width: 100%;
+        max-width: 100%;
+        height: calc(100vh - 30px);
+        max-height: calc(100vh - 30px);
+    }
+}
+
+/* Medium phones (481px-720px) */
+@media screen and (min-width: 481px) and (max-width: 720px) {
+    body {
+        padding: 15px;
+    }
+    
+    .mobile-container {
+        width: 100%;
+        max-width: 100%;
+        height: calc(100vh - 30px);
+        max-height: calc(100vh - 30px);
+    }
+}
+
+/* Large phones / Wide screens (721px-1600px) like 1600x720 */
+@media screen and (min-width: 721px) and (max-width: 1600px) {
+    body {
+        padding: 20px;
+    }
+    
+    .mobile-container {
+        width: 100%;
+        max-width: 400px;
+        height: calc(100vh - 40px);
+        max-height: 800px;
+    }
+}
+
+/* Tablet and above (above 1600px) */
+@media screen and (min-width: 1601px) {
+    body {
+        padding: 20px;
+    }
+    
+    .mobile-container {
+        width: 100%;
+        max-width: 400px;
+        height: 90vh;
+        max-height: 800px;
+    }
+}
+
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+        overflow: hidden;
+        height: 100vh;
+        max-height: 100vh;
+    }
+    
+    .mobile-container {
+        width: 100%;
+        max-width: 100%;
+        height: calc(100vh - 20px);
+        max-height: calc(100vh - 20px);
+    }
+    
+    .sidebar {
+        transform: translateX(0);
+        position: relative;
+        width: 100%;
+        transition: transform 0.3s ease;
+    }
+    
+    .sidebar.open {
+        transform: translateX(0);
+    }
+    
+    .sidebar.collapsed {
+        display: flex !important;
+        flex-direction: column;
+        transform: translateX(0);
+        width: 100%;
+        height: 10%;
+    }
+    
+    .sidebar.collapsed .back-to-selection-btn {
+        top: 10px; /* Adjust top position for mobile */
+        margin-left: 10px; /* Adjust left margin for mobile */
+        align-self: flex-start; /* Align to left on mobile */
+    }
+    
+    .sidebar.collapsed .sidebar-content {
+        align-items: flex-start; /* Align to left on mobile */
+    }
+    
+    .main-content {
+        margin-left: 0;
+        padding: 0.75rem;
+        overflow: hidden; /* Completely remove scrollbar */
+        position: relative; /* Make it a positioning context */
+    }
+    
+    .request-section {
+        padding: 0.75rem;
+    }
+    
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .form-row .form-group {
+        margin-bottom: 1rem;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .barangay-logo-image {
+        max-width: 160px;
+        max-height: 160px;
+    }
+    
+    .emblem-container {
+        width: 160px;
+        height: 160px;
+        overflow: hidden;
+    }
+    
+    .emblem-section {
+        position: absolute; /* Fixed inside main-content */
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100%;
+        margin: 0;
+        padding: 0;
+    }
+    
+    .barangay-emblem {
+        margin-top: 0;
+    }
+    
+    .documents-button {
+        min-width: 150px;
+        padding: 1.5rem;
+    }
+    
+    .documents-icon-bg {
+        width: 50px;
+        height: 50px;
+        font-size: 1.2rem;
+    }
+    
+    .documents-text {
+        font-size: 1rem;
+    }
+    
+    /* Mobile Document Buttons - Tablet */
+    .documents-section {
+        padding: 0 0.75rem;
+    }
+    
+    .documents-title {
+        font-size: 0.85rem;
+        margin-bottom: 0.6rem;
+    }
+    
+    .document-buttons {
+        gap: 0.45rem;
+    }
+    
+    .document-btn {
+        padding: 0.6rem 0.85rem;
+        font-size: 0.85rem;
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        padding: 10px;
+    }
+    
+    .mobile-container {
+        width: 100%;
+        max-width: 100%;
+        height: calc(100vh - 20px);
+        max-height: calc(100vh - 20px);
+    }
+    
+    .request-header h1 {
+        font-size: 1.5rem;
+    }
+    
+    .document-icon {
+        width: 60px;
+        height: 60px;
+        font-size: 1.5rem;
+    }
+    
+    .form-section {
+        padding: 1rem;
+    }
+    
+    /* Mobile Document Buttons */
+    .documents-section {
+        padding: 0 0.5rem;
+    }
+    
+    .documents-title {
+        font-size: 0.75rem;
+        margin-bottom: 0.5rem;
+        padding: 0 0.25rem;
+    }
+    
+    .document-buttons {
+        gap: 0.4rem;
+    }
+    
+    .document-btn {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.75rem;
+        border-left-width: 3px;
+        text-align: center;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    .document-btn span {
+        text-align: center;
+    }
+    
+    .emergency-btn i {
+        font-size: 0.9rem;
+    }
+    
+    .main-content {
+        padding: 8px;
+        overflow: hidden; /* Completely remove scrollbar */
+        position: relative; /* Make it a positioning context */
+    }
+    
+    .back-btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
+    }
+    
+    .emblem-container {
+        width: 150px;
+        height: 150px;
+        overflow: hidden;
+    }
+    
+    .barangay-logo-image {
+        width: 150px;
+        height: 150px;
+        transform: scale(1);
+    }
+    
+    .emblem-section {
+        text-align: center;
+        position: absolute; /* Fixed inside main-content */
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        background: transparent;
+        z-index: 1000;
+    }
+    
+    .barangay-emblem {
+        position: relative;
+        padding: 0;
+        margin: 0;
+        background: transparent;
+    }
+    
+    .documents-button {
+        min-width: 120px;
+        padding: 1rem;
+    }
+    
+    .documents-icon-bg {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+    }
+    
+    .documents-text {
+        font-size: 0.9rem;
+    }
+}
+
+/* Media query for wide mobile screens (720px-1600px) like 1600x720 */
+@media screen and (min-width: 720px) and (max-width: 1600px) {
+    .emblem-section {
+        position: absolute; /* Fixed inside main-content */
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        text-align: center;
+    }
+    
+    .emblem-container {
+        width: 170px;
+        height: 170px;
+    }
+    
+    .barangay-logo-image {
+        width: 170px;
+        height: 170px;
+    }
+}
+
+/* Media query for medium mobile screens (481px-719px) */
+@media screen and (min-width: 481px) and (max-width: 719px) {
+    .emblem-section {
+        position: absolute; /* Fixed inside main-content */
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100%;
+        margin: 0;
+        padding: 0;
+    }
+    
+    .emblem-container {
+        width: 155px;
+        height: 155px;
+    }
+    
+    .barangay-logo-image {
+        width: 155px;
+        height: 155px;
+    }
+}
+
+/* Barangay ID Form Styles */
+.form-container {
+    background: #f5f5f5;
+    min-height: calc(100vh - 60px);
+    max-height: none; /* Remove any max-height restrictions */
+    padding: 2rem;
+    padding-bottom: 250px; /* Increased padding to show full form-step content including navigation buttons */
+    padding-right: calc(2rem + 8px); /* Add space for scrollbar on the right */
+    overflow-y: auto; /* Enable scrolling */
+    overflow-x: hidden;
+    box-sizing: border-box;
+    /* Show scrollbar */
+    scrollbar-width: thin; /* Firefox - show scrollbar */
+    -ms-overflow-style: auto; /* Internet Explorer 10+ - show scrollbar */
+}
+
+/* Show scrollbar for WebKit browsers (Chrome, Safari, Edge) */
+.form-container::-webkit-scrollbar {
+    display: block;
+    width: 8px;
+    position: relative;
+}
+
+.form-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 0; /* Remove border-radius to prevent cut-off */
+    margin: 0;
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 8px;
+}
+
+.form-container::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 0; /* Remove border-radius to prevent cut-off */
+    min-height: 20px; /* Ensure thumb is visible */
+    width: 8px;
+}
+
+.form-container::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Page Indicator Styles */
+.page-indicator {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 2rem 0 3rem 0;
+    gap: 2rem;
+    position: relative;
+}
+
+.indicator-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.indicator-step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 20px;
+    left: 100%;
+    width: 2rem;
+    height: 3px;
+    background: #e0e0e0;
+    z-index: 1;
+}
+
+.indicator-step.completed:not(:last-child)::after {
+    background: #4a90e2;
+}
+
+.step-number {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #e0e0e0;
+    color: #666;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+    position: relative;
+    z-index: 2;
+    transition: all 0.3s ease;
+}
+
+.indicator-step.active .step-number {
+    background: #4a90e2;
+    color: white;
+    transform: scale(1.1);
+}
+
+.indicator-step.completed .step-number {
+    background: #4a90e2;
+    color: white;
+}
+
+.step-label {
+    font-size: 0.9rem;
+    color: #666;
+    text-align: center;
+    font-weight: 500;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: normal;
+    line-height: 1.3;
+}
+
+.indicator-step.active .step-label {
+    color: #4a90e2;
+    font-weight: 600;
+}
+
+.indicator-step.completed .step-label {
+    color: #4a90e2;
+}
+
+/* Multi-step Form Styles */
+.form-step {
+    display: none;
+    animation: fadeIn 0.3s ease-in-out;
+    padding-bottom: 2rem; /* Increased bottom padding to ensure content is scrollable */
+    margin-bottom: 1rem; /* Add margin for extra spacing */
+}
+
+.form-step.active {
+    display: block;
+    min-height: fit-content; /* Ensure content height is properly calculated */
+    padding-bottom: 2rem; /* Ensure active step has bottom padding */
+    margin-bottom: 1rem; /* Add margin for extra spacing */
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.step-title {
+    color: #2c3e50;
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 2rem;
+    text-align: center;
+    border-bottom: 2px solid #060606;
+    padding-bottom: 1rem;
+}
+
+.step-navigation {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-top: 3rem;
+    margin-bottom: 3rem; /* Increased bottom margin for scrolling */
+    padding-top: 2rem;
+    padding-bottom: 3rem; /* Increased bottom padding to ensure full visibility */
+    border-top: 1px solid #323131;
+    gap: 1rem;
+}
+
+.step-navigation .prev-btn,
+.step-navigation .submit-btn {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 100%;
+    align-self: flex-start;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.next-btn, .prev-btn, .submit-btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 15px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 120px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    vertical-align: middle;
+    line-height: 1;
+    box-sizing: border-box;
+}
+
+.next-btn {
+    background: linear-gradient(135deg, rgb(23, 162, 184) 0%, rgb(19, 132, 150) 100%);
+    color: white;
+    margin-left: auto;
+}
+
+.next-btn:hover {
+    background: linear-gradient(135deg, #357abd, #2c5aa0);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+}
+
+.prev-btn {
+    background: linear-gradient(135deg, rgb(23, 162, 184) 0%, rgb(19, 132, 150) 100%);
+    color: #ffffff;
+}
+
+.prev-btn:hover {
+    background: linear-gradient(135deg, #138496 0%, #117a8b 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.step-navigation .submit-btn {
+    background: linear-gradient(135deg, rgb(23, 162, 184) 0%, rgb(19, 132, 150) 100%);
+    color: white;
+    padding: 12px 24px;
+    min-width: 0;
+    width: 100%;
+    height: 48px;
+    font-size: 1rem;
+    text-transform: none;
+    letter-spacing: normal;
+    flex: 1;
+    display: flex;
+    align-self: flex-start;
+    justify-content: center;
+    vertical-align: top;
+    margin-top: -.5px;
+}
+
+.step-navigation .submit-btn:hover {
+    background: linear-gradient(135deg, #138496 0%, #117a8b 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.form-wrapper {
+    max-width: 600px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    padding-bottom: 1rem; /* Ensure bottom padding allows full scroll */
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.form-header-with-back {
+    position: relative;
+    margin-bottom: 2rem;
+}
+
+/* Move back button from form header to sidebar-content area */
+/* When sidebar is not collapsed, hide the button in sidebar, show in form header */
+.sidebar:not(.collapsed) .back-to-selection-btn {
+    display: none;
+}
+
+.form-header-with-back .back-to-selection-btn {
+    display: flex;
+    position: fixed;
+    left: 2rem;
+    top: 125px;
+    transform: none;
+}
+
+/* When sidebar is collapsed, hide button in form header */
+.sidebar.collapsed ~ .main-content .form-header-with-back .back-to-selection-btn {
+    display: none;
+}
+
+
+.back-to-selection-btn:hover {
+    background: linear-gradient(135deg, #138496 0%, #117a8b 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.back-to-selection-btn i {
+    font-size: 0.75rem;
+}
+
+.form-title {
+    text-align: center;
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #007bff;
+    margin-bottom: 0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    width: 100%;
+    padding-left: 45px;
+    padding-right: 45px;
+    box-sizing: border-box;
+}
+
+.barangay-id-form .form-section {
+    margin-bottom: 1.5rem;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-left: none;
+}
+
+.barangay-id-form .form-group {
+    margin-bottom: 1rem;
+}
+
+.barangay-id-form .form-group label {
+    display: block;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.clearance-form .form-group,
+.certification-form .form-group,
+.coe-form .form-group,
+.indigency-form .form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.clearance-form .form-group label,
+.certification-form .form-group label,
+.coe-form .form-group label,
+.indigency-form .form-group label {
+    display: block;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    width: 100%;
+}
+
+.clearance-form .form-group input,
+.clearance-form .form-group select,
+.certification-form .form-group input,
+.certification-form .form-group select,
+.coe-form .form-group input,
+.coe-form .form-group select,
+.indigency-form .form-group input,
+.indigency-form .form-group select {
+    width: 100%;
+}
+
+.clearance-form .form-group .radio-group,
+.certification-form .form-group .radio-group,
+.coe-form .form-group .radio-group,
+.indigency-form .form-group .radio-group {
+    display: flex;
+    flex-direction: row;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 0;
+}
+
+.clearance-form .form-group .radio-label,
+.certification-form .form-group .radio-label,
+.coe-form .form-group .radio-label,
+.indigency-form .form-group .radio-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    font-weight: normal;
+    width: auto;
+}
+
+.clearance-form .form-group .radio-label input[type="radio"],
+.certification-form .form-group .radio-label input[type="radio"],
+.coe-form .form-group .radio-label input[type="radio"],
+.indigency-form .form-group .radio-label input[type="radio"] {
+    width: auto;
+    margin: 0;
+}
+
+.barangay-id-form .form-group input,
+.barangay-id-form .form-group select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #c8c8cc;
+    border-radius: 8px;
+    font-size: 1rem;
+    background: white;
+    transition: border-color 0.3s ease;
+}
+
+.barangay-id-form .form-group input:focus,
+.barangay-id-form .form-group select:focus {
+    outline: none;
+    border-color: #9b59b6;
+    box-shadow: 0 0 0 3px rgba(155, 89, 182, 0.1);
+}
+
+.barangay-id-form .form-group input::placeholder {
+    color: #adb5bd;
+}
+
+/* Radio Button Styles */
+.radio-group {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+/* Other Input Groups - Add spacing between dropdown and textbox */
+[id$="Group"] {
+    margin-top: 0.5rem;
+    margin-left: 0.5rem;
+}
+
+/* Override margin-left for specific citizenship and birth place groups */
+#clearCitizenshipGroup,
+#certCitizenshipGroup,
+#certResidencyCitizenshipGroup {
+    margin-left: 0;
+}
+
+/* Override margin-left for business fields to align with other fields */
+#clearBusinessNameGroup,
+#clearBusinessLocationGroup {
+    margin-left: 0;
+}
+
+/* Override margin-left for Year Start Residing fields to align with other fields */
+#clearYearResidingGroup,
+#certYearResidingGroup {
+    margin-left: 0;
+}
+
+/* Override margin-left for Month and Year of Passing field to align with other fields */
+#certMonthYearPassingGroup {
+    margin-left: 0;
+}
+
+[id$="Group"] label {
+    font-size: 0.85rem;
+    color: #666;
+    margin-bottom: 0.3rem;
+}
+
+[id$="Group"] input {
+    padding: 0.6rem;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    background: #f9f9f9;
+    transition: all 0.3s ease;
+}
+
+[id$="Group"] input:focus {
+    outline: none;
+    border-color: #667eea;
+    background: white;
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+}
+
+/* Report Display Styles */
+.report-display {
+    max-width: 600px;
+    margin: 2rem auto 220px auto; /* Add bottom margin for emblem-section to prevent overlap */
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+/* Custom scrollbar for report-display */
+.report-display::-webkit-scrollbar {
+    width: 6px;
+}
+
+.report-display::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.report-display::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px;
+}
+
+.report-display::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+.report-card {
+    padding: 2rem;
+}
+
+.report-header {
+    text-align: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #000000;
+}
+
+.success-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: #10b981;
+    color: white;
+    padding: 0.75rem 1.25rem;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+}
+
+.success-badge i {
+    font-size: 1.1rem;
+}
+
+.report-header h2 {
+    color: #10b981;
+    font-size: 1.8rem;
+    margin-bottom: 0.5rem;
+    font-weight: 700;
+}
+
+.report-header p {
+    color: #6c757d;
+    font-size: 1rem;
+    margin: 0;
+}
+
+.report-details {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.detail-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1rem 1rem 0;
+    border-bottom: 1px solid #e8e8e8;
+    background: transparent;
+}
+
+.detail-item:last-child {
+    border-bottom: none;
+}
+
+.detail-item:first-child {
+    padding-top: 0.5rem;
+}
+
+.detail-icon {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.detail-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 0.25rem;
+}
+
+.detail-label {
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 0.95rem;
+    line-height: 1.4;
+}
+
+.detail-value {
+    color: #495057;
+    font-size: 0.95rem;
+    font-weight: 700;
+    line-height: 1.4;
+}
+
+/* Row layout for certJobItem, certDateHireItem, and certMonthlyIncomeItem */
+#certJobItem .detail-content,
+#certDateHireItem .detail-content,
+#certMonthlyIncomeItem .detail-content {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 0;
+}
+
+#certJobItem .detail-label,
+#certDateHireItem .detail-label,
+#certMonthlyIncomeItem .detail-label {
+    white-space: nowrap;
+    margin-right: 0.5rem;
+}
+
+#certJobItem .detail-value,
+#certDateHireItem .detail-value,
+#certMonthlyIncomeItem .detail-value {
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+.report-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e8e8e8;
+    flex-wrap: wrap;
+}
+
+.action-btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
+}
+
+.action-btn.primary {
+    background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+    color: white;
+}
+
+.action-btn.primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+}
+
+.action-btn.secondary {
+    background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+    color: #ffffff;
+    
+}
+
+.action-btn.secondary:hover {
+    transform: translateY(-2px);
+}
+
+.done-btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: white;
+    min-width: 120px;
+}
+
+.done-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 123, 255, 0.3);
+}
+
+.radio-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    font-weight: normal;
+}
+
+.radio-label input[type="radio"] {
+    width: auto;
+    margin: 0;
+    accent-color: #9b59b6;
+}
+
+.radio-text {
+    font-size: 0.9rem;
+    color: #2c3e50;
+}
+
+/* Upload Button */
+.upload-btn {
+    background: #e9ecef;
+    color: rgb(51, 51, 51);
+    border: none;
+    padding: 0.75rem 1rem;
+    border-radius: 15px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: block;
+    margin: 0.5rem auto 0 auto;
+    width: 140px;
+    text-align: center;
+}
+
+.upload-btn:hover {
+    background: #e9ecef;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
+}
+
+.upload-btn.error-indicator {
+    border: 2px solid #dc3545;
+    background: #fff5f5;
+    color: #dc3545;
+}
+
+.upload-btn.error-indicator:hover {
+    background: #fff5f5;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+}
+
+/* Submit Button */
+.submit-section {
+    text-align: center;
+    border-top: 2px solid #f8f9fa;
+}
+
+.submit-btn {
+    background: linear-gradient(135deg, rgb(23, 162, 184) 0%, rgb(19, 132, 150) 100%);;
+    color: white;
+    border: none;
+    padding: 1rem 2rem;
+    margin-top: 1rem;
+    border-radius: 15px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.submit-btn:hover {
+    
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(155, 89, 182, 0.3);
+}
+
+/* Responsive Design for Form */
+@media (max-width: 768px) {
+    .form-container {
+        padding: 1rem;
+       
+    }
+    
+    .form-wrapper {
+        padding: 1.5rem;
+    }
+    
+    .form-title {
+        font-size: 1.4rem;
+        padding-left: 40px;
+        padding-right: 40px;
+    }
+    
+    .back-to-selection-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 0.75rem;
+    }
+    
+    .back-to-selection-btn i {
+        font-size: 0.7rem;
+    }
+    
+    .report-display {
+        margin: 1rem auto 0 auto;
+        max-width: 100%;
+        max-height: calc(100vh - 120px);
+        overflow-y: auto;
+    }
+    
+    .report-card {
+        padding: 1.75rem 1.5rem;
+    }
+    
+    .success-badge {
+        padding: 0.625rem 1rem;
+        font-size: 0.875rem;
+        gap: 0.375rem;
+    }
+    
+    .success-badge i {
+        font-size: 1rem;
+    }
+    
+    .report-header h2 {
+        font-size: 1.5rem;
+    }
+    
+    .report-header p {
+        font-size: 0.95rem;
+    }
+    
+    .detail-icon {
+        width: 38px;
+        height: 38px;
+        font-size: 1.1rem;
+    }
+    
+    .detail-label {
+        font-size: 0.9rem;
+    }
+    
+    .detail-value {
+        font-size: 0.95rem;
+        font-weight: 700;
+    }
+    
+    .form-title {
+        font-size: 1.5rem;
+    }
+    
+    .radio-group {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .form-container {
+        padding: 0.5rem;
+    }
+    
+    .form-wrapper {
+        padding: 1rem;
+    }
+    
+    .report-display {
+        margin: 0.5rem auto;
+        border-radius: 12px;
+        max-width: 100%;
+        width: calc(100% - 1rem);
+        max-height: calc(100vh - 100px);
+        overflow-y: auto;
+    }
+    
+    .report-card {
+        padding: 1rem 0.75rem;
+    }
+    
+    .report-header {
+        margin-bottom: 1.25rem;
+        padding-bottom: 0.875rem;
+    }
+    
+    .success-badge {
+        padding: 0.5rem 0.875rem;
+        font-size: 0.8125rem;
+        gap: 0.375rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    .success-badge i {
+        font-size: 0.95rem;
+    }
+    
+    .report-header h2 {
+        font-size: 1.1rem;
+        margin-bottom: 0.4rem;
+        line-height: 1.3;
+    }
+    
+    .report-header p {
+        font-size: 0.85rem;
+        line-height: 1.4;
+    }
+    
+    .report-details {
+        gap: 0.7rem;
+    }
+    
+    .detail-item {
+        padding: 0.7rem 0.4rem 0.7rem 0;
+        gap: 0.7rem;
+    }
+    
+    .detail-icon {
+        width: 34px;
+        height: 34px;
+        font-size: 0.95rem;
+        flex-shrink: 0;
+    }
+    
+    .detail-content {
+        gap: 0.2rem;
+        min-width: 0;
+        flex: 1;
+    }
+    
+    .detail-label {
+        font-size: 0.8rem;
+        line-height: 1.3;
+    }
+    
+    .detail-value {
+        font-size: 0.85rem;
+        font-weight: 700;
+        line-height: 1.4;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+    
+    .report-actions {
+        flex-direction: column;
+        gap: 0.75rem;
+        margin-top: 1.5rem;
+        padding-top: 1rem;
+    }
+    
+    .action-btn {
+        width: 100%;
+        padding: 10px 20px;
+        font-size: 0.9rem;
+    }
+}
+
+/* Mobile view for 300px-574px (matching main_UI.css breakpoint) */
+@media screen and (min-width: 300px) and (max-width: 574px) {
+    .report-display {
+        margin: 0.5rem auto;
+        border-radius: 10px;
+        max-width: 100%;
+        width: calc(100% - 10px);
+        max-height: calc(100vh - 100px);
+        overflow-y: auto;
+    }
+    
+    .report-card {
+        padding: 1rem 0.75rem;
+    }
+    
+    .report-header {
+        margin-bottom: 1rem;
+        padding-bottom: 0.75rem;
+    }
+    
+    .report-header h2 {
+        font-size: 1.1rem;
+        margin-bottom: 0.4rem;
+        line-height: 1.3;
+    }
+    
+    .report-header p {
+        font-size: 0.85rem;
+        line-height: 1.4;
+    }
+    
+    .report-details {
+        gap: 0.75rem;
+    }
+    
+    .detail-item {
+        padding: 0.75rem 0.5rem 0.75rem 0;
+        gap: 0.75rem;
+        flex-wrap: nowrap;
+    }
+    
+    .detail-icon {
+        width: 32px;
+        height: 32px;
+        font-size: 0.9rem;
+        flex-shrink: 0;
+    }
+    
+    .detail-content {
+        gap: 0.2rem;
+        min-width: 0;
+        flex: 1;
+        overflow: hidden;
+    }
+    
+    .detail-label {
+        font-size: 0.8rem;
+        line-height: 1.3;
+        font-weight: 600;
+    }
+    
+    .detail-value {
+        font-size: 0.85rem;
+        font-weight: 700;
+        line-height: 1.4;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        word-break: break-word;
+    }
+    
+    .report-actions {
+        flex-direction: column;
+        gap: 0.75rem;
+        margin-top: 1.5rem;
+        padding-top: 1rem;
+    }
+    
+    .action-btn {
+        width: 100%;
+        padding: 12px 20px;
+        font-size: 0.9rem;
+        box-sizing: border-box;
+    }
+    
+    .action-btn {
+        width: 100%;
+        padding: 14px 20px;
+        font-size: 0.95rem;
+        min-width: auto;
+        box-sizing: border-box;
+    }
+    
+    .form-title {
+        font-size: 1.3rem;
+    }
+    
+    /* Page Indicator - Mobile */
+    .page-indicator {
+        gap: 0.5rem;
+        margin: 1rem 0 2rem 0;
+        flex-wrap: wrap;
+    }
+    
+    .indicator-step {
+        min-width: 80px;
+        flex: 1;
+        max-width: 100px;
+    }
+    
+    .indicator-step:not(:last-child)::after {
+        width: 0.5rem;
+    }
+    
+    .step-number {
+        width: 35px;
+        height: 35px;
+        font-size: 0.9rem;
+        margin-bottom: 0.3rem;
+    }
+    
+    .step-label {
+        font-size: 0.7rem;
+        white-space: normal;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        width: 100%;
+        line-height: 1.3;
+        text-align: center;
+    }
+    
+    .form-wrapper {
+        padding: 1rem;
+    }
+    
+    .step-title {
+        font-size: 1.2rem;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.75rem;
+    }
+    
+    .form-group {
+        margin-bottom: 0.75rem;
+    }
+    
+    .form-group label {
+        font-size: 0.85rem;
+    }
+    
+    .step-navigation {
+        margin-top: 2rem;
+        margin-bottom: 3rem; /* Increased bottom margin for mobile */
+        padding-top: 1.5rem;
+        padding-bottom: 3rem; /* Increased bottom padding for mobile */
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+    
+    .next-btn, .prev-btn, .step-navigation .submit-btn {
+        padding: 10px 20px;
+        font-size: 0.9rem;
+        min-width: 100px;
+        height: 42px;
+        flex: 1;
+    }
+}
+
+/* Loading and Success States */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+/* Full Screen Loading Overlay */
+.fullscreen-loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: all;
+}
+
+.fullscreen-loading .loading-content {
+    background: white;
+    padding: 2rem 3rem;
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    min-width: 200px;
+}
+
+.fullscreen-loading .loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #2677e1;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.fullscreen-loading .loading-text {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+    text-align: center;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Popup Message Styles */
+.popup-message {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-100px);
+    z-index: 10000;
+    padding: 15px 25px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 16px;
+    text-align: center;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(10px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    max-width: 90%;
+    word-wrap: break-word;
+}
+
+.popup-message.show {
+    transform: translateX(-50%) translateY(0);
+}
+
+.popup-message.success-message {
+    background: linear-gradient(135deg, #27ae60, #2ecc71);
+    color: #ffffff;
+    border: 2px solid #27ae60;
+}
+
+.popup-message.error-message {
+    background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+    color: #721c24;
+    border: 2px solid #f5c6cb;
+}
+
+/* Legacy message styles for backward compatibility */
+.success-message {
+    background: #d4edda;
+    color: #155724;
+    padding: 1rem;
+    border-radius: 10px;
+    border: 1px solid #c3e6cb;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.error-message {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 1rem;
+    border-radius: 10px;
+    border: 1px solid #f5c6cb;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+/* Responsive Design for Popup Messages */
+@media (max-width: 768px) {
+    .popup-message {
+        top: 15px;
+        padding: 12px 20px;
+        font-size: 14px;
+        max-width: 95%;
+    }
+}
+
+@media (max-width: 480px) {
+    .popup-message {
+        top: 10px;
+        padding: 10px 15px;
+        font-size: 13px;
+        max-width: 98%;
+    }
+}
+
+/* Image Preview Styles */
+.image-preview-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1rem;
+}
+
+.image-preview {
+    max-width: 200px;
+    max-height: 150px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    object-fit: cover;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Blocked Request SweetAlert - Mobile Optimized */
+@media screen and (max-width: 768px) {
+    .swal2-blocked-request-popup {
+        width: 80% !important;
+        max-width: 300px !important;
+        padding: 1rem 0.875rem !important;
+    }
+    
+    .swal2-blocked-request-popup .swal2-title {
+        font-size: 1.1rem !important;
+        margin-bottom: 0.5rem !important;
+        padding: 0 !important;
+    }
+    
+    .swal2-blocked-request-popup .swal2-content {
+        font-size: 0.875rem !important;
+        margin: 0.5rem 0 0.875rem 0 !important;
+        padding: 0 !important;
+        line-height: 1.5 !important;
+    }
+    
+    .swal2-blocked-request-popup .swal2-icon {
+        width: 50px !important;
+        height: 50px !important;
+        margin: 0 auto 0.75rem auto !important;
+    }
+    
+    .swal2-blocked-request-popup .swal2-icon .swal2-icon-content {
+        font-size: 1.75rem !important;
+        line-height: 50px !important;
+    }
+    
+    .swal2-blocked-request-popup .swal2-actions {
+        margin: 0.875rem 0 0 0 !important;
+    }
+    
+    .swal2-blocked-request-popup .swal2-confirm {
+        padding: 0.625rem 1.25rem !important;
+        font-size: 0.875rem !important;
+        min-height: 40px !important;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .swal2-blocked-request-popup {
+        width: 85% !important;
+        max-width: 280px !important;
+        padding: 0.875rem 0.75rem !important;
+    }
+    
+    .swal2-blocked-request-popup .swal2-title {
+        font-size: 1rem !important;
+        margin-bottom: 0.375rem !important;
+    }
+    
+    .swal2-blocked-request-popup .swal2-content {
+        font-size: 0.8125rem !important;
+        margin: 0.375rem 0 0.75rem 0 !important;
+        line-height: 1.4 !important;
+    }
+    
+    .swal2-blocked-request-popup .swal2-icon {
+        width: 45px !important;
+        height: 45px !important;
+        margin: 0 auto 0.625rem auto !important;
+    }
+    
+    .swal2-blocked-request-popup .swal2-icon .swal2-icon-content {
+        font-size: 1.5rem !important;
+        line-height: 45px !important;
+    }
+    
+    .swal2-blocked-request-popup .swal2-actions {
+        margin: 0.75rem 0 0 0 !important;
+    }
+    
+    .swal2-blocked-request-popup .swal2-confirm {
+        padding: 0.5625rem 1rem !important;
+        font-size: 0.8125rem !important;
+        min-height: 38px !important;
+    }
+}
+

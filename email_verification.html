@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RICH Email Verification</title>
+    <link rel="stylesheet" href="styles/email_verification.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <div class="verification-card">
+            <!-- Header -->
+            <div class="header">
+                <div class="nav-section">
+                    <button class="back-btn" onclick="goBack()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- Progress Bar -->
+                <div class="progress-section">
+                    <div class="progress-bar">
+                        <div class="progress-step active"></div>
+                        <div class="progress-step active"></div>
+                        <div class="progress-step"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="main-content">
+                <!-- Title -->
+                <h1 class="page-title">One-Time Code sent</h1>
+                <h2 class="subtitle">Check your email inbox</h2>
+                
+                <!-- Email Info -->
+                <p class="email-info">We've sent an email to <span id="userEmail" class="email-address">user@example.com</span> containing a 6-digit code.</p>
+
+                <!-- Code Input Section -->
+                <div class="code-section">
+                    <label for="verificationCode" class="code-label">Enter email code</label>
+                    <div class="input-container">
+                        <input type="text" id="verificationCode" placeholder="6-digit code" maxlength="6" class="code-input">
+                      
+                    </div>
+                </div>
+
+                <!-- Resend Timer -->
+                <div class="resend-section">
+                    <p class="resend-timer">Resend code in <span id="countdown">3:00</span> seconds...</p>
+                </div>
+
+                <!-- Information Box -->
+                <div class="info-box">
+                    <div class="info-icon">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="2"/>
+                            <path d="M10 6v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            <path d="M10 14h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <p class="info-text">Kindly wait for at least 3 minutes for the 6-digit code to arrive. Sometimes, there may be delays in receiving it. Thank you for your patience!</p>
+                </div>
+
+                <!-- Troubleshooting -->
+                <div class="troubleshooting">
+                    <p class="troubleshooting-text">Didn't receive the email?</p>
+                    <p class="troubleshooting-text">Try checking your junk or spam folders.</p>
+                </div>
+
+
+                <!-- Verify Button -->
+                <button type="button" class="verify-btn" onclick="verifyCode()">Verify Code</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/email_verification.js"></script>
+</body>
+</html>

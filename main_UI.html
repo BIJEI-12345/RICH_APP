@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/jpg" href="Images/logo app 2.jpg">
+    <title>RICH - Main Portal</title>
+    <link rel="stylesheet" href="styles/main_UI.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+    <!-- Main Mobile Container -->
+    <div class="mobile-container">
+    <!-- Header Section -->
+    <header class="header">
+        <div class="header-top">
+            <div class="header-left">
+                <div class="logo">
+                    <img src="Images/reserve.jpg" alt="Logo" class="logo-image">
+                    <span class="logo-text">RICH</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <!--div class="notification-icon" onclick="toggleNotificationDropdown()">
+                    <i class="fas fa-bell"></i>
+                    <span class="notification-dot"></span>
+                    <div class="notification-dropdown" id="notificationDropdown">
+                        <div class="notification-header">
+                            <h3>Notifications</h3>
+                        </div>
+                        <div class="notification-list">
+                            <div class="notification-item">
+                                <div class="notification-content">
+                                    <p>Your Barangay ID is ready!</p>
+                                </div>
+                            </div>
+                            <div class="notification-item highlighted">
+                                <div class="notification-content">
+                                    <p>Your Barangay Indigency is ready!</p>
+                                </div>
+                            </div>
+                            <div class="notification-item">
+                                <div class="notification-content">
+                                    <p>Your Barangay ID is ready!</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="notification-footer">
+                            <a href="#" class="mark-all-read">Mark all as read</a>
+                        </div>
+                    </div>
+                </div-->
+                <div class="settings-icon" onclick="toggleSettingsDropdown()">
+                    <i class="fas fa-cog"></i>
+                    <div class="settings-dropdown" id="settingsDropdown">
+                        <div class="dropdown-item" onclick="editProfile()">
+                            <i class="fas fa-user-edit"></i>
+                            <span>View Profile</span>
+                        </div>
+                        <div class="dropdown-item" onclick="logout()">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span>Logout</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="header-bottom">
+            <div class="profile-section">
+                <div class="profile-picture">
+                    <img alt="Profile" style="display: none;">
+                    <div class="profile-placeholder" style="display: none;">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <span class="profile-initials" style="display: flex;"></span>
+                </div>
+                <div class="user-info">
+                    <h2>Hi, Bigteño!</h2>
+                </div>
+            </div>
+            <div class="greeting-logos">
+                <img src="Images/Bagong_Pilipinas_logo.png" alt="Barangay Logo" class="barangay-logo">
+                <img src="Images/Logo.png" alt="Bagong Pilipinas Logo" class="bagong-pilipinas-logo">
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <div class="main-container">
+
+        <!-- Barangay Portal Banner -->
+        <div class="section-container">
+        <section class="portal-banner">
+            <div class="banner-content">
+                <div class="banner-left">
+                    <div class="banner-icon">
+                        <img src="Images/LogoApp.png" alt="RICH Logo" class="banner-logo-img">
+                    </div>
+                    <div class="banner-text">
+                        <h1>Welcome, Bigteño!</h1>
+                        
+                        <p>Access barangay services easily</p>
+                    </div>
+                </div>
+                <div class="banner-right">
+                    <div class="banner-image">
+                        <img src="Images/brgyHall.jpg" alt="Barangay Hall" class="brgy-hall-image">
+                        <div class="banner-overlay"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        </div>
+
+        <!-- Services Grid -->
+        <div class="section-container-no-border">
+        <section class="services-grid">
+            <div class="service-item" data-service="documents" onclick="Documents()">
+                <div class="service-icon documents">
+                    <i class="fas fa-file-alt"></i>
+                </div>
+                <p class="service-label">Documents</p>
+            </div>
+            <div class="service-item" data-service="emergency" onclick="window.location.href='emergency.html'">
+                <div class="service-icon emergency">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <p class="service-label">Emergency</p>
+            </div>
+            <div class="service-item" data-service="complaints">
+                <div class="service-icon complaints">
+                    <i class="fas fa-comment-dots"></i>
+                </div>
+                <p class="service-label">Feedback & Concerns</p>
+            </div>
+            <div class="service-item" data-service="hotline" onclick="window.location.href='hotline.html'">
+                <div class="service-icon hotline">
+                    <i class="fas fa-phone"></i>
+                </div>
+                <p class="service-label">Hotline</p>
+            </div>
+            <div class="service-item" data-service="transactions" onclick="window.location.href='transactions.html'">
+                <div class="service-icon transactions">
+                    <i class="fas fa-receipt"></i>
+                </div>
+                <p class="service-label">Transactions</p>
+            </div>
+        </section>
+        </div>
+
+        <!-- Document Requests Section 
+        <section class="document-requests">
+            <h3>Document Requests</h3>
+            <div class="request-cards-scroll">
+                <div class="cards-track">
+                <div class="request-card">
+                    <div class="request-icon">
+                        <i class="fas fa-file-invoice"></i>
+                    </div>
+                    <div class="request-content">
+                        <h4>Business Permit</h4>
+                        <p>New business permit or renewal</p>
+                        <div class="request-footer">
+                            <span class="price">P200</span>
+                            <button class="request-btn">Request Now</button>
+                        </div>
+                    </div>
+                    </div>
+                    <div class="request-card">
+                        <div class="request-icon barangay-id">
+                            <i class="fas fa-id-card"></i>
+                        </div>
+                        <div class="request-content">
+                            <h4>Barangay ID</h4>
+                            <p>Official barangay identification card</p>
+                            <div class="request-footer">
+                                <span class="price">P50</span>
+                                <button class="request-btn">Request Now</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="request-card">
+                        <div class="request-icon clearance">
+                            <i class="fas fa-certificate"></i>
+                        </div>
+                        <div class="request-content">
+                            <h4>Certificate of Clearance</h4>
+                            <p>Barangay clearance certificate</p>
+                            <div class="request-footer">
+                                <span class="price">P100</span>
+                                <button class="request-btn">Request Now</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="scroll-indicators">
+                    <span class="indicator active" data-index="0"></span>
+                    <span class="indicator" data-index="1"></span>
+                    <span class="indicator" data-index="2"></span>
+                </div>
+            </div>
+        </section> -->
+
+        
+        <!-- News and Articles Section -->
+        <div class="section-container-no-border">
+        <section class="news-section">
+            <div class="news-header">
+                <h3>News and Articles</h3>
+                <p class="news-subtitle">Latest updates and news.</p>
+                
+            </div>
+            <div class="news-card">
+                <div class="news-content">
+                    <h4>Barangay Updates</h4>
+                    <p>Stay informed with latest announcements</p>
+                </div>
+                <div class="announcements">
+                    <div class="announcements-wrapper" id="announcements-wrapper">
+                        <!-- Navigation Arrows -->
+                        <button class="carousel-nav prev" id="prev-announcement" onclick="scrollAnnouncements('prev')">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button class="carousel-nav next" id="next-announcement" onclick="scrollAnnouncements('next')">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                        
+                        <!-- Carousel Indicators -->
+                        <div class="carousel-indicators" id="announcement-indicators"></div>
+                        
+                        <div class="announcements-track" id="announcements-track">
+                            <!-- Loading indicator -->
+                            <div class="loading-indicator" id="loading-indicator">
+                                <div class="spinner"></div>
+                                <p>Loading announcements...</p>
+                            </div>
+                            
+                            <!-- No announcements message -->
+                            <div class="no-announcements" id="no-announcements" style="display: none;">
+                                <div class="no-announcements-content">
+                                    <i class="fas fa-bullhorn"></i>
+                                    <h3>No Announcements Available</h3>
+                                    <p>There are currently no announcements to display.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="see-all-container">
+                <button class="see-all-btn" onclick="seeAll()"> See All <i class="fas fa-arrow-right"></i></button>
+            </div>
+
+        </section>
+        </div>
+
+       
+
+    <!-- Edit Profile Modal -->
+    <div class="modal-overlay" id="editProfileModal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3>View Profile</h3>
+                <div class="header-actions">
+                    <button class="edit-btn" id="editProfileBtn" onclick="toggleEditMode()">
+                        <i class="fas fa-edit"></i>
+                        <span>Edit</span>
+                    </button>
+                    <button class="close-btn" onclick="closeEditProfileModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="modal-body">
+                <form id="editProfileForm" enctype="multipart/form-data">
+                    <div class="form-group profile-picture-group">
+                        <label for="profilePicture">Profile Picture</label>
+                        <div class="profile-picture-upload">
+                            <div class="current-profile-pic" id="currentProfilePic">
+                                <img alt="Current Profile" id="profilePreview" style="display: none;">
+                                <div class="profile-placeholder" id="profilePlaceholder" style="display: none;">
+                                    <i class="fas fa-user"></i>
+                                    <span class="profile-initials-modal" style="display: none;"></span>
+                                </div>
+                            </div>
+                            <div class="upload-controls">
+                                <input type="file" id="profilePicture" name="profilePicture" accept="image/*" onchange="previewProfileImage(this)">
+                                <button type="button" class="upload-btn" onclick="document.getElementById('profilePicture').click()">
+                                    <i class="fas fa-camera"></i>
+                                    Change Photo
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="firstName">First Name</label>
+                            <input type="text" id="firstName" name="firstName" placeholder="None" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="middleName">Middle Name</label>
+                            <input type="text" id="middleName" name="middleName" placeholder="None" readonly>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="lastName">Last Name</label>
+                            <input type="text" id="lastName" name="lastName" placeholder="None" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="suffix">Suffix</label>
+                            <input type="text" id="suffix" name="suffix" placeholder="None" readonly>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="userEmail">Email Address</label>
+                        <input type="email" id="userEmail" name="userEmail" placeholder="None" readonly>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="age">Age</label>
+                            <input type="number" id="age" name="age" placeholder="None" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="sex">Sex</label>
+                            <select id="sex" name="sex" disabled>
+                                <option value="">None</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="birthday">Birthday</label>
+                            <input type="date" id="birthday" name="birthday" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="civilStatus">Civil Status</label>
+                            <select id="civilStatus" name="civilStatus" disabled>
+                                
+                                <option value="Single">Single</option>
+                                <option value="Married">Married</option>
+                                
+                                <option value="Widowed">Widowed</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="userAddress">Address</label>
+                        <textarea id="userAddress" name="userAddress" placeholder="None" rows="3" readonly></textarea>
+                    </div>
+                    
+                    <div class="form-actions" id="formActions" style="display: none;">
+                        <button type="button" class="cancel-btn" onclick="cancelEdit()">Cancel</button>
+                        <button type="submit" class="save-btn">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Census Form Modal -->
+    <div class="modal-overlay" id="censusModal">
+        <div class="modal-container census-modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-clipboard-list"></i> Barangay Census Form</h3>
+            </div>
+            <div class="modal-body">
+                <div class="census-intro">
+                    <i class="fas fa-info-circle"></i>
+                    <p>Please help us update our barangay records. Fill in your information and add all household members living in your home.</p>
+                </div>
+                <form id="censusForm">
+                    <!-- Section 1: Your Personal Information -->
+                    <div class="census-section">
+                        <div class="section-header">
+                            <i class="fas fa-user"></i>
+                            <h4>Step 1: Your Personal Information</h4>
+                        </div>
+                        <div class="section-content">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="censusFirstName">First Name <span class="required-indicator">*</span></label>
+                                    <input type="text" id="censusFirstName" name="firstName" required placeholder="Enter your first name">
+                                </div>
+                                <div class="form-group">
+                                    <label for="censusLastName">Last Name <span class="required-indicator">*</span></label>
+                                    <input type="text" id="censusLastName" name="lastName" required placeholder="Enter your last name">
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group" style="flex: 2;">
+                                    <label for="censusMiddleName">Middle Name</label>
+                                    <input type="text" id="censusMiddleName" name="middleName" placeholder="Enter your middle name (optional)">
+                                </div>
+                                <div class="form-group" style="flex: 0.5; max-width: 120px;">
+                                    <label for="censusSuffix">Suffix</label>
+                                    <select id="censusSuffix" name="suffix">
+                                        <option value="">None</option>
+                                        <option value="Jr.">Jr.</option>
+                                        <option value="Sr.">Sr.</option>
+                                        <option value="II">II</option>
+                                        <option value="III">III</option>
+                                        <option value="IV">IV</option>
+                                        <option value="V">V</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" style="flex: 1.5;">
+                                    <label for="censusFamilyOccupation">Family Occupation <span class="required-indicator">*</span></label>
+                                    <select id="censusFamilyOccupation" name="familyOccupation" required>
+                                        <option value="">Select family occupation</option>
+                                        <option value="Mother">Mother</option>
+                                        <option value="Father">Father</option>
+                                        <option value="Son">Son</option>
+                                        <option value="Daughter">Daughter</option>
+                                        <option value="Grandparent">Grandparent</option>
+                                        <option value="Cousin">Cousin</option>
+                                        <option value="Other Relative">Other Relative</option>
+                                        <option value="Non-Relative">Non-Relative</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="censusAge">Age <span class="required-indicator">*</span></label>
+                                    <input type="number" id="censusAge" name="age" min="1" max="120" required placeholder="Your age">
+                                </div>
+                                <div class="form-group">
+                                    <label for="censusSex">Sex <span class="required-indicator">*</span></label>
+                                    <select id="censusSex" name="sex" required>
+                                        <option value="">Select your sex</option>
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="censusBirthday">Birthday <span class="required-indicator">*</span></label>
+                                    <input type="date" id="censusBirthday" name="birthday" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="censusCivilStatus">Civil Status <span class="required-indicator">*</span></label>
+                                    <select id="censusCivilStatus" name="civilStatus" required>
+                                        <option value="">Select status</option>
+                                        <option value="Single">Single</option>
+                                        <option value="Married">Married</option>
+                                        <option value="Divorced">Divorced</option>
+                                        <option value="Widowed">Widowed</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="censusContactNumber">Contact Number</label>
+                                    <input type="tel" id="censusContactNumber" name="contactNumber" placeholder="09XXXXXXXXX" maxlength="11" pattern="[0-9]{11}">
+                                </div>
+                                <div class="form-group">
+                                    <label for="censusOccupation">Your Occupation</label>
+                                    <input type="text" id="censusOccupation" name="occupation" placeholder="e.g., Teacher, Engineer, Student">
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="censusPlaceOfWork">Place of Work</label>
+                                    <input type="text" id="censusPlaceOfWork" name="placeOfWork" placeholder="Company name or work address">
+                                </div>
+                                <div class="form-group">
+                                    <label for="censusClaimedBenefits">Supported Benefits from Barangay</label>
+                                    <input type="text" id="censusClaimedBenefits" name="claimedBenefits" placeholder="List any benefits you receive">
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="censusAddress">Complete Address <span class="required-indicator">*</span></label>
+                                <textarea id="censusAddress" name="address" rows="3" required placeholder="Block No., House No., Street, Barangay Bigte, Norzagaray, Bulacan"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 2: Household Members -->
+                    <div class="census-section">
+                        <div class="section-header">
+                            <i class="fas fa-users"></i>
+                            <h4>Step 2: Household Members</h4>
+                            <span class="section-subtitle">Add all family members living in your home</span>
+                        </div>
+                        <div class="section-content">
+                            <div id="householdMembersContainer">
+                                <!-- Household members will be added here dynamically -->
+                            </div>
+                            <button type="button" class="add-member-btn" onclick="addHouseholdMember()">
+                                <i class="fas fa-plus-circle"></i> Add Household Member
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions census-actions">
+                        <button type="button" class="remind-later-btn" onclick="remindMeLater()">
+                            <i class="fas fa-clock"></i> Remind Me Later
+                        </button>
+                        <button type="submit" class="submit-btn census-submit">
+                            <i class="fas fa-check"></i> Submit Census
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    </div>
+    <!-- End Main Mobile Container -->
+
+    <script src="js/main_UI.js?v=20251004113000"></script>
+</body>
+</html> 

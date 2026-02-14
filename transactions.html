@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/jpg" href="Images/logo app 2.jpg">
+    <title>RICH - Transactions</title>
+    <link rel="stylesheet" href="styles/transactions.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+    <!-- Mobile Container -->
+    <div class="mobile-container">
+        <!-- Header Section -->
+        <header class="header">
+            <div class="header-top">
+                <div class="header-left">
+                    <div class="home-icon" onclick="goBack()">
+                        <i class="fas fa-home"></i>
+                    </div>
+                    <div class="logo">
+                        <img src="Images/LogoApp.png" alt="Logo" class="logo-image">
+                        <span class="logo-text">RICH</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Container -->
+        <div class="main-container">
+        
+
+        <!-- Statistics Cards -->
+        <section class="stats-section">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon pending">
+                        <i class="fas fa-plus-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="pending-count">0</h3>
+                        <p>New</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon processing">
+                        <i class="fas fa-cog"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="processing-count">0</h3>
+                        <p>Processing</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon completed">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="completed-count">0</h3>
+                        <p>Finished</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Transactions List -->
+        <section class="transactions-section">
+            <div class="transactions-header">
+                <h2>Your Requests & Concerns</h2>
+                <div class="header-actions">
+                    <button class="show-all-btn" onclick="resetFilter()" id="show-all-btn">
+                        <i class="fas fa-list"></i>
+                        Show All
+                    </button>
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="search-input" placeholder="Search requests...">
+                        <button class="clear-search-btn" id="clear-search-btn" onclick="clearSearch()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading Indicator -->
+            <div class="loading-indicator" id="loading-indicator">
+                <div class="spinner"></div>
+                <p>Loading transactions...</p>
+            </div>
+
+            <!-- No Transactions Message -->
+            <div class="no-transactions" id="no-transactions" style="display: none;">
+                <div class="no-transactions-content">
+                    <i class="fas fa-file-alt"></i>
+                    <h3>No Requests Found</h3>
+                    <p>You haven't submitted any concerns, emergency reports, or document requests yet.</p>
+                    <p>Start by submitting a request from the main menu.</p>
+                </div>
+            </div>
+
+            <!-- Transactions List -->
+            <div class="transactions-list" id="transactions-list">
+                <!-- Transaction cards will be dynamically inserted here -->
+            </div>
+        </section>
+        </div>
+    </div>
+
+    <!-- Transaction Details Modal -->
+    <div class="modal" id="transaction-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Transaction Details</h3>
+                <button class="close-btn" onclick="closeModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <!-- Transaction details will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <script src="js/transactions.js"></script>
+</body>
+</html>

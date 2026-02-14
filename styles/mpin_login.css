@@ -1,0 +1,452 @@
+/* MPIN Login Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: #ffffff;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    transition: padding 0.3s ease;
+}
+
+/* Mobile keyboard adjustments */
+body.keyboard-open {
+    align-items: flex-start;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.container {
+    width: 100%;
+    max-width: 400px;
+    transition: transform 0.3s ease;
+    position: relative;
+}
+
+/* Adjust container when keyboard is visible */
+.container.keyboard-visible {
+    transform: translateY(0);
+    margin-top: 0;
+}
+
+.mpin-login-card {
+    background: white;
+    border-radius: 16px;
+    padding: 30px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
+    border: 1px solid #f0f0f0;
+    animation: slideUp 0.6s ease;
+    position: relative;
+    width: 100%;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Header */
+.header {
+    margin-bottom: 30px;
+}
+
+.nav-section {
+    margin-bottom: 20px;
+}
+
+.back-btn {
+    background: none;
+    border: none;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.back-btn:hover {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+.title-section {
+    text-align: center;
+}
+
+.page-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 8px;
+}
+
+.subtitle {
+    font-size: 16px;
+    color: #6b7280;
+    font-weight: 400;
+}
+
+/* Main Content */
+.main-content {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    width: 100%;
+}
+
+/* User Info */
+.user-info {
+    text-align: center;
+    padding: 20px;
+    background: #f8fafc;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+}
+
+.user-email {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 8px;
+}
+
+.user-text {
+    font-size: 14px;
+    color: #6b7280;
+}
+
+/* MPIN Section */
+.mpin-section {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+    width: 100%;
+}
+
+.mpin-inputs {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: nowrap;
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+}
+
+.mpin-digit {
+    width: 50px;
+    height: 50px;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    text-align: center;
+    font-size: 20px;
+    font-weight: 600;
+    color: #1f2937;
+    background: #ffffff;
+    transition: all 0.2s ease;
+    outline: none;
+}
+
+.mpin-digit:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    transform: scale(1.05);
+}
+
+.mpin-digit.filled {
+    border-color: #10b981;
+    background: #f0fdf4;
+}
+
+.mpin-digit.error {
+    border-color: #ef4444;
+    background: #fef2f2;
+    animation: shake 0.5s ease;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+/* Error Message */
+.error-message {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #dc2626;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    text-align: center;
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Login Button */
+.login-btn {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.login-btn:enabled:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+}
+
+.login-btn:disabled {
+    background: #d1d5db;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.login-btn.loading {
+    background: #9ca3af;
+}
+
+.login-btn.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid transparent;
+    border-top: 2px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Forgot Section */
+.forgot-section {
+    text-align: center;
+}
+
+.forgot-link {
+    color: #667eea;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.forgot-link:hover {
+    color: #5a67d8;
+    text-decoration: underline;
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+    body {
+        padding: 10px;
+        min-height: 100vh;
+        min-height: -webkit-fill-available; /* iOS Safari fix */
+    }
+    
+    body.keyboard-open {
+        padding: 10px;
+        align-items: flex-start;
+        min-height: auto;
+    }
+    
+    .container {
+        padding: 0;
+        max-width: 100%;
+    }
+    
+    .container.keyboard-visible {
+        margin-top: 0;
+        padding-top: 0;
+    }
+    
+    .mpin-login-card {
+        padding: 20px 16px;
+        border-radius: 12px;
+    }
+    
+    .page-title {
+        font-size: 22px;
+        margin-bottom: 6px;
+    }
+    
+    .subtitle {
+        font-size: 14px;
+    }
+    
+    .user-info {
+        padding: 16px;
+    }
+    
+    .user-email {
+        font-size: 16px;
+    }
+    
+    .user-text {
+        font-size: 13px;
+    }
+    
+    .mpin-inputs {
+        gap: 10px;
+        flex-wrap: nowrap;
+        justify-content: center;
+        width: 100%;
+        max-width: 100%;
+        padding: 0;
+        margin: 0 auto;
+    }
+    
+    .mpin-digit {
+        width: 48px;
+        height: 48px;
+        font-size: 20px;
+        border-width: 2px;
+        flex-shrink: 0;
+    }
+    
+    .mpin-digit:focus {
+        transform: scale(1.05);
+    }
+    
+    /* Ensure MPIN inputs are scrollable into view when keyboard appears */
+    .mpin-section {
+        scroll-margin-top: 20px;
+    }
+    
+    .mpin-digit {
+        scroll-margin: 10px;
+    }
+    
+    .login-btn {
+        padding: 14px;
+        font-size: 15px;
+    }
+    
+    /* Adjust card when keyboard is visible */
+    .mpin-login-card {
+        position: relative;
+    }
+}
+
+@media (max-width: 360px) {
+    .mpin-login-card {
+        padding: 18px 14px;
+    }
+    
+    .page-title {
+        font-size: 20px;
+    }
+    
+    .mpin-inputs {
+        gap: 8px;
+        padding: 0;
+        margin: 0 auto;
+    }
+    
+    .mpin-digit {
+        width: 42px;
+        height: 42px;
+        font-size: 18px;
+    }
+}
+
+/* Ensure inputs are accessible when keyboard appears */
+@media (max-width: 480px) {
+    html {
+        height: -webkit-fill-available;
+    }
+    
+    body {
+        height: 100%;
+        height: -webkit-fill-available;
+    }
+    
+    /* Prevent body from being too tall when keyboard is visible */
+    body.keyboard-open {
+        height: auto;
+        min-height: 100vh;
+        min-height: -webkit-fill-available;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .mpin-login-card {
+        background: #1f2937;
+        color: #f9fafb;
+    }
+    
+    .page-title {
+        color: #f9fafb;
+    }
+    
+    .subtitle {
+        color: #9ca3af;
+    }
+    
+    .user-info {
+        background: #374151;
+        border-color: #4b5563;
+    }
+    
+    .user-email {
+        color: #f9fafb;
+    }
+    
+    .user-text {
+        color: #9ca3af;
+    }
+    
+    .mpin-digit {
+        background: #374151;
+        border-color: #4b5563;
+        color: #f9fafb;
+    }
+    
+    .mpin-digit:focus {
+        border-color: #667eea;
+    }
+}

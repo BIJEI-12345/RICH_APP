@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/jpg" href="Images/logo app 2.jpg">
+    <title>RICH - News & Articles</title>
+    <link rel="stylesheet" href="styles/announcements.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Mobile Container - Main Wrapper -->
+    <div class="mobile-container">
+        <!-- Header Section -->
+        <header class="header">
+            <div class="header-top">
+                <div class="header-left">
+                    <div class="back-btn" onclick="goBack()">
+                        <i class="fas fa-arrow-left"></i>
+                        <span>Back</span>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <div class="logo">
+                        <img src="Images/LogoApp.png" alt="Logo" class="logo-image">
+                        <span class="logo-text">RICH</span>
+                    </div>
+                </div>
+            </div>
+            <div class="header-bottom">
+                <div class="page-title">
+                    <h1>Announcements & Events</h1>
+                    <p>Stay updated with the latest barangay announcements</p>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Container -->
+        <div class="main-container">
+        
+        <!-- All News and Articles Section -->
+        <section class="all-news-section" id="announcements-list-section">
+            <div class="news-grid" id="announcements-container">
+                <!-- Loading indicator -->
+                <div class="loading-indicator" id="loading-indicator">
+                    <div class="spinner"></div>
+                    <p>Loading announcements...</p>
+                </div>
+
+                <!-- No announcements message -->
+                <div class="no-announcements" id="no-announcements" style="display: none;">
+                    <div class="no-announcements-content">
+                        <i class="fas fa-bullhorn"></i>
+                        <h3>No Announcements Available</h3>
+                        <p>There are currently no announcements to display.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Announcement Detail View -->
+        <section class="announcement-detail-section" id="announcement-detail-section" style="display: none;">
+            <div class="detail-header">
+                <div class="detail-back-btn" onclick="goBackToList()">
+                    <i class="fas fa-arrow-left"></i>
+                </div>
+                <div class="detail-logo">
+                    <img src="Images/LogoApp.png" alt="Logo" class="logo-image">
+                    <span class="logo-text">RICH</span>
+                </div>
+            </div>
+            
+            <div class="announcement-detail-container">
+                <!-- Detail Indicators -->
+                <div class="detail-indicators" id="detail-indicators">
+                    <!-- Indicators will be dynamically inserted here -->
+                </div>
+
+                <!-- Announcement Details -->
+                <div class="detail-content">
+                    <div class="detail-meta">
+                        <span id="detail-category" class="detail-category"></span>
+                        <span id="detail-timestamp" class="detail-timestamp"></span>
+                    </div>
+                    
+                    <h2 id="detail-title" class="detail-title"></h2>
+                    
+                    <div class="detail-date-info">
+                        <div class="date-item">
+                            <i class="fas fa-calendar-alt"></i>
+                            <span>Posted on: <strong id="detail-date"></strong></span>
+                        </div>
+                        <div class="date-item">
+                            <i class="fas fa-clock"></i>
+                            <span>Time posted: <strong id="detail-time"></strong></span>
+                        </div>
+                        <div class="date-item">
+                            <i class="fas fa-history"></i>
+                            <span>When: <strong id="detail-duration"></strong></span>
+                        </div>
+                    </div>
+
+                    <div class="detail-description">
+                        <h3>Statement</h3>
+                        <p id="detail-description"></p>
+                    </div>
+
+                    <div class="detail-actions">
+                        <button class="action-btn share-btn" onclick="shareAnnouncement()">
+                            <i class="fas fa-share"></i>
+                            Share
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>&copy; 2025 RICH. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script src="js/announcements.js"></script>
+</body>
+</html>

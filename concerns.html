@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/jpg" href="Images/logo app 2.jpg">
+    <title>RICH - Feedback & Concerns</title>
+    <link rel="stylesheet" href="styles/concerns.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+</head>
+<body>
+    <!-- Mobile Container -->
+    <div class="mobile-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-top">
+                <div class="header-left">
+                    <div class="home-icon" onclick="goToHome()">
+                        <i class="fas fa-home"></i>
+                    </div>
+                    <div class="logo">
+                        <img src="Images/LogoApp.png" alt="RICH Logo" class="logo-image">
+                        <span class="logo-text">RICH</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+        <div class="form-container">
+            <div class="form-wrapper">
+                <h1 class="form-title">FEEDBACK & CONCERNS</h1>
+
+                <form class="concern-form" id="concernFormElement">
+                    <div class="form-group">
+                        <label>Photo (optional):</label>
+                        <div class="image-preview-container">
+                            <img id="cfImagePreview" class="image-preview" style="display:none" alt="Preview">
+                        </div>
+                        <button type="button" class="upload-btn" onclick="document.getElementById('cfImageUpload').click()">Upload Image</button>
+                        <input type="file" id="cfImageUpload" name="cfImageUpload" accept="image/*" style="display:none" onchange="previewImage(this, 'cfImagePreview')">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="cfReporter">Reporter:</label>
+                        <input type="text" id="cfReporter" name="cfReporter" placeholder="Auto from profile (optional)" readonly>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="cfContact">Contact:</label>
+                        <input type="tel" id="cfContact" name="cfContact" placeholder="09XXXXXXXXX" maxlength="11" pattern="[0-9]*" inputmode="numeric" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="cfLocation">Location:</label>
+                        <input type="text" id="cfLocation" name="cfLocation" placeholder="Enter location" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="cfStatement">Statement:</label>
+                        <textarea id="cfStatement" name="cfStatement" rows="4" placeholder="Describe your feedback or concern" required></textarea>
+                    </div>
+
+                    <div class="submit-section">
+                        <button type="submit" class="submit-btn">Submit</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Display Card -->
+        <div class="report-display" id="cfReportDisplay" style="display:none">
+            <div class="report-card">
+                <div class="display-image" id="cfDisplayImageWrap" style="display:none">
+                    <img id="cfDisplayImage" alt="Uploaded" />
+                </div>
+
+                <div class="display-row">
+                    <span class="label">Reporter:</span>
+                    <span class="value" id="cfDisplayReporter">-</span>
+                </div>
+                <div class="display-row">
+                    <span class="label">Contact:</span>
+                    <span class="value" id="cfDisplayContact">-</span>
+                </div>
+                <div class="display-row">
+                    <span class="label">Date & Time:</span>
+                    <span class="value" id="cfDisplayDateTime">-</span>
+                </div>
+                <div class="display-row">
+                    <span class="label">Location:</span>
+                    <span class="value" id="cfDisplayLocation">-</span>
+                </div>
+                <div class="display-column">
+                    <span class="label">Statement:</span>
+                    <div class="statement" id="cfDisplayStatement">-</div>
+                </div>
+
+                <div class="report-actions">
+                    <button type="button" class="btn-secondary" onclick="cfSubmitAnother()">Submit Another</button>
+                    <button type="button" class="btn-primary" onclick="goToHome()">Go to Home</button>
+                </div>
+            </div>
+        </div>
+        </main>
+    </div>
+
+    <script src="js/concerns.js"></script>
+</body>
+</html>
+
