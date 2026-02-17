@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/jpg" href="Images/logo app 2.jpg">
+    <title>RICH - Emergency Report</title>
+    <link rel="stylesheet" href="styles/emergency.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Mobile Container -->
+    <div class="mobile-container">
+        <!-- Header Section -->
+        <header class="header">
+            <div class="header-top">
+                <div class="header-left">
+                    <div class="home-icon" onclick="goToHome()">
+                        <i class="fas fa-home"></i>
+                    </div>
+                    <div class="logo">
+                        <img src="Images/LogoApp.png" alt="RICH Logo" class="logo-image">
+                        <span class="logo-text">RICH</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Layout Container -->
+        <div class="main-layout">
+            <!-- Main Content Area -->
+            <main class="main-content">
+            <!-- Emergency Report Form Section -->
+            <div class="form-container">
+                <div class="form-wrapper">
+                    <h1 class="form-title">EMERGENCY REPORT FORM</h1>
+                    
+                    <form class="emergency-form" id="emergencyFormElement">
+                        <!-- Image Upload Section -->
+                        <div class="form-group">
+                            <label>Photo (optional):</label>
+                            <div class="image-preview-container">
+                                <img id="emergencyImagePreview" class="image-preview" style="display:none" alt="Preview">
+                            </div>
+                            <button type="button" class="upload-btn" onclick="document.getElementById('emergencyImageUpload').click()">Upload Image</button>
+                            <input type="file" id="emergencyImageUpload" name="emergencyImageUpload" accept="image/*" style="display:none" onchange="previewImage(this, 'emergencyImagePreview')">
+                        </div>
+
+                        <!-- Emergency Type -->
+                        <div class="form-group">
+                            <label for="emergencyType">Emergency Type: <span class="required-indicator">*</span></label>
+                            <select id="emergencyType" name="emergencyType">
+                                <option value="">Select Emergency Type</option>
+                                <option value="fire">Fire</option>
+                                <option value="medical">Medical Emergency</option>
+                                <option value="accident">Traffic Accident</option>
+                                <option value="flood">Flood</option>
+                                <option value="earthquake">Earthquake</option>
+                                <option value="robbery">Robbery/Theft</option>
+                                <option value="violence">Violence/Domestic</option>
+                                <option value="gas-leak">Gas Leak</option>
+                                <option value="power-outage">Power Outage</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+
+                        <!-- Other Emergency Type (Hidden by default) -->
+                        <div class="form-group" id="otherEmergencyGroup" style="display: none;">
+                            <label for="otherEmergencyType">Specify Emergency Type: <span class="required-indicator" id="otherEmergencyRequiredIndicator" style="display: none;">*</span></label>
+                            <input type="text" id="otherEmergencyType" name="otherEmergencyType" placeholder="Please specify the emergency type">
+                        </div>
+
+                        <!-- Location -->
+                        <div class="form-group">
+                            <label for="location">Location: <span class="required-indicator">*</span></label>
+                            <input type="text" id="location" name="location" placeholder="Enter exact location/address">
+                        </div>
+
+                        <!-- Landmark -->
+                        <div class="form-group">
+                            <label for="landmark">Landmark: <span class="required-indicator">*</span></label>
+                            <input type="text" id="landmark" name="landmark" placeholder="Enter nearby landmark or reference point">
+                        </div>
+
+                        <!-- Reporter Information -->
+                        <div class="form-group">
+                            <label for="reporterName">Reporter Name:</label>
+                            <input type="text" id="reporterName" name="reporterName" placeholder="Auto-filled from your profile" readonly>
+                        </div>
+
+                        
+
+                        <!-- Description -->
+                        <div class="form-group">
+                            <label for="description">Description: <span class="required-indicator">*</span></label>
+                            <textarea id="description" name="description" rows="4" placeholder="Provide detailed description of the emergency situation"></textarea>
+                        </div>
+
+                        
+
+
+                        <!-- Submit Button -->
+                        <div class="submit-section">
+                            <button type="submit" class="submit-btn">Submit Emergency Report</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Emergency Report Display Section (Hidden by default) -->
+            <div class="report-display" id="reportDisplay" style="display: none;">
+                <div class="report-card">
+                    <div class="report-header">
+                        <h2>Emergency Report Submitted</h2>
+                        <p>Your emergency report has been successfully submitted. Here are the details:</p>
+                    </div>
+                    
+                    <div class="report-details">
+                        <!-- Emergency Image -->
+                        <div class="display-image" id="imageCard" style="display: none;">
+                            <img id="displayEmergencyImage" alt="Emergency Image" />
+                        </div>
+
+                        <div class="display-item">
+                            <div class="icon-label-row">
+                                <i class="fas fa-exclamation-triangle row-icon"></i>
+                                <span class="label">Emergency Type:</span>
+                            </div>
+                            <span class="value" id="displayEmergencyType">-</span>
+                        </div>
+                        <div class="display-item">
+                            <div class="icon-label-row">
+                                <i class="fas fa-map-marker-alt row-icon"></i>
+                                <span class="label">Location:</span>
+                            </div>
+                            <span class="value" id="displayLocation">-</span>
+                        </div>
+                        <div class="display-item">
+                            <div class="icon-label-row">
+                                <i class="fas fa-landmark row-icon"></i>
+                                <span class="label">Landmark:</span>
+                            </div>
+                            <span class="value" id="displayLandmark">-</span>
+                        </div>
+                        <div class="display-item">
+                            <div class="icon-label-row">
+                                <i class="fas fa-user row-icon"></i>
+                                <span class="label">Reporter:</span>
+                            </div>
+                            <span class="value" id="displayReporter">-</span>
+                        </div>
+                        <div class="display-item">
+                            <div class="icon-label-row">
+                                <i class="fas fa-clock row-icon"></i>
+                                <span class="label">Date & Time:</span>
+                            </div>
+                            <span class="value" id="displayDateTime">-</span>
+                        </div>
+                        <div class="display-item">
+                            <div class="icon-label-row">
+                                <i class="fas fa-info-circle row-icon"></i>
+                                <span class="label">Description:</span>
+                            </div>
+                            <div class="statement" id="displayDescription">-</div>
+                        </div>
+                        <div class="display-item">
+                            <div class="icon-label-row">
+                                <i class="fas fa-list row-icon"></i>
+                                <span class="label">Status:</span>
+                            </div>
+                            <span class="status-badge new">NEW</span>
+                        </div>
+                    </div>
+
+                    <div class="report-actions">
+                        <button type="button" class="btn-secondary" onclick="goBackToForm()">Submit Another Report</button>
+                        <button type="button" class="btn-primary" onclick="goToHome()">Go to Home</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+        </div>
+    </div>
+
+    <script src="js/emergency.js"></script>
+</body>
+</html>

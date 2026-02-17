@@ -1,0 +1,1755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/jpg" href="Images/logo app 2.jpg">
+    <title>RICH - Document Request</title>
+    <link rel="stylesheet" href="styles/request.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+    <!-- Main Mobile Container -->
+    <div class="mobile-container">
+        <!-- Header Section -->
+        <header class="header">
+            <div class="header-top">
+                <div class="header-left">
+                    <div class="logo">
+                        <img src="Images/LogoApp.png" alt="RICH Logo" class="logo-image">
+                        <span class="logo-text">RICH</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Layout Container -->
+        <div class="main-layout">
+        <!-- Left Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-content">
+                <!-- Back to Selection Button - Shown when sidebar is collapsed -->
+                <button type="button" class="back-to-selection-btn" onclick="hideAllForms()" title="Back to Document Selection">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                
+                <!-- Home Button -->
+                <div class="sidebar-item home-item">
+                    <i class="fas fa-home"></i>
+                    <span>Home</span>
+                </div>
+                
+                <!-- Available Documents Section -->
+                <div class="documents-section">
+                    <h3 class="documents-title">Available Documents</h3>
+                    <div class="document-buttons">
+                        <div class="document-btn" data-document="barangay-id">
+                            <span>Barangay ID</span>
+                        </div>
+                        <div class="document-btn" data-document="certification-form">
+                            <span>Certification</span>
+                        </div>
+                        <div class="document-btn" data-document="certification-employment">
+                            <span>Certification of Employment</span>
+                        </div>
+                        <div class="document-btn" data-document="indigency-form">
+                            <span>Indigency</span>
+                        </div>
+                        <div class="document-btn" data-document="clearance-form">
+                            <span>Clearance</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Barangay ID Form Section -->
+            <div class="form-container" id="barangayIdForm" style="display: none;">
+                <div class="form-wrapper">
+                    <div class="form-header-with-back">
+                        <button type="button" class="back-to-selection-btn" onclick="hideAllForms()" title="Back to Document Selection">
+                            <i class="fas fa-arrow-left"></i>
+                        </button>
+                        <h1 class="form-title">BARANGAY ID FORM</h1>
+                    </div>
+                    
+                    <!-- Page Indicator -->
+                    <div class="page-indicator">
+                        <div class="indicator-step active" data-step="1">
+                            <div class="step-number">1</div>
+                            <div class="step-label">Personal Info</div>
+                        </div>
+                        <div class="indicator-step" data-step="2">
+                            <div class="step-number">2</div>
+                            <div class="step-label">Address & Status</div>
+                        </div>
+                        <div class="indicator-step" data-step="3">
+                            <div class="step-number">3</div>
+                            <div class="step-label">Contact & Documents</div>
+                        </div>
+                    </div>
+                    
+                    <form class="barangay-id-form" id="barangayIdFormElement">
+                        <!-- Step 1: Personal Information -->
+                        <div class="form-step active" id="step1">
+                            <h2 class="step-title">Personal Information</h2>
+                            
+                            <div class="form-group">
+                                <label for="lastName">Last Name: <span class="required-indicator">*</span></label>
+                                <input type="text" id="lastName" name="lastName" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="firstName">Given Name: <span class="required-indicator">*</span></label>
+                                <input type="text" id="firstName" name="firstName" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="middleName">Middle Name:</label>
+                                <input type="text" id="middleName" name="middleName">
+                            </div>
+                            <div class="form-group">
+                                <label for="birthDate">Birth Date: <span class="required-indicator">*</span></label>
+                                <input type="date" id="birthDate" name="birthDate" required>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="height">Height: <span class="required-indicator">*</span></label>
+                                    <input type="number" id="height" name="height" placeholder="cm" min="50" max="300" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="weight">Weight: <span class="required-indicator">*</span></label>
+                                    <input type="number" id="weight" name="weight" placeholder="kg" min="10" max="500" step="0.1" required>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>1x1 ID Picture: <span class="required-indicator">*</span></label>
+                                <div class="image-preview-container">
+                                    <img id="idPicturePreview" class="image-preview" style="display: none;" alt="1x1 ID Picture Preview">
+                                </div>
+                                <button type="button" class="upload-btn" onclick="document.getElementById('idPictureUpload').click()">
+                                    Upload 1x1
+                                </button>
+                                <input type="file" id="idPictureUpload" name="idPictureUpload" accept="image/*" style="display: none;">
+                            </div>
+                            
+                            <div class="step-navigation">
+                                <button type="button" class="next-btn" onclick="nextStep()">Next</button>
+                            </div>
+                        </div>
+
+                        <!-- Step 2: Address and Status -->
+                        <div class="form-step" id="step2">
+                            <h2 class="step-title">Address and Status</h2>
+                            
+                            <div class="form-group">
+                                <label for="province">Province:</label>
+                                <input type="text" id="province" name="province" placeholder="Bulacan" readonly style="background-color: #f5f5f5; color: #000000; font-weight: normal;">
+                            </div>
+                            <div class="form-group">
+                                <label for="municipality">Municipality:</label>
+                                <input type="text" id="municipality" name="municipality" placeholder="Norzagaray" readonly style="background-color: #f5f5f5; color: #000000; font-weight: normal;">
+                            </div>
+                            <div class="form-group">
+                                <label for="barangay">Barangay:</label>
+                                <input type="text" id="barangay" name="barangay" placeholder="Bigte" readonly style="background-color: #f5f5f5; color: #000000; font-weight: normal;">
+                            </div>
+                            <div class="form-group">
+                                <label for="streetAddress">Street Address: <span class="required-indicator">*</span></label>
+                                <input type="text" id="streetAddress" name="streetAddress" placeholder="Block No., House No., Street" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Civil Status: <span class="required-indicator">*</span></label>
+                                <div class="radio-group">
+                                    <label class="radio-label">
+                                        <input type="radio" name="civilStatus" value="single" required>
+                                        <span class="radio-text">Single</span>
+                                    </label>
+                                    <label class="radio-label">
+                                        <input type="radio" name="civilStatus" value="married" required>
+                                        <span class="radio-text">Married</span>
+                                    </label>
+                                    <label class="radio-label">
+                                        <input type="radio" name="civilStatus" value="widow" required>
+                                        <span class="radio-text">Widow</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Gender: <span class="required-indicator">*</span></label>
+                                <div class="radio-group">
+                                    <label class="radio-label">
+                                        <input type="radio" name="gender" value="male" required>
+                                        <span class="radio-text">Male</span>
+                                    </label>
+                                    <label class="radio-label">
+                                        <input type="radio" name="gender" value="female" required>
+                                        <span class="radio-text">Female</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="nationality">Nationality: <span class="required-indicator">*</span></label>
+                                <select id="nationality" name="nationality" required onchange="toggleOtherInput('nationality', 'otherNationality')">
+                                    <option value="">Select Nationality</option>
+                                    <option value="filipino">Filipino</option>
+                                    <option value="american">American</option>
+                                    <option value="chinese">Chinese</option>
+                                    <option value="japanese">Japanese</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="otherNationalityGroup" style="display: none;">
+                                <label for="otherNationality">Please specify nationality: <span class="required-indicator">*</span></label>
+                                <input type="text" id="otherNationality" name="otherNationality" placeholder="Please specify nationality">
+                            </div>
+                            
+                            <div class="step-navigation">
+                                <button type="button" class="prev-btn" onclick="prevStep()">Previous</button>
+                                <button type="button" class="next-btn" onclick="nextStep()">Next</button>
+                            </div>
+                        </div>
+
+                        <!-- Step 3: Contact and Documents -->
+                        <div class="form-step" id="step3">
+                            <h2 class="step-title">Contact and Documents</h2>
+                            
+                            <div class="form-group">
+                                <label>Contact person incase of emergency and contact No:</label>
+                            </div>
+                            <div class="form-group">
+                                <label for="guardianName">Name of Guardian/parent: <span class="required-indicator">*</span></label>
+                                <input type="text" id="guardianName" name="guardianName" placeholder="Name of Guardian/parent:" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="guardianContact">Contact Number: <span class="required-indicator">*</span></label>
+                                <input type="tel" id="guardianContact" name="guardianContact" placeholder="Contact Number:" maxlength="11" pattern="[0-9]{11}" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Months/Years lived in Barangay:</label>
+                            </div>
+                            <div class="form-group">
+                                <label for="residencyDuration">please specify: <span class="required-indicator">*</span></label>
+                                <input type="text" id="residencyDuration" name="residencyDuration" placeholder="Please specify: 3 years 8 months" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="idType">Type of ID: <span class="required-indicator">*</span></label>
+                                <select id="idType" name="idType" required onchange="toggleOtherInput('idType', 'otherIdType')">
+                                    <option value="">Select ID Type</option>
+                                    <option value="driver-license">Driver's License</option>
+                                    <option value="passport">Passport</option>
+                                    <option value="sss-id">SSS ID</option>
+                                    <option value="sss-id">Umid ID</option>
+                                    <option value="sss-id">National ID</option>
+                                    <option value="philhealth-id">PhilHealth ID</option>
+                                    <option value="postal-id">Postal ID</option>
+                                    <option value="senior-citizen-id">Senior Citizen ID</option>
+                                    <option value="pwd-id">PWD ID</option>
+                                    <option value="company-id">Company ID</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="otherIdTypeGroup" style="display: none;">
+                                <label for="otherIdType">Please specify ID type: <span class="required-indicator">*</span></label>
+                                <input type="text" id="otherIdType" name="otherIdType" placeholder="Please specify ID type">
+                            </div>
+                            <div class="form-group">
+                                <label>Valid ID (Showing Current Address): <span class="required-indicator">*</span></label>
+                                <div class="image-preview-container">
+                                    <img id="idPreview" class="image-preview" style="display: none;" alt="ID Preview">
+                                </div>
+                                <button type="button" class="upload-btn" onclick="document.getElementById('idUpload').click()">
+                                    Upload Image
+                                </button>
+                                <input type="file" id="idUpload" name="idUpload" accept="image/*" style="display: none;" onchange="previewImage(this, 'idPreview')">
+                            </div>
+                            
+                            <div class="step-navigation">
+                                <button type="button" class="prev-btn" onclick="prevStep()">Previous</button>
+                                <button type="submit" class="submit-btn">Submit Application</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Barangay ID Form Success Display Section (Hidden by default) -->
+            <div class="report-display" id="barangayIdReportDisplay" style="display: none;">
+                <div class="report-card">
+                    <div class="report-header">
+                        <h2>Barangay ID Form Submitted Successfully</h2>
+                        <p>Your barangay ID application has been successfully submitted. Here are the details:</p>
+                    </div>
+                    
+                    <div class="report-details">
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Last Name</div>
+                                <div class="detail-value" id="displayBarangayIdLastName">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Given Name</div>
+                                <div class="detail-value" id="displayBarangayIdFirstName">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Middle Name</div>
+                                <div class="detail-value" id="displayBarangayIdMiddleName">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-calendar-alt"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Birth Date</div>
+                                <div class="detail-value" id="displayBarangayIdBirthDate">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Province</div>
+                                <div class="detail-value" id="displayBarangayIdProvince">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Municipality</div>
+                                <div class="detail-value" id="displayBarangayIdMunicipality">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Barangay</div>
+                                <div class="detail-value" id="displayBarangayIdBarangay">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Street Address</div>
+                                <div class="detail-value" id="displayBarangayIdStreetAddress">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-ruler-vertical"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Height</div>
+                                <div class="detail-value" id="displayBarangayIdHeight">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-weight"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Weight</div>
+                                <div class="detail-value" id="displayBarangayIdWeight">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-heart"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Civil Status</div>
+                                <div class="detail-value" id="displayBarangayIdCivilStatus">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-venus-mars"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Gender</div>
+                                <div class="detail-value" id="displayBarangayIdGender">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-flag"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Nationality</div>
+                                <div class="detail-value" id="displayBarangayIdNationality">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-id-card"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Valid ID</div>
+                                <div class="detail-value" id="displayBarangayIdValidId">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Submitted At</div>
+                                <div class="detail-value" id="displayBarangayIdDateTime">-</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="report-actions">
+                        <button class="action-btn secondary" onclick="goBackToFormChoices()">Submit Another</button>
+                        <button class="action-btn primary" onclick="goToMainPage()">Back to Home</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Certification Form Section -->
+            <div class="form-container" id="certificationForm" style="display: none;">
+                <div class="form-wrapper">
+                    <div class="form-header-with-back">
+                        <button type="button" class="back-to-selection-btn" onclick="hideAllForms()" title="Back to Document Selection">
+                            <i class="fas fa-arrow-left"></i>
+                        </button>
+                        <h1 class="form-title">CERTIFICATION FORM</h1>
+                    </div>
+                    
+                    <!-- Page Indicator -->
+                    <div class="page-indicator">
+                        <div class="indicator-step active" data-step="1">
+                            <div class="step-number">1</div>
+                            <div class="step-label">Personal Info</div>
+                        </div>
+                        <div class="indicator-step" data-step="2">
+                            <div class="step-number">2</div>
+                            <div class="step-label">Family & Status</div>
+                        </div>
+                        <div class="indicator-step" data-step="3">
+                            <div class="step-number">3</div>
+                            <div class="step-label">Documents</div>
+                        </div>
+                    </div>
+                    
+                    <form class="certification-form" id="certificationFormElement">
+                        <!-- Step 1: Personal Information -->
+                        <div class="form-step active" id="certStep1">
+                            <h2 class="step-title">Personal Information</h2>
+                            
+                        <div class="form-group">
+                            <label for="certFirstName">First Name: <span class="required-indicator">*</span></label>
+                            <input type="text" id="certFirstName" name="certFirstName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="certMiddleName">Middle Name:</label>
+                            <input type="text" id="certMiddleName" name="certMiddleName">
+                        </div>
+                        <div class="form-group">
+                            <label for="certLastName">Last Name: <span class="required-indicator">*</span></label>
+                            <input type="text" id="certLastName" name="certLastName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="certBirthDate">Birth Date: <span class="required-indicator">*</span></label>
+                            <input type="date" id="certBirthDate" name="certBirthDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="certBirthPlace">Birth Place: <span class="required-indicator">*</span></label>
+                            <input type="text" id="certBirthPlace" name="certBirthPlace" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="certPurpose">Purpose: <span class="required-indicator">*</span></label>
+                                <select id="certPurpose" name="certPurpose" required onchange="toggleCertificationConditionalFields(); toggleOtherInput('certPurpose', 'otherCertPurpose')">
+                                <option value="">Select Purpose</option>
+                                <option value="proof-of-residency">Proof of Residency</option>
+                                <option value="pag-ibig-loan">Pag-Ibig Loan</option>
+                                <option value="certification-for-dead">Certification for Dead</option>
+                                <option value="other">Others</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="otherCertPurposeGroup" style="display: none;">
+                            <label for="otherCertPurpose">Please specify purpose: <span class="required-indicator">*</span></label>
+                            <input type="text" id="otherCertPurpose" name="otherCertPurpose" placeholder="Please specify purpose">
+                        </div>
+
+                            <div class="step-navigation">
+                                <button type="button" class="next-btn" onclick="nextCertStep()">Next</button>
+                            </div>
+                        </div>
+
+                        <!-- Step 2: Status Information -->
+                        <div class="form-step" id="certStep2">
+                            <h2 class="step-title">Status Information</h2>
+                            
+                            <div class="form-group">
+                                <label for="certAddress">Address: <span class="required-indicator">*</span></label>
+                                <input type="text" id="certAddress" placeholder="(Block No., House No., Street, Municipality, Province)" name="certAddress" required>
+                            </div>
+                            
+                            <!-- Conditional field for Citizenship when Proof of Residency is selected -->
+                            <div class="form-group" id="certResidencyCitizenshipGroup" style="display: none;">
+                                <label for="certResidencyCitizenship">Citizenship: <span class="required-indicator">*</span></label>
+                                <select id="certResidencyCitizenship" name="certResidencyCitizenship">
+                                    <option value="">Select Citizenship</option>
+                                    <option value="filipino">Filipino</option>
+                                    <option value="dual">Dual Citizenship</option>
+                                    <option value="foreign">Foreign</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Conditional fields for Pag-Ibig Loan -->
+                            <div class="form-group" id="certCitizenshipGroup" style="display: none;">
+                                <label for="certCitizenship">Citizenship: <span class="required-indicator">*</span></label>
+                                <select id="certCitizenship" name="certCitizenship">
+                                    <option value="">Select Citizenship</option>
+                                    <option value="filipino">Filipino</option>
+                                    <option value="dual">Dual Citizenship</option>
+                                    <option value="foreign">Foreign</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="certJobGroup" style="display: none;">
+                                <label for="certJob">Job: <span class="required-indicator">*</span></label>
+                                <input type="text" id="certJob" placeholder="e.g. Teacher, Doctor, etc." name="certJob">
+                            </div>
+                            <div class="form-group" id="certDateHireGroup" style="display: none;">
+                                <label for="certDateHire">Date of Hire: <span class="required-indicator">*</span></label>
+                                <input type="date" id="certDateHire" name="certDateHire">
+                            </div>
+                            <div class="form-group" id="certMonthlyIncomeGroup" style="display: none;">
+                                <label for="certMonthlyIncome">Monthly Income: <span class="required-indicator">*</span></label>
+                                <input type="text" id="certMonthlyIncome" name="certMonthlyIncome" placeholder="e.g. 4,000">
+                            </div>
+                            
+                            <!-- Conditional fields for Proof of Residency -->
+                            <div class="form-group" id="certYearResidingGroup" style="display: none;">
+                                <label for="certYearResiding">Year Start Residing: <span class="required-indicator">*</span></label>
+                                <input type="text" id="certYearResiding" placeholder="e.g. 2020" name="certYearResiding">
+                            </div>
+                            
+                            <!-- Conditional fields for Certification for Dead -->
+                            <div class="form-group" id="certMonthYearPassingGroup" style="display: none;">
+                                <label for="certMonthYearPassing">Month and Year of Passing: <span class="required-indicator">*</span></label>
+                                <input type="text" id="certMonthYearPassing" name="certMonthYearPassing" placeholder="e.g. January 2020">
+                            </div>
+                        <div class="form-group">
+                            <label>Gender: <span class="required-indicator">*</span></label>
+                            <div class="radio-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="certGender" value="male" required>
+                                    <span class="radio-text">Male</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="certGender" value="female" required>
+                                    <span class="radio-text">Female</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Civil Status: <span class="required-indicator">*</span></label>
+                            <div class="radio-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="certCivilStatus" value="single" required>
+                                    <span class="radio-text">Single</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="certCivilStatus" value="married" required>
+                                    <span class="radio-text">Married</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="certCivilStatus" value="widow" required>
+                                    <span class="radio-text">Widow</span>
+                                </label>
+                            </div>
+                        </div>
+                            
+                            <div class="step-navigation">
+                                <button type="button" class="prev-btn" onclick="prevCertStep()">Previous</button>
+                                <button type="button" class="next-btn" onclick="nextCertStep()">Next</button>
+                            </div>
+                        </div>
+
+                        <!-- Step 3: Documents -->
+                        <div class="form-step" id="certStep3">
+                            <h2 class="step-title">Documents</h2>
+                            
+                        <div class="form-group">
+                            <label for="certIdType">Type of ID: <span class="required-indicator">*</span></label>
+                            <select id="certIdType" name="certIdType" required onchange="toggleOtherInput('certIdType', 'otherCertIdType')">
+                                <option value="">Select ID Type</option>
+                                <option value="driver-license">Driver's License</option>
+                                <option value="passport">Passport</option>
+                                <option value="sss-id">SSS ID</option>
+                                <option value="philhealth-id">PhilHealth ID</option>
+                                <option value="postal-id">Postal ID</option>
+                                <option value="voter-id">Voter's ID</option>
+                                <option value="senior-citizen-id">Senior Citizen ID</option>
+                                <option value="pwd-id">PWD ID</option>
+                                <option value="company-id">Company ID</option>
+                                <option value="barangay-id">Barangay ID</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="otherCertIdTypeGroup" style="display: none;">
+                            <label for="otherCertIdType">Please specify ID type: <span class="required-indicator">*</span></label>
+                            <input type="text" id="otherCertIdType" name="otherCertIdType" placeholder="Please specify ID type">
+                        </div>
+                        <div class="form-group">
+                            <label>Valid ID (Showing Current Address): <span class="required-indicator">*</span></label>
+                            <div class="image-preview-container">
+                                <img id="certIdPreview" class="image-preview" style="display: none;" alt="ID Preview">
+                            </div>
+                            <button type="button" class="upload-btn" onclick="document.getElementById('certIdUpload').click()">
+                                Upload Image
+                            </button>
+                            <input type="file" id="certIdUpload" name="certIdUpload" accept="image/*" style="display: none;" onchange="previewImage(this, 'certIdPreview')">
+                        </div>
+
+                            <div class="step-navigation">
+                                <button type="button" class="prev-btn" onclick="prevCertStep()">Previous</button>
+                            <button type="submit" class="submit-btn">Submit Application</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Certification Form Success Display Section (Hidden by default) -->
+            <div class="report-display" id="certificationReportDisplay" style="display: none;">
+                <div class="report-card">
+                    <div class="report-header">
+                        <h2>Certification Form Submitted Successfully</h2>
+                        <p>Your certification application has been successfully submitted. Here are the details:</p>
+                    </div>
+                    
+                    <div class="report-details">
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Full Name</div>
+                                <div class="detail-value" id="displayCertificationName">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Address</div>
+                                <div class="detail-value" id="displayCertificationAddress">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-calendar-alt"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Birth Date</div>
+                                <div class="detail-value" id="displayCertificationBirthDate">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-map-pin"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Birth Place</div>
+                                <div class="detail-value" id="displayCertificationBirthPlace">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-venus-mars"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Gender</div>
+                                <div class="detail-value" id="displayCertificationGender">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-heart"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Civil Status</div>
+                                <div class="detail-value" id="displayCertificationCivilStatus">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-flag"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Citizenship</div>
+                                <div class="detail-value" id="displayCertificationCitizenship">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item" id="certYearResidingItem" style="display: none;">
+                            <div class="detail-icon">
+                                <i class="fas fa-calendar-check"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Year Start Residing</div>
+                                <div class="detail-value" id="displayCertificationYearResiding">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item" id="certMonthYearPassingContainer" style="display: none;">
+                            <div class="detail-icon">
+                                <i class="fas fa-calendar-times"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Month and Year of Passing</div>
+                                <div class="detail-value" id="displayCertificationMonthYearPassing">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item" id="certJobContainer" style="display: none;">
+                            <div class="detail-icon">
+                                <i class="fas fa-briefcase"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Job</div>
+                                <div class="detail-value" id="displayCertificationJob">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item" id="certDateHireContainer" style="display: none;">
+                            <div class="detail-icon">
+                                <i class="fas fa-calendar-alt"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Date of Hire</div>
+                                <div class="detail-value" id="displayCertificationDateHire">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item" id="certMonthlyIncomeContainer" style="display: none;">
+                            <div class="detail-icon">
+                                <i class="fas fa-money-bill-wave"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Monthly Income</div>
+                                <div class="detail-value" id="displayCertificationMonthlyIncome">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-bullseye"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Purpose</div>
+                                <div class="detail-value" id="displayCertificationPurpose">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-id-card"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Valid ID</div>
+                                <div class="detail-value" id="displayCertificationValidId">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Submitted At</div>
+                                <div class="detail-value" id="displayCertificationDateTime">-</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="report-actions">
+                        <button class="action-btn secondary" onclick="goBackToCertificationForm()">Submit Another</button>
+                        <button class="action-btn primary" onclick="goToMainPage()">Back to Home</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COE Form Section -->
+            <div class="form-container" id="coeForm" style="display: none;">
+                <div class="form-wrapper">
+                    <div class="form-header-with-back">
+                        <button type="button" class="back-to-selection-btn" onclick="hideAllForms()" title="Back to Document Selection">
+                            <i class="fas fa-arrow-left"></i>
+                        </button>
+                        <h1 class="form-title">COE FORM</h1>
+                    </div>
+                    
+                    <!-- Page Indicator -->
+                    <div class="page-indicator">
+                        <div class="indicator-step active" data-step="1">
+                            <div class="step-number">1</div>
+                            <div class="step-label">Personal Info</div>
+                        </div>
+                        <div class="indicator-step" data-step="2">
+                            <div class="step-number">2</div>
+                            <div class="step-label">Employment</div>
+                        </div>
+                        <div class="indicator-step" data-step="3">
+                            <div class="step-number">3</div>
+                            <div class="step-label">Documents</div>
+                        </div>
+                    </div>
+                    
+                    <form class="coe-form" id="coeFormElement">
+                        <!-- Step 1: Personal Information -->
+                        <div class="form-step active" id="coeStep1">
+                            <h2 class="step-title">Personal Information</h2>
+                            
+                        <div class="form-group">
+                            <label for="coeFirstName">First Name: <span class="required-indicator">*</span></label>
+                            <input type="text" id="coeFirstName" name="coeFirstName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="coeMiddleName">Middle Name:</label>
+                            <input type="text" id="coeMiddleName" name="coeMiddleName">
+                        </div>
+                        <div class="form-group">
+                            <label for="coeLastName">Last Name: <span class="required-indicator">*</span></label>
+                            <input type="text" id="coeLastName" name="coeLastName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="coeAddress">Address: <span class="required-indicator">*</span></label>
+                            <input type="text" id="coeAddress" placeholder="(Block No., House No., Street, Municipality, Province)" name="coeAddress" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="coeAge">Age: <span class="required-indicator">*</span></label>
+                            <input type="number" id="coeAge" name="coeAge" min="18" max="100" required>
+                        </div>
+
+                            <div class="step-navigation">
+                                <button type="button" class="next-btn" onclick="nextCoeStep()">Next</button>
+                            </div>
+                        </div>
+
+                        <!-- Step 2: Employment Information -->
+                        <div class="form-step" id="coeStep2">
+                            <h2 class="step-title">Employment Information</h2>
+                            
+                        <div class="form-group">
+                            <label>Gender: <span class="required-indicator">*</span></label>
+                            <div class="radio-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="coeGender" value="male" required>
+                                    <span class="radio-text">Male</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="coeGender" value="female" required>
+                                    <span class="radio-text">Female</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Civil Status: <span class="required-indicator">*</span></label>
+                            <div class="radio-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="coeCivilStatus" value="single" required>
+                                    <span class="radio-text">Single</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="coeCivilStatus" value="married" required>
+                                    <span class="radio-text">Married</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="coeCivilStatus" value="widow" required>
+                                    <span class="radio-text">Widow</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Employment Type: <span class="required-indicator">*</span></label>
+                            <div class="radio-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="coeEmploymentType" value="contractual" required>
+                                    <span class="radio-text">Contractual</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="coeEmploymentType" value="self_employed" required>
+                                    <span class="radio-text">Self-Employed</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="coeEmploymentType" value="on_call" required>
+                                    <span class="radio-text">On Call</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="coePosition">Position/Job: <span class="required-indicator">*</span></label>
+                            <input type="text" id="coePosition" placeholder="e.g. Teacher, Doctor, etc." name="coePosition" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="coeDateStarted">Date Started: <span class="required-indicator">*</span></label>
+                            <input type="date" id="coeDateStarted" name="coeDateStarted" min="1950-01-01" max="2030-12-31" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="coeMonthlySalary">Monthly Salary: <span class="required-indicator">*</span></label>
+                            <input type="text" id="coeMonthlySalary" name="coeMonthlySalary" placeholder="e.g. 4,000" required>
+                        </div>
+
+                            <div class="step-navigation">
+                                <button type="button" class="prev-btn" onclick="prevCoeStep()">Previous</button>
+                                <button type="button" class="next-btn" onclick="nextCoeStep()">Next</button>
+                            </div>
+                        </div>
+
+                        <!-- Step 3: Documents -->
+                        <div class="form-step" id="coeStep3">
+                            <h2 class="step-title">Documents</h2>
+                            
+                        <div class="form-group">
+                            <label for="coeIdType">Type of ID: <span class="required-indicator">*</span></label>
+                            <select id="coeIdType" name="coeIdType" required onchange="toggleOtherInput('coeIdType', 'otherCoeIdType')">
+                                <option value="">Select ID Type</option>
+                                <option value="driver-license">Driver's License</option>
+                                <option value="passport">Passport</option>
+                                <option value="sss-id">SSS ID</option>
+                                <option value="philhealth-id">PhilHealth ID</option>
+                                <option value="postal-id">Postal ID</option>
+                                <option value="voter-id">Voter's ID</option>
+                                <option value="senior-citizen-id">Senior Citizen ID</option>
+                                <option value="pwd-id">PWD ID</option>
+                                <option value="company-id">Company ID</option>
+                                <option value="barangay-id">Barangay ID</option>
+                               
+                            </select>
+                        </div>
+                        <div class="form-group" id="otherCoeIdTypeGroup" style="display: none;">
+                            <label for="otherCoeIdType">Please specify ID type: <span class="required-indicator">*</span></label>
+                            <input type="text" id="otherCoeIdType" name="otherCoeIdType" placeholder="Please specify ID type">
+                        </div>
+                        <div class="form-group">
+                            <label>Valid ID (Showing Current Address): <span class="required-indicator">*</span></label>
+                            <div class="image-preview-container">
+                                <img id="coeIdPreview" class="image-preview" style="display: none;" alt="ID Preview">
+                            </div>
+                            <button type="button" class="upload-btn" onclick="document.getElementById('coeIdUpload').click()">
+                                Upload Image
+                            </button>
+                            <input type="file" id="coeIdUpload" name="coeIdUpload" accept="image/*" style="display: none;" onchange="previewImage(this, 'coeIdPreview')">
+                        </div>
+
+                            <div class="step-navigation">
+                                <button type="button" class="prev-btn" onclick="prevCoeStep()">Previous</button>
+                            <button type="submit" class="submit-btn">Submit Application</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- COE Form Success Display Section (Hidden by default) -->
+            <div class="report-display" id="coeReportDisplay" style="display: none;">
+                <div class="report-card">
+                    <div class="report-header">
+                        <h2>COE Form Submitted Successfully</h2>
+                        <p>Your certification of employment application has been successfully submitted. Here are the details:</p>
+                    </div>
+                    
+                    <div class="report-details">
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Full Name</div>
+                                <div class="detail-value" id="displayCoeName">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Address</div>
+                                <div class="detail-value" id="displayCoeAddress">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-birthday-cake"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Age</div>
+                                <div class="detail-value" id="displayCoeAge">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-venus-mars"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Gender</div>
+                                <div class="detail-value" id="displayCoeGender">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-heart"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Civil Status</div>
+                                <div class="detail-value" id="displayCoeCivilStatus">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-user-tie"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Employment Type</div>
+                                <div class="detail-value" id="displayCoeEmploymentType">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-briefcase"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Position</div>
+                                <div class="detail-value" id="displayCoePosition">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-calendar-check"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Date Started</div>
+                                <div class="detail-value" id="displayCoeDateStarted">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-money-bill-wave"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Monthly Salary</div>
+                                <div class="detail-value" id="displayCoeMonthlySalary">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-id-card"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Valid ID</div>
+                                <div class="detail-value" id="displayCoeValidId">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Submitted At</div>
+                                <div class="detail-value" id="displayCoeDateTime">-</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="report-actions">
+                        <button class="action-btn secondary" onclick="goBackToCoeForm()">Submit Another</button>
+                        <button class="action-btn primary" onclick="goToMainPage()">Back to Home</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Indigency Form Section -->
+            <div class="form-container" id="indigencyForm" style="display: none;">
+                <div class="form-wrapper">
+                    <div class="form-header-with-back">
+                        <button type="button" class="back-to-selection-btn" onclick="hideAllForms()" title="Back to Document Selection">
+                            <i class="fas fa-arrow-left"></i>
+                        </button>
+                        <h1 class="form-title">INDIGENCY FORM</h1>
+                    </div>
+                    
+                    <!-- Page Indicator -->
+                    <div class="page-indicator">
+                        <div class="indicator-step active" data-step="1">
+                            <div class="step-number">1</div>
+                            <div class="step-label">Personal Info</div>
+                        </div>
+                        <div class="indicator-step" data-step="2">
+                            <div class="step-number">2</div>
+                            <div class="step-label">Family & Status</div>
+                        </div>
+                        <div class="indicator-step" data-step="3">
+                            <div class="step-number">3</div>
+                            <div class="step-label">Documents</div>
+                        </div>
+                    </div>
+                    
+                    <form class="indigency-form" id="indigencyFormElement">
+                        <!-- Step 1: Personal Information -->
+                        <div class="form-step active" id="indStep1">
+                            <h2 class="step-title">Personal Information</h2>
+                            
+                        <div class="form-group">
+                            <label for="indFirstName">First Name: <span class="required-indicator">*</span></label>
+                            <input type="text" id="indFirstName" name="indFirstName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="indMiddleName">Middle Name:</label>
+                            <input type="text" id="indMiddleName" name="indMiddleName">
+                        </div>
+                        <div class="form-group">
+                            <label for="indLastName">Last Name: <span class="required-indicator">*</span></label>
+                            <input type="text" id="indLastName" name="indLastName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="indAge">Age: <span class="required-indicator">*</span></label>
+                            <input type="number" id="indAge" name="indAge" min="1" max="120" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="indAddress">Address: <span class="required-indicator">*</span></label>
+                            <input type="text" id="indAddress" placeholder="(Block No., House No., Street, Municipality, Province)" name="indAddress" required>
+                        </div>
+
+                            <div class="step-navigation">
+                                <button type="button" class="next-btn" onclick="nextIndStep()">Next</button>
+                            </div>
+                        </div>
+
+                        <!-- Step 2: Family and Status Information -->
+                        <div class="form-step" id="indStep2">
+                            <h2 class="step-title">Family and Status Information</h2>
+                            
+                        <div class="form-group">
+                            <label for="indBirthDate">Birth Date: <span class="required-indicator">*</span></label>
+                            <input type="date" id="indBirthDate" name="indBirthDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="indBirthPlace">Birth Place: <span class="required-indicator">*</span></label>
+                            <input type="text" id="indBirthPlace" name="indBirthPlace" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Gender: <span class="required-indicator">*</span></label>
+                            <div class="radio-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="indGender" value="male" required>
+                                    <span class="radio-text">Male</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="indGender" value="female" required>
+                                    <span class="radio-text">Female</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Civil Status: <span class="required-indicator">*</span></label>
+                            <div class="radio-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="indCivilStatus" value="single" required>
+                                    <span class="radio-text">Single</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="indCivilStatus" value="married" required>
+                                    <span class="radio-text">Married</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="indCivilStatus" value="widow" required>
+                                    <span class="radio-text">Widow</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="indPurpose">Purpose: <span class="required-indicator">*</span></label>
+                            <select id="indPurpose" name="indPurpose" required onchange="toggleOtherInput('indPurpose', 'otherIndPurpose')">
+                                <option value="">Select Purpose</option>
+                                <option value="medical-assistance">Medical Assistance</option>
+                                <option value="educational-assistance">Educational Assistance</option>
+                                <option value="burial-assistance">Burial Assistance</option>
+                                <option value="livelihood-assistance">Livelihood Assistance</option>
+                                <option value="housing-assistance">Housing Assistance</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="otherIndPurposeGroup" style="display: none;">
+                            <label for="otherIndPurpose">Please specify purpose: <span class="required-indicator">*</span></label>
+                            <input type="text" id="otherIndPurpose" name="otherIndPurpose" placeholder="Please specify purpose">
+                        </div>
+
+                            <div class="step-navigation">
+                                <button type="button" class="prev-btn" onclick="prevIndStep()">Previous</button>
+                                <button type="button" class="next-btn" onclick="nextIndStep()">Next</button>
+                            </div>
+                        </div>
+
+                        <!-- Step 3: Documents -->
+                        <div class="form-step" id="indStep3">
+                            <h2 class="step-title">Documents</h2>
+                            
+                        <div class="form-group">
+                            <label for="indIdType">Type of ID: <span class="required-indicator">*</span></label>
+                            <select id="indIdType" name="indIdType" required onchange="toggleOtherInput('indIdType', 'otherIndIdType')">
+                                <option value="">Select ID Type</option>
+                                <option value="driver-license">Driver's License</option>
+                                <option value="passport">Passport</option>
+                                <option value="sss-id">SSS ID</option>
+                                <option value="sss-id">Umid ID</option>
+                                <option value="sss-id">National ID</option>
+                                <option value="philhealth-id">PhilHealth ID</option>
+                                <option value="postal-id">Postal ID</option>
+                                <option value="voter-id">Voter's ID</option>
+                                <option value="senior-citizen-id">Senior Citizen ID</option>
+                                <option value="pwd-id">PWD ID</option>
+                                <option value="company-id">Company ID</option>
+                                <option value="barangay-id">Barangay ID</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="otherIndIdTypeGroup" style="display: none;">
+                            <label for="otherIndIdType">Please specify ID type: <span class="required-indicator">*</span></label>
+                            <input type="text" id="otherIndIdType" name="otherIndIdType" placeholder="Please specify ID type">
+                        </div>
+                        <div class="form-group">
+                            <label>Valid ID (Showing Current Address): <span class="required-indicator">*</span></label>
+                            <div class="image-preview-container">
+                                <img id="indIdPreview" class="image-preview" style="display: none;" alt="ID Preview">
+                            </div>
+                            <button type="button" class="upload-btn" onclick="document.getElementById('indIdUpload').click()">
+                                Upload Image
+                            </button>
+                            <input type="file" id="indIdUpload" name="indIdUpload" accept="image/*" style="display: none;" onchange="previewImage(this, 'indIdPreview')">
+                        </div>
+
+                            <div class="step-navigation">
+                                <button type="button" class="prev-btn" onclick="prevIndStep()">Previous</button>
+                            <button type="submit" class="submit-btn">Submit Application</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Indigency Form Success Display Section (Hidden by default) -->
+            <div class="report-display" id="indigencyReportDisplay" style="display: none;">
+                <div class="report-card">
+                    <div class="report-header">
+                        <h2>Indigency Form Submitted Successfully</h2>
+                        <p>Your indigency application has been successfully submitted. Here are the details:</p>
+                    </div>
+                    
+                    <div class="report-details">
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Full Name</div>
+                                <div class="detail-value" id="displayIndigencyName">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Address</div>
+                                <div class="detail-value" id="displayIndigencyAddress">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-calendar-alt"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Birth Date</div>
+                                <div class="detail-value" id="displayIndigencyBirthDate">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-map-pin"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Birth Place</div>
+                                <div class="detail-value" id="displayIndigencyBirthPlace">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-birthday-cake"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Age</div>
+                                <div class="detail-value" id="displayIndigencyAge">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-venus-mars"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Gender</div>
+                                <div class="detail-value" id="displayIndigencyGender">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-heart"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Civil Status</div>
+                                <div class="detail-value" id="displayIndigencyCivilStatus">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-bullseye"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Purpose</div>
+                                <div class="detail-value" id="displayIndigencyPurpose">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-id-card"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Valid ID</div>
+                                <div class="detail-value" id="displayIndigencyValidId">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Submitted At</div>
+                                <div class="detail-value" id="displayIndigencyDateTime">-</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="report-actions">
+                        <button class="action-btn secondary" onclick="goBackToIndigencyForm()">Submit Another</button>
+                        <button class="action-btn primary" onclick="goToMainPage()">Back to Home</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Clearance Form Section -->
+            <div class="form-container" id="clearanceForm" style="display: none;">
+                <div class="form-wrapper">
+                    <div class="form-header-with-back">
+                        <button type="button" class="back-to-selection-btn" onclick="hideAllForms()" title="Back to Document Selection">
+                            <i class="fas fa-arrow-left"></i>
+                        </button>
+                        <h1 class="form-title">CLEARANCE FORM</h1>
+                    </div>
+                    
+                    <!-- Page Indicator -->
+                    <div class="page-indicator">
+                        <div class="indicator-step active" data-step="1">
+                            <div class="step-number">1</div>
+                            <div class="step-label">Personal Info</div>
+                        </div>
+                        <div class="indicator-step" data-step="2">
+                            <div class="step-number">2</div>
+                            <div class="step-label">Family & Status</div>
+                        </div>
+                        <div class="indicator-step" data-step="3">
+                            <div class="step-number">3</div>
+                            <div class="step-label">Documents</div>
+                        </div>
+                    </div>
+                    
+                    <form class="clearance-form" id="clearanceFormElement">
+                        <!-- Step 1: Personal Information -->
+                        <div class="form-step active" id="clearStep1">
+                            <h2 class="step-title">Personal Information</h2>
+                            
+                        <div class="form-group">
+                            <label for="clearFirstName">First Name: <span class="required-indicator">*</span></label>
+                            <input type="text" id="clearFirstName" name="clearFirstName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="clearMiddleName">Middle Name:</label>
+                            <input type="text" id="clearMiddleName" name="clearMiddleName">
+                        </div>
+                        <div class="form-group">
+                            <label for="clearLastName">Last Name: <span class="required-indicator">*</span></label>
+                            <input type="text" id="clearLastName" name="clearLastName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="clearAge">Age: <span class="required-indicator">*</span></label>
+                            <input type="number" id="clearAge" name="clearAge" min="1" max="120">
+                        </div>
+                        <div class="form-group">
+                            <label for="clearAddress">Address: <span class="required-indicator">*</span></label>
+                            <input type="text" id="clearAddress" placeholder="(Block No., House No., Street, Municipality, Province)" name="clearAddress" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="clearPurpose">Purpose: <span class="required-indicator">*</span></label>
+                            <select id="clearPurpose" name="clearPurpose" required onchange="toggleClearanceConditionalFields()">
+                                <option value="">Select Purpose</option>
+                                <option value="barangay-clearance">Barangay Clearance</option>
+                                <option value="business-clearance">Business Clearance</option>
+                                <option value="proof-of-residency">Proof of Residency</option>
+                            </select>
+                        </div>
+                            
+                        <div class="step-navigation">
+                            <button type="button" class="next-btn" onclick="nextClearStep()">Next</button>
+                        </div>
+                        </div>
+
+                        <!-- Step 2: Status Information -->
+                        <div class="form-step" id="clearStep2">
+                            <h2 class="step-title">Status Information</h2>
+                            
+                        <div class="form-group">
+                            <label for="clearBirthDate">Birth Date: <span class="required-indicator">*</span></label>
+                            <input type="date" id="clearBirthDate" name="clearBirthDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="clearBirthPlace">Birth Place: <span class="required-indicator">*</span></label>
+                            <input type="text" id="clearBirthPlace" name="clearBirthPlace" required>
+                        </div>
+                        <div class="form-group" id="clearCitizenshipGroup">
+                            <label for="clearCitizenship">Citizenship: <span class="required-indicator">*</span></label>
+                            <select id="clearCitizenship" name="clearCitizenship">
+                                <option value="">Select Citizenship</option>
+                                <option value="filipino">Filipino</option>
+                                <option value="dual">Dual Citizenship</option>
+                                <option value="foreign">Foreign</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="clearBusinessNameGroup" style="display: none;">
+                            <label for="clearBusinessName">Business Name: <span class="required-indicator">*</span></label>
+                            <input type="text" id="clearBusinessName" placeholder="e.g. ABC Corporation" name="clearBusinessName">
+                        </div>
+                        <div class="form-group" id="clearBusinessLocationGroup" style="display: none;">
+                            <label for="clearBusinessLocation">Location of Business: <span class="required-indicator">*</span></label>
+                            <input type="text" id="clearBusinessLocation" placeholder="e.g. 123 Main St., Manila, Philippines" name="clearBusinessLocation">
+                        </div>
+                        <div class="form-group" id="clearYearResidingGroup" style="display: none;">
+                            <label for="clearYearResiding">Year Start Residing: <span class="required-indicator">*</span></label>
+                            <input type="text" id="clearYearResiding" name="clearYearResiding" placeholder="e.g. 2020">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Gender: <span class="required-indicator">*</span></label>
+                            <div class="radio-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="clearGender" value="male" required>
+                                    <span class="radio-text">Male</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="clearGender" value="female" required>
+                                    <span class="radio-text">Female</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Civil Status: <span class="required-indicator">*</span></label>
+                            <div class="radio-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="clearCivilStatus" value="single" required>
+                                    <span class="radio-text">Single</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="clearCivilStatus" value="married" required>
+                                    <span class="radio-text">Married</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="clearCivilStatus" value="widow" required>
+                                    <span class="radio-text">Widow</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="step-navigation">
+                            <button type="button" class="prev-btn" onclick="prevClearStep()">Previous</button>
+                            <button type="button" class="next-btn" onclick="nextClearStep()">Next</button>
+                        </div>
+                        </div>
+
+                        <!-- Step 3: Documents -->
+                        <div class="form-step" id="clearStep3">
+                            <h2 class="step-title">Documents</h2>
+                            
+                            <div class="form-group">
+                                <label for="clearIdType">Type of ID: <span class="required-indicator">*</span></label>
+                                <select id="clearIdType" name="clearIdType" required onchange="toggleOtherInput('clearIdType', 'otherClearIdType')">
+                                    <option value="">Select ID Type</option>
+                                    <option value="driver-license">Driver's License</option>
+                                    <option value="passport">Passport</option>
+                                    <option value="sss-id">SSS ID</option>
+                                    <option value="sss-id">Umid ID</option>
+                                    <option value="sss-id">National ID</option>
+                                    <option value="philhealth-id">PhilHealth ID</option>
+                                    <option value="postal-id">Postal ID</option>
+                                    <option value="senior-citizen-id">Senior Citizen ID</option>
+                                    <option value="pwd-id">PWD ID</option>
+                                    <option value="company-id">Company ID</option>
+                                    <option value="barangay-id">Barangay ID</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="otherClearIdTypeGroup" style="display: none;">
+                                <label for="otherClearIdType">Please specify ID type: <span class="required-indicator">*</span></label>
+                                <input type="text" id="otherClearIdType" name="otherClearIdType" placeholder="Please specify ID type">
+                            </div>
+                            <div class="form-group">
+                                <label>Valid ID (Showing Current Address): <span class="required-indicator">*</span></label>
+                                <div class="image-preview-container">
+                                    <img id="clearIdPreview" class="image-preview" style="display: none;" alt="ID Preview">
+                                </div>
+                                <button type="button" class="upload-btn" onclick="document.getElementById('clearIdUpload').click()">
+                                    Upload Image
+                                </button>
+                                <input type="file" id="clearIdUpload" name="clearIdUpload" accept="image/*" style="display: none;" onchange="previewImage(this, 'clearIdPreview')">
+                            </div>
+                            
+                            <div class="step-navigation">
+                                <button type="button" class="prev-btn" onclick="prevClearStep()">Previous</button>
+                                <button type="submit" class="submit-btn">Submit Application</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Clearance Form Success Display Section (Hidden by default) -->
+            <div class="report-display" id="clearanceReportDisplay" style="display: none;">
+                <div class="report-card">
+                    <div class="report-header">
+                        <h2>Clearance Form Submitted Successfully</h2>
+                        <p>Your clearance application has been successfully submitted. Here are the details:</p>
+                    </div>
+                    
+                    <div class="report-details">
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Full Name</div>
+                                <div class="detail-value" id="displayClearanceName">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Address</div>
+                                <div class="detail-value" id="displayClearanceAddress">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-calendar-alt"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Birth Date</div>
+                                <div class="detail-value" id="displayClearanceBirthDate">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-map-pin"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Birth Place</div>
+                                <div class="detail-value" id="displayClearanceBirthPlace">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-birthday-cake"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Age</div>
+                                <div class="detail-value" id="displayClearanceAge">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-venus-mars"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Gender</div>
+                                <div class="detail-value" id="displayClearanceGender">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-heart"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Civil Status</div>
+                                <div class="detail-value" id="displayClearanceCivilStatus">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item" id="displayClearanceCitizenshipItem" style="display: none;">
+                            <div class="detail-icon">
+                                <i class="fas fa-flag"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Citizenship</div>
+                                <div class="detail-value" id="displayClearanceCitizenship">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item" id="displayClearanceYearResidingItem" style="display: none;">
+                            <div class="detail-icon">
+                                <i class="fas fa-calendar-check"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Year Start Residing</div>
+                                <div class="detail-value" id="displayClearanceYearResiding">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-bullseye"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Purpose</div>
+                                <div class="detail-value" id="displayClearancePurpose">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-id-card"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Valid ID</div>
+                                <div class="detail-value" id="displayClearanceValidId">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Submitted At</div>
+                                <div class="detail-value" id="displayClearanceDateTime">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item" id="displayClearanceBusinessNameItem" style="display: none;">
+                            <div class="detail-icon">
+                                <i class="fas fa-building"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Business Name</div>
+                                <div class="detail-value" id="displayClearanceBusinessName">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item" id="displayClearanceBusinessLocationItem" style="display: none;">
+                            <div class="detail-icon">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Business Location</div>
+                                <div class="detail-value" id="displayClearanceBusinessLocation">-</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="report-actions">
+                        <button class="action-btn secondary" onclick="goBackToClearanceForm()">Submit Another</button>
+                        <button class="action-btn primary" onclick="goToMainPage()">Back to Home</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Barangay Emblem Section -->
+            <div class="emblem-section" id="emblemSection">
+                <div class="barangay-emblem">
+                    <div class="emblem-container">
+                        <img src="Images/logo.png" alt="Barangay Bigte Logo" class="barangay-logo-image">
+                    </div>
+                </div>
+            </div>
+        </main>
+        </div>
+    </div>
+
+    <script src="js/request.js"></script>
+</body>
+</html>

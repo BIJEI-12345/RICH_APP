@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/jpg" href="Images/logo app 2.jpg">
+    <title>RICH - Hotline Directory</title>
+    <link rel="stylesheet" href="styles/hotline.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Mobile Container -->
+    <div class="mobile-container">
+        <!-- Header Section -->
+        <header class="header">
+            <div class="header-top">
+                <div class="header-left">
+                    <div class="home-icon" onclick="goToHome()">
+                        <i class="fas fa-home"></i>
+                    </div>
+                    <div class="logo">
+                        <img src="Images/LogoApp.png" alt="RICH Logo" class="logo-image">
+                        <span class="logo-text">RICH</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Layout Container -->
+        <div class="main-layout">
+            <!-- Main Content Area -->
+            <main class="main-content">
+            <!-- Hotline Directory Section -->
+            <div class="directory-container">
+                <div class="directory-wrapper">
+                    <div class="directory-header">
+                        <div class="header-icon">
+                            <i class="fas fa-phone"></i>
+                        </div>
+                        <h1 class="directory-title">BRGY. BIGTE HOTLINE</h1>
+                        <p class="directory-subtitle">Directory of Essential Contact Numbers</p>
+                    </div>
+
+                    <!-- Directory Carousel -->
+                    <div class="carousel-container">
+                        <div class="carousel-wrapper">
+                            <div class="carousel-track" id="carouselTrack">
+                                <div class="directory-item">
+                                    <div class="item-icon">
+                                        <img src="Images/logo.png" alt="Public Info" class="item-icon-image">
+                                    </div>
+                                    <div class="item-content">
+                                        <div class="item-title">BRGY. BIGTE HOTLINE</div>
+                                        <div class="item-number">0997-732-2787</div>
+                                    </div>
+                                    <div class="item-action">
+                                        <button class="call-btn" onclick="makeCall('0997-732-2787')">
+                                            <i class="fas fa-phone"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="directory-item">
+                                    <div class="item-icon">
+                                        <img src="Images/Public-info.png" alt="Public Info" class="item-icon-image">
+                                    </div>
+                                    <div class="item-content">
+                                        <div class="item-title">PUBLIC INFO. HOTLINE</div>
+                                        <div class="item-number">0975-048-4859</div>
+                                    </div>
+                                    <div class="item-action">
+                                        <button class="call-btn" onclick="makeCall('0975-048-4859')">
+                                            <i class="fas fa-phone"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="directory-item">
+                                    <div class="item-icon">
+                                        <img src="Images/pnp.png" alt="PNP" class="item-icon-image">
+                                    </div>
+                                    <div class="item-content">
+                                        <div class="item-title">PNP HOTLINE</div>
+                                        <div class="item-number">0998-598-5388 / 0998-967-3203</div>
+                                    </div>
+                                    <div class="item-action">
+                                        <button class="call-btn" onclick="makeCall('0998-598-5388')">
+                                            <i class="fas fa-phone"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="directory-item">
+                                    <div class="item-icon">
+                                        <img src="Images/bfp.png" alt="PNP" class="item-icon-image">
+                                    </div>
+                                    <div class="item-content">
+                                        <div class="item-title">NORZ. FIRE STATION HOTLINE</div>
+                                        <div class="item-number">0917-159-5831</div>
+                                    </div>
+                                    <div class="item-action">
+                                        <button class="call-btn" onclick="makeCall('0917-159-5831')">
+                                            <i class="fas fa-phone"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="directory-item">
+                                    <div class="item-icon">
+                                        <img src="Images/ndrrmo.png" alt="PNP" class="item-icon-image">
+                                    </div>
+                                    <div class="item-content">
+                                        <div class="item-title">MDRRMO NORZ. HOTLINE</div>
+                                        <div class="item-number">0905-247-0355</div>
+                                    </div>
+                                    <div class="item-action">
+                                        <button class="call-btn" onclick="makeCall('0905-247-0355')">
+                                            <i class="fas fa-phone"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="directory-item">
+                                    <div class="item-icon">
+                                        <i class="fas fa-hospital"></i>
+                                    </div>
+                                    <div class="item-content">
+                                        <div class="item-title">MBS HOTLINE</div>
+                                        <div class="item-number">0966-604-4114</div>
+                                    </div>
+                                    <div class="item-action">
+                                        <button class="call-btn" onclick="makeCall('0966-604-4114')">
+                                            <i class="fas fa-phone"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Carousel Controls -->
+                        <div class="carousel-controls">
+                            <button class="carousel-btn prev-btn" id="prevBtn">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <button class="carousel-btn next-btn" id="nextBtn">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    
+                </div>
+            </div>
+        </main>
+        </div>
+    </div>
+
+    <script src="js/hotline.js"></script>
+</body>
+</html>

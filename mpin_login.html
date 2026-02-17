@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <link rel="icon" type="image/jpg" href="Images/logo app 2.jpg">
+    <title>RICH MPIN Login</title>
+    <link rel="stylesheet" href="styles/mpin_login.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <div class="mpin-login-card">
+            <!-- Header -->
+            <div class="header">
+                <div class="nav-section">
+                    <button class="back-btn" onclick="goBack()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="title-section">
+                    <h1 class="page-title">Enter MPIN</h1>
+                    <p class="subtitle">Enter your 6-digit MPIN to continue</p>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="main-content">
+                <!-- User Info -->
+                <div class="user-info">
+                    <div class="user-email" id="userEmail"></div>
+                    <p class="user-text">Enter your MPIN to access your account</p>
+                </div>
+                
+                <!-- MPIN Input Section -->
+                <div class="mpin-section">
+                    <div class="mpin-inputs">
+                        <input type="password" class="mpin-digit" maxlength="1" data-index="0">
+                        <input type="password" class="mpin-digit" maxlength="1" data-index="1">
+                        <input type="password" class="mpin-digit" maxlength="1" data-index="2">
+                        <input type="password" class="mpin-digit" maxlength="1" data-index="3">
+                        <input type="password" class="mpin-digit" maxlength="1" data-index="4">
+                        <input type="password" class="mpin-digit" maxlength="1" data-index="5">
+                    </div>
+                </div>
+
+                <!-- Error Message -->
+                <div class="error-message" id="errorMessage" style="display: none;"></div>
+
+                <!-- Login Button -->
+                <button type="button" class="login-btn" id="loginBtn" onclick="verifyMPIN()" disabled>Login</button>
+
+                <!-- Forgot MPIN Link -->
+                <!--div class="forgot-section">
+                    <a href="#" class="forgot-link" onclick="forgotMPIN()">Forgot your MPIN?</a>
+                </div-->
+            </div>
+        </div>
+    </div>
+
+    <script src="js/mpin_login.js"></script>
+</body>
+</html>
+
+<!--sa mpin_login kapag pinindot yung Forgot your MPIN? magpunta sa reset_mpin_password.html(create this) then input the email after clicking the next button it will send an otp in email inputed then after verifying in  reset_mpin_password.html will appear a modal to reset your mpin_password -->
