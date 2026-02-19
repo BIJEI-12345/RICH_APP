@@ -274,6 +274,103 @@
                 </div>
             </div>
 
+            <!-- Barangay ID Form Preview Section (Hidden by default) -->
+            <div class="report-display" id="barangayIdPreviewDisplay" style="display: none;">
+                <div class="report-card">
+                    <div class="report-header">
+                        <h2>Review Your Barangay ID Details</h2>
+                        <p>Please review your information before submitting your application.</p>
+                    </div>
+
+                    <div class="report-details">
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Last Name</div>
+                                <div class="detail-value" id="previewBarangayIdLastName">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Given Name</div>
+                                <div class="detail-value" id="previewBarangayIdFirstName">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Middle Name</div>
+                                <div class="detail-value" id="previewBarangayIdMiddleName">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-calendar-alt"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Birth Date</div>
+                                <div class="detail-value" id="previewBarangayIdBirthDate">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Address</div>
+                                <div class="detail-value" id="previewBarangayIdAddress">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-venus-mars"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Gender</div>
+                                <div class="detail-value" id="previewBarangayIdGender">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-heart"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Civil Status</div>
+                                <div class="detail-value" id="previewBarangayIdCivilStatus">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-id-card"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Valid ID</div>
+                                <div class="detail-value" id="previewBarangayIdValidId">-</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="report-actions">
+                        <button class="action-btn secondary" onclick="goBackToBarangayIdForm()">Back to Form</button>
+                        <button class="action-btn primary" onclick="finalSubmitBarangayId()">Submit Application</button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Barangay ID Form Success Display Section (Hidden by default) -->
             <div class="report-display" id="barangayIdReportDisplay" style="display: none;">
                 <div class="report-card">
@@ -647,6 +744,73 @@
                 </div>
             </div>
 
+            <!-- Certification Form Preview Section (Hidden by default) -->
+            <div class="report-display" id="certificationPreviewDisplay" style="display: none;">
+                <div class="report-card">
+                    <div class="report-header">
+                        <h2>Review Your Certification Details</h2>
+                        <p>Please review your information before submitting your application.</p>
+                    </div>
+
+                    <div class="report-details">
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Full Name</div>
+                                <div class="detail-value" id="previewCertificationName">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Address</div>
+                                <div class="detail-value" id="previewCertificationAddress">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-calendar-alt"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Birth Date</div>
+                                <div class="detail-value" id="previewCertificationBirthDate">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-bullseye"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Purpose</div>
+                                <div class="detail-value" id="previewCertificationPurpose">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-id-card"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Valid ID</div>
+                                <div class="detail-value" id="previewCertificationValidId">-</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="report-actions">
+                        <button class="action-btn secondary" onclick="goBackToCertificationForm()">Back to Form</button>
+                        <button class="action-btn primary" onclick="finalSubmitCertification()">Submit Application</button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Certification Form Success Display Section (Hidden by default) -->
             <div class="report-display" id="certificationReportDisplay" style="display: none;">
                 <div class="report-card">
@@ -986,6 +1150,123 @@
                 </div>
             </div>
 
+            <!-- COE Form Preview Section (Hidden by default) -->
+            <div class="report-display" id="coePreviewDisplay" style="display: none;">
+                <div class="report-card">
+                    <div class="report-header">
+                        <h2>Review Your COE Details</h2>
+                        <p>Please review your information before submitting your application.</p>
+                    </div>
+
+                    <div class="report-details">
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Full Name</div>
+                                <div class="detail-value" id="previewCoeName">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Address</div>
+                                <div class="detail-value" id="previewCoeAddress">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-birthday-cake"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Age</div>
+                                <div class="detail-value" id="previewCoeAge">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-venus-mars"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Gender</div>
+                                <div class="detail-value" id="previewCoeGender">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-heart"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Civil Status</div>
+                                <div class="detail-value" id="previewCoeCivilStatus">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-user-tie"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Employment Type</div>
+                                <div class="detail-value" id="previewCoeEmploymentType">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-briefcase"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Position/Job</div>
+                                <div class="detail-value" id="previewCoePosition">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-calendar-check"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Date Started</div>
+                                <div class="detail-value" id="previewCoeDateStarted">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-money-bill-wave"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Monthly Salary</div>
+                                <div class="detail-value" id="previewCoeMonthlySalary">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-id-card"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Valid ID</div>
+                                <div class="detail-value" id="previewCoeValidId">-</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="report-actions">
+                        <button class="action-btn secondary" onclick="goBackToCoeForm()">Back to Form</button>
+                        <button class="action-btn primary" onclick="finalSubmitCoe()">Submit Application</button>
+                    </div>
+                </div>
+            </div>
+
             <!-- COE Form Success Display Section (Hidden by default) -->
             <div class="report-display" id="coeReportDisplay" style="display: none;">
                 <div class="report-card">
@@ -1107,7 +1388,7 @@
                     </div>
 
                     <div class="report-actions">
-                        <button class="action-btn secondary" onclick="goBackToCoeForm()">Submit Another</button>
+                        <button class="action-btn secondary" onclick="goBackToCoeSelection()">Submit Another</button>
                         <button class="action-btn primary" onclick="goToMainPage()">Back to Home</button>
                     </div>
                 </div>
@@ -1278,6 +1559,113 @@
                             </div>
                         </div>
                     </form>
+                </div>
+            </div>
+
+            <!-- Indigency Form Preview Section (Hidden by default) -->
+            <div class="report-display" id="indigencyPreviewDisplay" style="display: none;">
+                <div class="report-card">
+                    <div class="report-header">
+                        <h2>Review Your Indigency Details</h2>
+                        <p>Please review your information before submitting your application.</p>
+                    </div>
+
+                    <div class="report-details">
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Full Name</div>
+                                <div class="detail-value" id="previewIndigencyName">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Address</div>
+                                <div class="detail-value" id="previewIndigencyAddress">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-birthday-cake"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Age</div>
+                                <div class="detail-value" id="previewIndigencyAge">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-calendar-alt"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Birth Date</div>
+                                <div class="detail-value" id="previewIndigencyBirthDate">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-map-pin"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Birth Place</div>
+                                <div class="detail-value" id="previewIndigencyBirthPlace">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-venus-mars"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Gender</div>
+                                <div class="detail-value" id="previewIndigencyGender">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-heart"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Civil Status</div>
+                                <div class="detail-value" id="previewIndigencyCivilStatus">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-bullseye"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Purpose</div>
+                                <div class="detail-value" id="previewIndigencyPurpose">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-id-card"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Valid ID</div>
+                                <div class="detail-value" id="previewIndigencyValidId">-</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="report-actions">
+                        <button class="action-btn secondary" onclick="goBackToIndigencyForm()">Back to Form</button>
+                        <button class="action-btn primary" onclick="finalSubmitIndigency()">Submit Application</button>
+                    </div>
                 </div>
             </div>
 
@@ -1578,6 +1966,113 @@
                             </div>
                         </div>
                     </form>
+                </div>
+            </div>
+
+            <!-- Clearance Form Preview Section (Hidden by default) -->
+            <div class="report-display" id="clearancePreviewDisplay" style="display: none;">
+                <div class="report-card">
+                    <div class="report-header">
+                        <h2>Review Your Clearance Details</h2>
+                        <p>Please review your information before submitting your application.</p>
+                    </div>
+
+                    <div class="report-details">
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Full Name</div>
+                                <div class="detail-value" id="previewClearanceName">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Address</div>
+                                <div class="detail-value" id="previewClearanceAddress">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-calendar-alt"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Birth Date</div>
+                                <div class="detail-value" id="previewClearanceBirthDate">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-map-pin"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Birth Place</div>
+                                <div class="detail-value" id="previewClearanceBirthPlace">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-birthday-cake"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Age</div>
+                                <div class="detail-value" id="previewClearanceAge">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-venus-mars"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Gender</div>
+                                <div class="detail-value" id="previewClearanceGender">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-heart"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Civil Status</div>
+                                <div class="detail-value" id="previewClearanceCivilStatus">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-bullseye"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Purpose</div>
+                                <div class="detail-value" id="previewClearancePurpose">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-id-card"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Valid ID</div>
+                                <div class="detail-value" id="previewClearanceValidId">-</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="report-actions">
+                        <button class="action-btn secondary" type="button" onclick="editClearanceApplication()">Back to Form</button>
+                        <button class="action-btn primary" type="button" onclick="confirmClearanceSubmission()">Submit Application</button>
+                    </div>
                 </div>
             </div>
 

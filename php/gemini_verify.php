@@ -23,9 +23,38 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// Use Groq API key from environment variable or config
-// Set GROQ_API_KEY in your environment or .env file
-$API_KEY = getenv('GROQ_API_KEY') ?: 'YOUR_GROQ_API_KEY_HERE';
+// Load environment variables from .env file
+function loadEnv($path) {
+    if (!file_exists($path)) {
+        return;
+    }
+    $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        if (strpos(trim($line), '#') === 0) {
+            continue; // Skip comments
+        }
+        list($name, $value) = explode('=', $line, 2);
+        $name = trim($name);
+        $value = trim($value);
+        if (!array_key_exists($name, $_SERVER) && !array_key_exists($name, $_ENV)) {
+            putenv(sprintf('%s=%s', $name, $value));
+            $_ENV[$name] = $value;
+            $_SERVER[$name] = $value;
+        }
+    }
+}
+
+// Load .env file from project root (two levels up from php directory)
+$envPath = dirname(__DIR__) . DIRECTORY_SEPARATOR . '.env';
+loadEnv($envPath);
+
+// Get Groq API key from environment variable
+$API_KEY = getenv('GROG_API_KEY') ?: $_ENV['GROG_API_KEY'] ?? '';
+if (empty($API_KEY)) {
+    echo json_encode(['success' => false, 'ok' => false, 'message' => 'GROG_API_KEY not found in .env file']);
+    exit;
+}
+
 $URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 try {

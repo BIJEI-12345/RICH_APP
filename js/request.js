@@ -1630,13 +1630,10 @@ async function handleBarangayIdSubmission(e) {
         return;
     }
     
-    // Show full-screen loading
-    showFullScreenLoading('Submitting your request...');
-    
     // Show loading state
     const submitBtn = form.querySelector('.submit-btn');
     const originalText = submitBtn.textContent;
-    submitBtn.textContent = 'Submitting...';
+    submitBtn.textContent = 'Validating...';
     submitBtn.disabled = true;
     
     // Validate ID address contains "Bigte"
@@ -1658,12 +1655,79 @@ async function handleBarangayIdSubmission(e) {
                 allowEscapeKey: false
             });
             
-            hideFullScreenLoading();
             submitBtn.textContent = originalText;
             submitBtn.disabled = false;
             return;
         }
     }
+    
+    // Show preview instead of submitting directly
+    displayBarangayIdPreview(formData);
+    
+    // Hide form and show preview display
+    document.getElementById('barangayIdForm').style.display = 'none';
+    document.getElementById('barangayIdPreviewDisplay').style.display = 'block';
+    
+    // Hide emblem section
+    const emblemSection = document.getElementById('emblemSection');
+    if (emblemSection) {
+        emblemSection.style.display = 'none';
+    }
+    
+    // Hide sidebar (collapse it)
+    const sidebar = document.querySelector('.sidebar');
+    if (sidebar && !sidebar.classList.contains('collapsed')) {
+        sidebar.classList.add('collapsed');
+    }
+    
+    // Scroll to preview display
+    document.getElementById('barangayIdPreviewDisplay').scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'start' 
+    });
+    
+    // Reset button state
+    submitBtn.textContent = originalText;
+    submitBtn.disabled = false;
+}
+
+// Display Barangay ID Preview
+function displayBarangayIdPreview(formData) {
+    const province = formData.get('province') || 'Bulacan';
+    const municipality = formData.get('municipality') || 'Norzagaray';
+    const barangay = formData.get('barangay') || 'Bigte';
+    const streetAddress = formData.get('streetAddress');
+    const fullAddress = `${streetAddress}, ${barangay}, ${municipality}, ${province}`;
+    
+    let validId = formData.get('idType');
+    if (validId === 'other' && formData.get('otherIdType')) {
+        validId = formData.get('otherIdType');
+    }
+    
+    document.getElementById('previewBarangayIdLastName').textContent = formData.get('lastName') || '-';
+    document.getElementById('previewBarangayIdFirstName').textContent = formData.get('firstName') || '-';
+    document.getElementById('previewBarangayIdMiddleName').textContent = formData.get('middleName') || '-';
+    document.getElementById('previewBarangayIdBirthDate').textContent = formData.get('birthDate') || '-';
+    document.getElementById('previewBarangayIdAddress').textContent = fullAddress || '-';
+    document.getElementById('previewBarangayIdGender').textContent = formData.get('gender') ? formData.get('gender').charAt(0).toUpperCase() + formData.get('gender').slice(1) : '-';
+    document.getElementById('previewBarangayIdCivilStatus').textContent = formData.get('civilStatus') ? formData.get('civilStatus').charAt(0).toUpperCase() + formData.get('civilStatus').slice(1) : '-';
+    document.getElementById('previewBarangayIdValidId').textContent = validId ? validId.charAt(0).toUpperCase() + validId.slice(1).replace('-', ' ') : '-';
+}
+
+// Go back to Barangay ID form
+function goBackToBarangayIdForm() {
+    document.getElementById('barangayIdPreviewDisplay').style.display = 'none';
+    document.getElementById('barangayIdForm').style.display = 'block';
+    document.getElementById('barangayIdForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// Final submit Barangay ID
+async function finalSubmitBarangayId() {
+    const form = document.getElementById('barangayIdFormElement');
+    const formData = new FormData(form);
+    
+    // Show full-screen loading
+    showFullScreenLoading('Submitting your request...');
     
     try {
         // Handle ID image upload (required)
@@ -1743,38 +1807,12 @@ async function handleBarangayIdSubmission(e) {
         const result = await response.json();
         console.log('Response result:', result);
         
-        // Hide full-screen loading
+        // Hide full-screen loading before showing SweetAlert
         hideFullScreenLoading();
         
-        // Reset button state
-        submitBtn.textContent = originalText;
-        submitBtn.disabled = false;
-        
         if (result.success) {
-            // Display the submitted barangay ID form
-            displayBarangayIdForm(formData);
-            
-            // Hide form and show report display
-            document.getElementById('barangayIdForm').style.display = 'none';
-            document.getElementById('barangayIdReportDisplay').style.display = 'block';
-            
-            // Hide emblem section
-            const emblemSection = document.getElementById('emblemSection');
-            if (emblemSection) {
-                emblemSection.style.display = 'none';
-            }
-            
-            // Hide sidebar (collapse it) like when showing forms
-            const sidebar = document.querySelector('.sidebar');
-            if (sidebar && !sidebar.classList.contains('collapsed')) {
-                sidebar.classList.add('collapsed');
-            }
-            
-            // Scroll to report display
-            document.getElementById('barangayIdReportDisplay').scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'start' 
-            });
+            // Hide preview display
+            document.getElementById('barangayIdPreviewDisplay').style.display = 'none';
             
             // Re-apply active request restrictions immediately
             setTimeout(async () => {
@@ -1786,6 +1824,25 @@ async function handleBarangayIdSubmission(e) {
                     console.error('Error applying restrictions after submission:', error);
                 }
             }, 300);
+            
+            // Small delay to ensure overlay is fully hidden before showing SweetAlert
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            // Show success SweetAlert
+            await Swal.fire({
+                icon: 'success',
+                title: 'Request Submitted Successfully!',
+                text: 'Your Barangay ID request has been submitted. You can view it in the Transactions Module.',
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#17a2b8',
+                allowOutsideClick: false,
+                allowEscapeKey: false
+            });
+            
+            // Clear form and go back to selection
+            clearAllFormInputs();
+            hideAllForms();
+            showEmblemSection();
         } else {
             showMessage('Error: ' + result.message, 'error', 'barangayIdFormElement');
         }
@@ -1795,10 +1852,6 @@ async function handleBarangayIdSubmission(e) {
         
         // Hide full-screen loading
         hideFullScreenLoading();
-        
-        // Reset button state
-        submitBtn.textContent = originalText;
-        submitBtn.disabled = false;
         
         showMessage('Network error. Please try again.', 'error', 'barangayIdFormElement');
     }
@@ -1932,13 +1985,10 @@ async function handleCertificationSubmission(e) {
         return;
     }
     
-    // Show full-screen loading
-    showFullScreenLoading('Submitting your request...');
-    
     // Show loading state
     const submitBtn = form.querySelector('.submit-btn');
     const originalText = submitBtn.textContent;
-    submitBtn.textContent = 'Submitting...';
+    submitBtn.textContent = 'Validating...';
     submitBtn.disabled = true;
     
     // Validate ID address contains "Bigte"
@@ -1960,42 +2010,93 @@ async function handleCertificationSubmission(e) {
                 allowEscapeKey: false
             });
             
-            hideFullScreenLoading();
             submitBtn.textContent = originalText;
             submitBtn.disabled = false;
             return;
         }
     }
     
-    // Get user email
-    const userEmail = sessionStorage.getItem('user_email') || localStorage.getItem('user_email');
+    // Show preview instead of submitting directly
+    displayCertificationPreview(formData);
     
-    // Prepare data for API submission
+    // Hide form and show preview display
+    document.getElementById('certificationForm').style.display = 'none';
+    document.getElementById('certificationPreviewDisplay').style.display = 'block';
+    
+    // Scroll to preview display
+    document.getElementById('certificationPreviewDisplay').scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'start' 
+    });
+    
+    // Reset button state
+    submitBtn.textContent = originalText;
+    submitBtn.disabled = false;
+}
+
+// Display Certification Preview
+function displayCertificationPreview(formData) {
     const purpose = formData.get('certPurpose');
-    const submissionData = {
-        form_type: 'certification',
-        email: userEmail,
-        first_name: formData.get('certFirstName'),
-        middle_name: formData.get('certMiddleName'),
-        last_name: formData.get('certLastName'),
-        address: formData.get('certAddress'),
-        birth_date: formData.get('certBirthDate'),
-        birth_place: formData.get('certBirthPlace'),
-        civil_status: formData.get('certCivilStatus'),
-        gender: formData.get('certGender'),
-        purpose: purpose === 'other' ? formData.get('otherCertPurpose') : purpose,
-        citizenship: formData.get('certCitizenship') || formData.get('certResidencyCitizenship') || null,
-        job: formData.get('certJob') || null,
-        date_hire: formData.get('certDateHire') || null,
-        monthly_income: formData.get('certMonthlyIncome') ? formData.get('certMonthlyIncome').replace(/,/g, '') : null,
-        year_residing: formData.get('certYearResiding') || null,
-        month_year_passing: formData.get('certMonthYearPassing') || null,
-        valid_id: formData.get('certIdType'),
-        id_image: formData.get('certIdUpload') ? await fileToBase64(formData.get('certIdUpload')) : null
-    };
+    const finalPurpose = purpose === 'other' ? formData.get('otherCertPurpose') : purpose;
     
-    // Submit to API
+    let validId = formData.get('certIdType');
+    if (validId === 'other' && formData.get('otherCertIdType')) {
+        validId = formData.get('otherCertIdType');
+    }
+    
+    const fullName = `${formData.get('certFirstName') || ''} ${formData.get('certMiddleName') || ''} ${formData.get('certLastName') || ''}`.trim();
+    
+    document.getElementById('previewCertificationName').textContent = fullName || '-';
+    document.getElementById('previewCertificationAddress').textContent = formData.get('certAddress') || '-';
+    document.getElementById('previewCertificationBirthDate').textContent = formData.get('certBirthDate') || '-';
+    document.getElementById('previewCertificationPurpose').textContent = finalPurpose ? finalPurpose.charAt(0).toUpperCase() + finalPurpose.slice(1).replace('-', ' ') : '-';
+    document.getElementById('previewCertificationValidId').textContent = validId ? validId.charAt(0).toUpperCase() + validId.slice(1).replace('-', ' ') : '-';
+}
+
+// Go back to Certification form
+function goBackToCertificationForm() {
+    document.getElementById('certificationPreviewDisplay').style.display = 'none';
+    document.getElementById('certificationForm').style.display = 'block';
+    document.getElementById('certificationForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// Final submit Certification
+async function finalSubmitCertification() {
+    const form = document.getElementById('certificationFormElement');
+    const formData = new FormData(form);
+    
+    // Show full-screen loading
+    showFullScreenLoading('Submitting your request...');
+    
     try {
+        // Get user email
+        const userEmail = sessionStorage.getItem('user_email') || localStorage.getItem('user_email');
+        
+        // Prepare data for API submission
+        const purpose = formData.get('certPurpose');
+        const submissionData = {
+            form_type: 'certification',
+            email: userEmail,
+            first_name: formData.get('certFirstName'),
+            middle_name: formData.get('certMiddleName'),
+            last_name: formData.get('certLastName'),
+            address: formData.get('certAddress'),
+            birth_date: formData.get('certBirthDate'),
+            birth_place: formData.get('certBirthPlace'),
+            civil_status: formData.get('certCivilStatus'),
+            gender: formData.get('certGender'),
+            purpose: purpose === 'other' ? formData.get('otherCertPurpose') : purpose,
+            citizenship: formData.get('certCitizenship') || formData.get('certResidencyCitizenship') || null,
+            job: formData.get('certJob') || null,
+            date_hire: formData.get('certDateHire') || null,
+            monthly_income: formData.get('certMonthlyIncome') ? formData.get('certMonthlyIncome').replace(/,/g, '') : null,
+            year_residing: formData.get('certYearResiding') || null,
+            month_year_passing: formData.get('certMonthYearPassing') || null,
+            valid_id: formData.get('certIdType'),
+            id_image: formData.get('certIdUpload') ? await fileToBase64(formData.get('certIdUpload')) : null
+        };
+        
+        // Submit to API
         const response = await fetch('php/request.php', {
             method: 'POST',
             headers: {
@@ -2006,34 +2107,41 @@ async function handleCertificationSubmission(e) {
         
         const result = await response.json();
         
+        // Hide full-screen loading before showing SweetAlert
+        hideFullScreenLoading();
+        
         if (result.success) {
-            // Display the submitted certification form
-            displayCertificationForm(formData);
-            
-            // Hide form and show report display
-            document.getElementById('certificationForm').style.display = 'none';
-            document.getElementById('certificationReportDisplay').style.display = 'block';
-            
-            // Scroll to report display
-            document.getElementById('certificationReportDisplay').scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'start' 
-            });
-            
-            showMessage('Certification application submitted successfully!', 'success', 'certificationFormElement');
+            // Hide preview display
+            document.getElementById('certificationPreviewDisplay').style.display = 'none';
             
             // Re-apply active request restrictions immediately
             try { await applyActiveRequestRestrictions(); } catch (_) {}
+            
+            // Small delay to ensure overlay is fully hidden before showing SweetAlert
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            // Show success SweetAlert
+            await Swal.fire({
+                icon: 'success',
+                title: 'Request Submitted Successfully!',
+                text: 'Your Certification request has been submitted. You can view it in the Transactions Module.',
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#17a2b8',
+                allowOutsideClick: false,
+                allowEscapeKey: false
+            });
+            
+            // Clear form and go back to selection
+            clearAllFormInputs();
+            hideAllForms();
+            showEmblemSection();
         } else {
             showMessage(result.message || 'Failed to submit certification form', 'error', 'certificationFormElement');
         }
     } catch (error) {
         console.error('Error submitting certification form:', error);
-        showMessage('Network error. Please try again.', 'error', 'certificationFormElement');
-    } finally {
         hideFullScreenLoading();
-        submitBtn.textContent = originalText;
-        submitBtn.disabled = false;
+        showMessage('Network error. Please try again.', 'error', 'certificationFormElement');
     }
 }
 
@@ -2149,13 +2257,10 @@ async function handleCoeSubmission(e) {
         return;
     }
     
-    // Show full-screen loading
-    showFullScreenLoading('Submitting your request...');
-    
     // Show loading state
     const submitBtn = form.querySelector('.submit-btn');
     const originalText = submitBtn.textContent;
-    submitBtn.textContent = 'Submitting...';
+    submitBtn.textContent = 'Validating...';
     submitBtn.disabled = true;
     
     // Validate ID address contains "Bigte"
@@ -2183,30 +2288,99 @@ async function handleCoeSubmission(e) {
         }
     }
     
-    // Get user email
-    const userEmail = sessionStorage.getItem('user_email') || localStorage.getItem('user_email');
+    // Show preview instead of submitting directly
+    displayCoePreview(formData);
     
-    // Prepare data for API submission
-    const submissionData = {
-        form_type: 'coe',
-        email: userEmail,
-        first_name: formData.get('coeFirstName'),
-        middle_name: formData.get('coeMiddleName'),
-        last_name: formData.get('coeLastName'),
-        address: formData.get('coeAddress'),
-        age: formData.get('coeAge'),
-        gender: formData.get('coeGender'),
-        civil_status: formData.get('coeCivilStatus'),
-        employment_type: formData.get('coeEmploymentType'),
-        position: formData.get('coePosition'),
-        date_started: formData.get('coeDateStarted'),
-        monthly_salary: formData.get('coeMonthlySalary') ? formData.get('coeMonthlySalary').replace(/,/g, '') : null,
-        valid_id: formData.get('coeIdType'),
-        id_image: formData.get('coeIdUpload') ? await fileToBase64(formData.get('coeIdUpload')) : null
-    };
+    // Hide form and show preview display
+    document.getElementById('coeForm').style.display = 'none';
+    document.getElementById('coePreviewDisplay').style.display = 'block';
     
-    // Submit to API
+    // Scroll to preview display
+    document.getElementById('coePreviewDisplay').scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'start' 
+    });
+    
+    // Reset button state
+    submitBtn.textContent = originalText;
+    submitBtn.disabled = false;
+}
+
+// Display COE Preview
+function displayCoePreview(formData) {
+    const fullName = `${formData.get('coeFirstName') || ''} ${formData.get('coeMiddleName') || ''} ${formData.get('coeLastName') || ''}`.trim();
+    
+    let validId = formData.get('coeIdType');
+    if (validId === 'other' && formData.get('otherCoeIdType')) {
+        validId = formData.get('otherCoeIdType');
+    }
+    
+    // Format gender and civil status
+    const gender = formData.get('coeGender');
+    const formattedGender = gender ? gender.charAt(0).toUpperCase() + gender.slice(1) : '-';
+    
+    const civilStatus = formData.get('coeCivilStatus');
+    const formattedCivilStatus = civilStatus ? civilStatus.charAt(0).toUpperCase() + civilStatus.slice(1) : '-';
+    
+    // Format employment type
+    const employmentType = formData.get('coeEmploymentType');
+    const formattedEmploymentType = employmentType ? employmentType.charAt(0).toUpperCase() + employmentType.slice(1).replace('-', ' ') : '-';
+    
+    // Format monthly salary with currency
+    const monthlySalary = formData.get('coeMonthlySalary');
+    const formattedSalary = monthlySalary ? '₱' + monthlySalary.replace(/,/g, ',') : '-';
+    
+    document.getElementById('previewCoeName').textContent = fullName || '-';
+    document.getElementById('previewCoeAddress').textContent = formData.get('coeAddress') || '-';
+    document.getElementById('previewCoeAge').textContent = formData.get('coeAge') || '-';
+    document.getElementById('previewCoeGender').textContent = formattedGender;
+    document.getElementById('previewCoeCivilStatus').textContent = formattedCivilStatus;
+    document.getElementById('previewCoeEmploymentType').textContent = formattedEmploymentType;
+    document.getElementById('previewCoePosition').textContent = formData.get('coePosition') || '-';
+    document.getElementById('previewCoeDateStarted').textContent = formData.get('coeDateStarted') || '-';
+    document.getElementById('previewCoeMonthlySalary').textContent = formattedSalary;
+    document.getElementById('previewCoeValidId').textContent = validId ? validId.charAt(0).toUpperCase() + validId.slice(1).replace('-', ' ') : '-';
+}
+
+// Go back to COE form
+function goBackToCoeForm() {
+    document.getElementById('coePreviewDisplay').style.display = 'none';
+    document.getElementById('coeForm').style.display = 'block';
+    document.getElementById('coeForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// Final submit COE
+async function finalSubmitCoe() {
+    const form = document.getElementById('coeFormElement');
+    const formData = new FormData(form);
+    
+    // Show full-screen loading
+    showFullScreenLoading('Submitting your request...');
+    
     try {
+        // Get user email
+        const userEmail = sessionStorage.getItem('user_email') || localStorage.getItem('user_email');
+        
+        // Prepare data for API submission
+        const submissionData = {
+            form_type: 'coe',
+            email: userEmail,
+            first_name: formData.get('coeFirstName'),
+            middle_name: formData.get('coeMiddleName'),
+            last_name: formData.get('coeLastName'),
+            address: formData.get('coeAddress'),
+            age: formData.get('coeAge'),
+            gender: formData.get('coeGender'),
+            civil_status: formData.get('coeCivilStatus'),
+            employment_type: formData.get('coeEmploymentType'),
+            position: formData.get('coePosition'),
+            date_started: formData.get('coeDateStarted'),
+            monthly_salary: formData.get('coeMonthlySalary') ? formData.get('coeMonthlySalary').replace(/,/g, '') : null,
+            valid_id: formData.get('coeIdType'),
+            id_image: formData.get('coeIdUpload') ? await fileToBase64(formData.get('coeIdUpload')) : null
+        };
+        
+        // Submit to API
         const response = await fetch('php/request.php', {
             method: 'POST',
             headers: {
@@ -2217,34 +2391,41 @@ async function handleCoeSubmission(e) {
         
         const result = await response.json();
         
+        // Hide full-screen loading before showing SweetAlert
+        hideFullScreenLoading();
+        
         if (result.success) {
-            // Display the submitted COE form
-            displayCoeForm(formData);
-            
-            // Hide form and show report display
-            document.getElementById('coeForm').style.display = 'none';
-            document.getElementById('coeReportDisplay').style.display = 'block';
-            
-            // Scroll to report display
-            document.getElementById('coeReportDisplay').scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'start' 
-            });
-            
-            showMessage('COE application submitted successfully!', 'success', 'coeFormElement');
+            // Hide preview display
+            document.getElementById('coePreviewDisplay').style.display = 'none';
             
             // Re-apply active request restrictions immediately
             try { await applyActiveRequestRestrictions(); } catch (_) {}
+            
+            // Small delay to ensure overlay is fully hidden before showing SweetAlert
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            // Show success SweetAlert
+            await Swal.fire({
+                icon: 'success',
+                title: 'Request Submitted Successfully!',
+                text: 'Your Certification of Employment request has been submitted. You can view it in the Transactions Module.',
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#17a2b8',
+                allowOutsideClick: false,
+                allowEscapeKey: false
+            });
+            
+            // Clear form and go back to selection
+            clearAllFormInputs();
+            hideAllForms();
+            showEmblemSection();
         } else {
             showMessage(result.message || 'Failed to submit COE form', 'error', 'coeFormElement');
         }
     } catch (error) {
         console.error('Error submitting COE form:', error);
-        showMessage('Network error. Please try again.', 'error', 'coeFormElement');
-    } finally {
         hideFullScreenLoading();
-        submitBtn.textContent = originalText;
-        submitBtn.disabled = false;
+        showMessage('Network error. Please try again.', 'error', 'coeFormElement');
     }
 }
 
@@ -2294,13 +2475,10 @@ async function handleIndigencySubmission(e) {
         return;
     }
     
-    // Show full-screen loading
-    showFullScreenLoading('Submitting your request...');
-    
     // Show loading state
     const submitBtn = form.querySelector('.submit-btn');
     const originalText = submitBtn.textContent;
-    submitBtn.textContent = 'Submitting...';
+    submitBtn.textContent = 'Validating...';
     submitBtn.disabled = true;
     
     // Validate ID address contains "Bigte"
@@ -2327,6 +2505,64 @@ async function handleIndigencySubmission(e) {
             return;
         }
     }
+    
+    // Show preview instead of submitting directly
+    displayIndigencyPreview(formData);
+    
+    // Hide form and show preview display
+    document.getElementById('indigencyForm').style.display = 'none';
+    document.getElementById('indigencyPreviewDisplay').style.display = 'block';
+    
+    // Scroll to preview display
+    document.getElementById('indigencyPreviewDisplay').scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'start' 
+    });
+    
+    // Reset button state
+    submitBtn.textContent = originalText;
+    submitBtn.disabled = false;
+}
+
+// Display Indigency Preview
+function displayIndigencyPreview(formData) {
+    let purpose = formData.get('indPurpose');
+    if (purpose === 'other' && formData.get('otherIndPurpose')) {
+        purpose = formData.get('otherIndPurpose');
+    }
+    
+    let validId = formData.get('indIdType');
+    if (validId === 'other' && formData.get('otherIndIdType')) {
+        validId = formData.get('otherIndIdType');
+    }
+    
+    const fullName = `${formData.get('indFirstName') || ''} ${formData.get('indMiddleName') || ''} ${formData.get('indLastName') || ''}`.trim();
+    
+    document.getElementById('previewIndigencyName').textContent = fullName || '-';
+    document.getElementById('previewIndigencyAddress').textContent = formData.get('indAddress') || '-';
+    document.getElementById('previewIndigencyAge').textContent = formData.get('indAge') || '-';
+    document.getElementById('previewIndigencyBirthDate').textContent = formData.get('indBirthDate') || '-';
+    document.getElementById('previewIndigencyBirthPlace').textContent = formData.get('indBirthPlace') || '-';
+    document.getElementById('previewIndigencyGender').textContent = formData.get('indGender') ? formData.get('indGender').charAt(0).toUpperCase() + formData.get('indGender').slice(1) : '-';
+    document.getElementById('previewIndigencyCivilStatus').textContent = formData.get('indCivilStatus') ? formData.get('indCivilStatus').charAt(0).toUpperCase() + formData.get('indCivilStatus').slice(1) : '-';
+    document.getElementById('previewIndigencyPurpose').textContent = purpose ? purpose.charAt(0).toUpperCase() + purpose.slice(1).replace('-', ' ') : '-';
+    document.getElementById('previewIndigencyValidId').textContent = validId ? validId.charAt(0).toUpperCase() + validId.slice(1).replace('-', ' ') : '-';
+}
+
+// Go back to Indigency form
+function goBackToIndigencyForm() {
+    document.getElementById('indigencyPreviewDisplay').style.display = 'none';
+    document.getElementById('indigencyForm').style.display = 'block';
+    document.getElementById('indigencyForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// Final submit Indigency
+async function finalSubmitIndigency() {
+    const form = document.getElementById('indigencyFormElement');
+    const formData = new FormData(form);
+    
+    // Show full-screen loading
+    showFullScreenLoading('Submitting your request...');
     
     try {
         // Handle image upload (optional)
@@ -2380,31 +2616,34 @@ async function handleIndigencySubmission(e) {
         const result = await response.json();
         console.log('Response result:', result);
         
-        // Hide full-screen loading
+        // Hide full-screen loading before showing SweetAlert
         hideFullScreenLoading();
         
-        // Reset button state
-        submitBtn.textContent = originalText;
-        submitBtn.disabled = false;
-        
         if (result.success) {
-            // Display the submitted indigency form
-            displayIndigencyForm(formData);
-            
-            // Hide indigency form specifically and show report display
-            document.getElementById('indigencyForm').style.display = 'none';
-            document.getElementById('indigencyReportDisplay').style.display = 'block';
-            
-            // Scroll to report display
-            document.getElementById('indigencyReportDisplay').scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'start' 
-            });
-            
-            showMessage('Indigency application submitted successfully!', 'success', 'indigencyFormElement');
+            // Hide preview display
+            document.getElementById('indigencyPreviewDisplay').style.display = 'none';
 
             // Re-apply active request restrictions so indigency gets restricted immediately
             try { await applyActiveRequestRestrictions(); } catch (_) {}
+            
+            // Small delay to ensure overlay is fully hidden before showing SweetAlert
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            // Show success SweetAlert
+            await Swal.fire({
+                icon: 'success',
+                title: 'Request Submitted Successfully!',
+                text: 'Your Indigency request has been submitted. You can view it in the Transactions Module.',
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#17a2b8',
+                allowOutsideClick: false,
+                allowEscapeKey: false
+            });
+            
+            // Clear form and go back to selection
+            clearAllFormInputs();
+            hideAllForms();
+            showEmblemSection();
         } else {
             showMessage('Error: ' + result.message, 'error', 'indigencyFormElement');
         }
@@ -2414,10 +2653,6 @@ async function handleIndigencySubmission(e) {
         
         // Hide full-screen loading
         hideFullScreenLoading();
-        
-        // Reset button state
-        submitBtn.textContent = originalText;
-        submitBtn.disabled = false;
         
         showMessage('Network error. Please try again.', 'error', 'indigencyFormElement');
     }
@@ -2493,24 +2728,97 @@ async function handleClearanceSubmission(e) {
         scrollToFirstError();
         return;
     }
-    
+
+    // If validation passed, show preview instead of submitting immediately
+    showClearancePreview(formData);
+}
+
+// Show preview for Clearance form before final submission
+function showClearancePreview(formData) {
+    // Build full name
+    const fullName = `${formData.get('clearFirstName') || ''} ${formData.get('clearMiddleName') || ''} ${formData.get('clearLastName') || ''}`.trim();
+
+    // Populate preview fields
+    const previewMap = [
+        ['previewClearanceName', fullName || '-'],
+        ['previewClearanceAddress', formData.get('clearAddress') || '-'],
+        ['previewClearanceBirthDate', formData.get('clearBirthDate') || '-'],
+        ['previewClearanceBirthPlace', formData.get('clearBirthPlace') || '-'],
+        ['previewClearanceAge', formData.get('clearAge') || '-'],
+        ['previewClearanceGender', formData.get('clearGender') || '-'],
+        ['previewClearanceCivilStatus', formData.get('clearCivilStatus') || '-'],
+        ['previewClearancePurpose', formData.get('clearPurpose') || '-'],
+        ['previewClearanceValidId', formData.get('clearIdType') || '-']
+    ];
+
+    previewMap.forEach(([id, value]) => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.textContent = value;
+        }
+    });
+
+    // Toggle visibility: hide form, show preview
+    const formContainer = document.getElementById('clearanceForm');
+    const previewDisplay = document.getElementById('clearancePreviewDisplay');
+    if (formContainer && previewDisplay) {
+        formContainer.style.display = 'none';
+        previewDisplay.style.display = 'block';
+        previewDisplay.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+        });
+    }
+
+    // Optionally hide emblem section while previewing
+    const emblemSection = document.getElementById('emblemSection');
+    if (emblemSection) {
+        emblemSection.style.display = 'none';
+    }
+}
+
+// Go back from preview to Clearance form for editing
+function editClearanceApplication() {
+    const formContainer = document.getElementById('clearanceForm');
+    const previewDisplay = document.getElementById('clearancePreviewDisplay');
+
+    if (previewDisplay) {
+        previewDisplay.style.display = 'none';
+    }
+    if (formContainer) {
+        formContainer.style.display = 'block';
+        formContainer.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+        });
+    }
+}
+
+// Final submission after user confirms preview
+async function confirmClearanceSubmission() {
+    const form = document.getElementById('clearanceFormElement');
+    if (!form) return;
+
+    const formData = new FormData(form);
+    const clearIdUpload = document.getElementById('clearIdUpload');
+
     // Show full-screen loading
     showFullScreenLoading('Submitting your request...');
-    
-    // Show loading state
+
+    // Use the original submit button inside the form for loading state
     const submitBtn = form.querySelector('.submit-btn');
-    const originalText = submitBtn.textContent;
-    submitBtn.textContent = 'Submitting...';
-    submitBtn.disabled = true;
-    
-    // Validate ID address contains "Bigte"
-    if (clearIdUpload.files && clearIdUpload.files[0]) {
-        // If validation hasn't been done yet, do it now
+    const originalText = submitBtn ? submitBtn.textContent : '';
+    if (submitBtn) {
+        submitBtn.textContent = 'Submitting...';
+        submitBtn.disabled = true;
+    }
+
+    // Validate ID address contains "Bigte" via OCR (if not already validated)
+    if (clearIdUpload && clearIdUpload.files && clearIdUpload.files[0]) {
         if (!idOcrValidation.clearance.ok || idOcrValidation.clearance.hasBigte === undefined) {
             await handleIDImageUpload(clearIdUpload.files[0], 'clearance');
         }
-        
-        // Show SweetAlert if Bigte not found
+
         if (idOcrValidation.clearance.ok && !idOcrValidation.clearance.hasBigte) {
             await Swal.fire({
                 icon: 'error',
@@ -2521,16 +2829,19 @@ async function handleClearanceSubmission(e) {
                 allowOutsideClick: false,
                 allowEscapeKey: false
             });
-            
-            submitBtn.textContent = originalText;
-            submitBtn.disabled = false;
+
+            hideFullScreenLoading();
+            if (submitBtn) {
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            }
             return;
         }
     }
-    
+
     // Get user email
     const userEmail = sessionStorage.getItem('user_email') || localStorage.getItem('user_email');
-    
+
     // Prepare data for API submission
     const purpose = formData.get('clearPurpose');
     const submissionData = {
@@ -2546,7 +2857,6 @@ async function handleClearanceSubmission(e) {
         age: formData.get('clearAge'),
         gender: formData.get('clearGender'),
         purpose: purpose,
-        // Conditional fields based on purpose
         citizenship: formData.get('clearCitizenship') || null,
         business_name: formData.get('clearBusinessName') || null,
         business_location: formData.get('clearBusinessLocation') || null,
@@ -2554,8 +2864,7 @@ async function handleClearanceSubmission(e) {
         valid_id: formData.get('clearIdType'),
         id_image: formData.get('clearIdUpload') ? await fileToBase64(formData.get('clearIdUpload')) : null
     };
-    
-    // Submit to API
+
     try {
         const response = await fetch('php/request.php', {
             method: 'POST',
@@ -2564,37 +2873,56 @@ async function handleClearanceSubmission(e) {
             },
             body: JSON.stringify(submissionData)
         });
-        
+
         const result = await response.json();
+
+        // Hide full-screen loading before showing SweetAlert
+        hideFullScreenLoading();
         
+        if (submitBtn) {
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+        }
+
         if (result.success) {
-            // Display the submitted clearance form
-            displayClearanceForm(formData);
-            
-            // Hide form and show report display
-            document.getElementById('clearanceForm').style.display = 'none';
-            document.getElementById('clearanceReportDisplay').style.display = 'block';
-            
-            // Scroll to report display
-            document.getElementById('clearanceReportDisplay').scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'start' 
-            });
-            
-            showMessage('Clearance application submitted successfully!', 'success', 'clearanceFormElement');
-            
+            // Hide preview display
+            const previewDisplay = document.getElementById('clearancePreviewDisplay');
+            if (previewDisplay) {
+                previewDisplay.style.display = 'none';
+            }
+
             // Re-apply active request restrictions immediately
             try { await applyActiveRequestRestrictions(); } catch (_) {}
+            
+            // Small delay to ensure overlay is fully hidden before showing SweetAlert
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            // Show success SweetAlert
+            await Swal.fire({
+                icon: 'success',
+                title: 'Request Submitted Successfully!',
+                text: 'Your Clearance request has been submitted. You can view it in the Transactions Module.',
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#17a2b8',
+                allowOutsideClick: false,
+                allowEscapeKey: false
+            });
+            
+            // Clear form and go back to selection
+            clearAllFormInputs();
+            hideAllForms();
+            showEmblemSection();
         } else {
             showMessage(result.message || 'Failed to submit clearance form', 'error', 'clearanceFormElement');
         }
     } catch (error) {
         console.error('Error submitting clearance form:', error);
-        showMessage('Network error. Please try again.', 'error', 'clearanceFormElement');
-    } finally {
         hideFullScreenLoading();
-        submitBtn.textContent = originalText;
-        submitBtn.disabled = false;
+        if (submitBtn) {
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+        }
+        showMessage('Network error. Please try again.', 'error', 'clearanceFormElement');
     }
 }
 
@@ -2643,27 +2971,8 @@ function displayIndigencyForm(formData) {
     document.getElementById('displayIndigencyDateTime').textContent = formattedDateTime;
 }
 
-// Go back to indigency form
-function goBackToIndigencyForm() {
-    // Show sidebar
-    const sidebar = document.querySelector('.sidebar');
-    if (sidebar && sidebar.classList.contains('collapsed')) {
-        sidebar.classList.remove('collapsed');
-    }
-    
-    // Remove active state from all document buttons
-    const documentButtons = document.querySelectorAll('.document-btn:not(.emergency-btn)');
-    documentButtons.forEach(btn => btn.classList.remove('active'));
-    
-    // Hide all forms and report displays
-    hideAllForms();
-    
-    // Clear all form inputs
-    clearAllFormInputs();
-    
-    // Show emblem section
-    showEmblemSection();
-}
+// Go back to indigency form from report (old function - kept for backward compatibility but not used in preview flow)
+// The new goBackToIndigencyForm() at line 2514 handles preview -> form navigation
 
 // Go to main page
 // Show confirmation dialog and navigate to emblem section
@@ -3040,7 +3349,7 @@ function goBackToCertificationForm() {
     showEmblemSection();
 }
 
-function goBackToCoeForm() {
+function goBackToCoeSelection() {
     // Show sidebar
     const sidebar = document.querySelector('.sidebar');
     if (sidebar && sidebar.classList.contains('collapsed')) {

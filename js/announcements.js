@@ -306,15 +306,15 @@ function showPreviousAnnouncement() {
                 
                 // Remove old animation classes
                 detailContainer.classList.remove('slide-out-right');
-                // Slide in from right (realistic: previous comes from right when swiping left)
-                detailContainer.classList.add('slide-in-right');
+                // Slide in from left (reversed: previous comes from left when swiping right)
+                detailContainer.classList.add('slide-in-left');
                 
                 // Scroll to top
                 document.getElementById('announcement-detail-section').scrollIntoView({ behavior: 'smooth' });
                 
                 // Remove animation class after animation completes
                 setTimeout(() => {
-                    detailContainer.classList.remove('slide-in-right');
+                    detailContainer.classList.remove('slide-in-left');
                 }, 500);
             }, 250);
         }
@@ -336,15 +336,15 @@ function showNextAnnouncement() {
                 
                 // Remove old animation classes
                 detailContainer.classList.remove('slide-out-left');
-                // Slide in from left (realistic: next comes from left when swiping right)
-                detailContainer.classList.add('slide-in-left');
+                // Slide in from right (reversed: next comes from right when swiping left)
+                detailContainer.classList.add('slide-in-right');
                 
                 // Scroll to top
                 document.getElementById('announcement-detail-section').scrollIntoView({ behavior: 'smooth' });
                 
                 // Remove animation class after animation completes
                 setTimeout(() => {
-                    detailContainer.classList.remove('slide-in-left');
+                    detailContainer.classList.remove('slide-in-right');
                 }, 500);
             }, 250);
         }
@@ -403,31 +403,10 @@ function setupDetailSwipe() {
         const threshold = 50;
         
         if (Math.abs(deltaX) > threshold) {
-            // Swipe RIGHT (deltaX < 0): Show NEXT announcement coming from LEFT
-            // Swipe LEFT (deltaX > 0): Show PREVIOUS announcement coming from RIGHT
+            // Swipe RIGHT (deltaX < 0): Show PREVIOUS announcement coming from LEFT (reversed)
+            // Swipe LEFT (deltaX > 0): Show NEXT announcement coming from RIGHT (reversed)
             if (deltaX < 0) {
-                // Swipe right - go to next
-                if (currentDetailIndex < allAnnouncements.length - 1) {
-                    showNextAnnouncement();
-                } else {
-                    // If at last announcement, go to first one
-                    const detailContainer = document.querySelector('.announcement-detail-container');
-                    if (detailContainer) {
-                        detailContainer.classList.add('slide-out-left');
-                        setTimeout(() => {
-                            currentDetailIndex = 0;
-                            const announcement = allAnnouncements[0];
-                            populateAnnouncementDetail(announcement);
-                            detailContainer.classList.remove('slide-out-left');
-                            detailContainer.classList.add('slide-in-left');
-                            setTimeout(() => {
-                                detailContainer.classList.remove('slide-in-left');
-                            }, 500);
-                        }, 250);
-                    }
-                }
-            } else {
-                // Swipe left - go to previous
+                // Swipe right - go to previous (reversed)
                 if (currentDetailIndex > 0) {
                     showPreviousAnnouncement();
                 } else {
@@ -440,6 +419,27 @@ function setupDetailSwipe() {
                             const announcement = allAnnouncements[currentDetailIndex];
                             populateAnnouncementDetail(announcement);
                             detailContainer.classList.remove('slide-out-right');
+                            detailContainer.classList.add('slide-in-left');
+                            setTimeout(() => {
+                                detailContainer.classList.remove('slide-in-left');
+                            }, 500);
+                        }, 250);
+                    }
+                }
+            } else {
+                // Swipe left - go to next (reversed)
+                if (currentDetailIndex < allAnnouncements.length - 1) {
+                    showNextAnnouncement();
+                } else {
+                    // If at last announcement, go to first one
+                    const detailContainer = document.querySelector('.announcement-detail-container');
+                    if (detailContainer) {
+                        detailContainer.classList.add('slide-out-left');
+                        setTimeout(() => {
+                            currentDetailIndex = 0;
+                            const announcement = allAnnouncements[0];
+                            populateAnnouncementDetail(announcement);
+                            detailContainer.classList.remove('slide-out-left');
                             detailContainer.classList.add('slide-in-right');
                             setTimeout(() => {
                                 detailContainer.classList.remove('slide-in-right');
@@ -490,31 +490,10 @@ function setupDetailSwipe() {
         const threshold = 50;
         
         if (Math.abs(deltaX) > threshold) {
-            // Swipe RIGHT (deltaX < 0): Show NEXT announcement coming from LEFT
-            // Swipe LEFT (deltaX > 0): Show PREVIOUS announcement coming from RIGHT
+            // Swipe RIGHT (deltaX < 0): Show PREVIOUS announcement coming from LEFT (reversed)
+            // Swipe LEFT (deltaX > 0): Show NEXT announcement coming from RIGHT (reversed)
             if (deltaX < 0) {
-                // Swipe right - go to next
-                if (currentDetailIndex < allAnnouncements.length - 1) {
-                    showNextAnnouncement();
-                } else {
-                    // If at last announcement, go to first one
-                    const detailContainer = document.querySelector('.announcement-detail-container');
-                    if (detailContainer) {
-                        detailContainer.classList.add('slide-out-left');
-                        setTimeout(() => {
-                            currentDetailIndex = 0;
-                            const announcement = allAnnouncements[0];
-                            populateAnnouncementDetail(announcement);
-                            detailContainer.classList.remove('slide-out-left');
-                            detailContainer.classList.add('slide-in-left');
-                            setTimeout(() => {
-                                detailContainer.classList.remove('slide-in-left');
-                            }, 500);
-                        }, 250);
-                    }
-                }
-            } else {
-                // Swipe left - go to previous
+                // Swipe right - go to previous (reversed)
                 if (currentDetailIndex > 0) {
                     showPreviousAnnouncement();
                 } else {
@@ -527,6 +506,27 @@ function setupDetailSwipe() {
                             const announcement = allAnnouncements[currentDetailIndex];
                             populateAnnouncementDetail(announcement);
                             detailContainer.classList.remove('slide-out-right');
+                            detailContainer.classList.add('slide-in-left');
+                            setTimeout(() => {
+                                detailContainer.classList.remove('slide-in-left');
+                            }, 500);
+                        }, 250);
+                    }
+                }
+            } else {
+                // Swipe left - go to next (reversed)
+                if (currentDetailIndex < allAnnouncements.length - 1) {
+                    showNextAnnouncement();
+                } else {
+                    // If at last announcement, go to first one
+                    const detailContainer = document.querySelector('.announcement-detail-container');
+                    if (detailContainer) {
+                        detailContainer.classList.add('slide-out-left');
+                        setTimeout(() => {
+                            currentDetailIndex = 0;
+                            const announcement = allAnnouncements[0];
+                            populateAnnouncementDetail(announcement);
+                            detailContainer.classList.remove('slide-out-left');
                             detailContainer.classList.add('slide-in-right');
                             setTimeout(() => {
                                 detailContainer.classList.remove('slide-in-right');

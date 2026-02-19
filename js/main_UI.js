@@ -1415,20 +1415,32 @@ async function checkCensusStatus() {
         // Check if user is already censused (last name + house number match found)
         if (data.success && data.isAlreadyCensused === true) {
             // User's last name + house number matches existing census record
-            // Show sweet alert instead of census form
-            console.log('User is already censused (last name + house number match found) - showing alert');
-            if (typeof Swal !== 'undefined') {
-                Swal.fire({
-                    icon: 'info',
-                    title: 'Already Censused',
-                    text: 'You are already censused',
-                    confirmButtonText: 'OK',
-                    confirmButtonColor: '#3085d6',
-                    allowOutsideClick: true,
-                    allowEscapeKey: true
-                });
+            // Check if user has already dismissed this alert
+            const userEmail = sessionStorage.getItem('user_email') || localStorage.getItem('user_email') || 'guest';
+            const storageKey = `already_censused_dismissed_${userEmail}`;
+            
+            // Only show alert if it hasn't been dismissed before
+            if (localStorage.getItem(storageKey) !== '1') {
+                console.log('User is already censused (last name + house number match found) - showing alert');
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'Already Censused',
+                        text: 'You are already censused',
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: '#3085d6',
+                        allowOutsideClick: true,
+                        allowEscapeKey: true
+                    }).then(() => {
+                        // Save to localStorage that user has dismissed this alert
+                        localStorage.setItem(storageKey, '1');
+                    });
+                } else {
+                    alert('You are already censused');
+                    localStorage.setItem(storageKey, '1');
+                }
             } else {
-                alert('You are already censused');
+                console.log('Already censused alert already dismissed by user, skipping...');
             }
             return;
         }
