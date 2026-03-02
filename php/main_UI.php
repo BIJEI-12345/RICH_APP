@@ -38,21 +38,15 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     exit;
 }
 
-// Database connection
+// Database connection - Load from config
+require_once(__DIR__ . '/config.php');
+
 try {
-    $host = "rich.cmxcoo6yc8nh.us-east-1.rds.amazonaws.com"; 
-    $user = "admin";
-    $pass = "4mazonb33j4y!";
-    $db   = "rich_db";      // Siguraduhin na nagawa mo na ang database na ito sa phpMyAdmin
-     
-    // $host = "rich.c4lc2owy0af4.us-east-1.rds.amazonaws.com";
-    // $username = "admin";
-    // $password = "4mazonb33j4y!"; 
-    // $dbname = "rich_db"; 
-     
-    
-    $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8", $user, $pass);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $pdo = getDBConnection();
+    if (!$pdo) {
+        echo json_encode(['success' => false, 'message' => 'Database connection failed']);
+        exit;
+    }
     
     // Prepare and execute query to fetch user data
     $stmt = $pdo->prepare("SELECT first_name, middle_name, last_name, suffix, email, age, sex, birthday, civil_status, address, valid_id, id_image, profile_pic FROM resident_information WHERE email = ?");

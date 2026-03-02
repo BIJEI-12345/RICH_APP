@@ -41,30 +41,8 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     exit;
 }
 
-// Database connection function
-function getDBConnection() {
-    $host = "rich.cmxcoo6yc8nh.us-east-1.rds.amazonaws.com"; 
-    $user = "admin";
-    $pass = "4mazonb33j4y!";
-    $db   = "rich_db";      // Siguraduhin na nagawa mo na ang database na ito sa phpMyAdmin
-      
-     // $host = "rich.c4lc2owy0af4.us-east-1.rds.amazonaws.com";
-     // $username = "admin";
-     // $password = "4mazonb33j4y!"; 
-     // $dbname = "rich_db"; 
-       
-    
-    try {
-        $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8", $user, $pass);
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        // Set MySQL timezone to Philippine time (UTC+8)
-        $pdo->exec("SET time_zone = '+08:00'");
-        return $pdo;
-    } catch (PDOException $e) {
-        error_log("Database connection failed: " . $e->getMessage());
-        return null;
-    }
-}
+// Database connection - Load from config
+require_once(__DIR__ . '/config.php');
 
 try {
     $pdo = getDBConnection();

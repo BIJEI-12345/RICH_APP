@@ -19,20 +19,15 @@ if (empty($email)) {
     exit;
 }
 
-// Database connection
+// Database connection - Load from config
+require_once(__DIR__ . '/config.php');
+
 try {
-    $host = "rich.cmxcoo6yc8nh.us-east-1.rds.amazonaws.com"; 
-    $user = "admin";
-    $pass = "4mazonb33j4y!";
-    $db   = "rich_db";        // Siguraduhin na nagawa mo na ang database na ito sa phpMyAdmin
-      
-     // $host = "rich.c4lc2owy0af4.us-east-1.rds.amazonaws.com";
-     // $username = "admin";
-     // $password = "4mazonb33j4y!"; 
-     // $dbname = "rich_db"; 
-      
-    $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8", $user, $pass);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $pdo = getDBConnection();
+    if (!$pdo) {
+        echo json_encode(['success' => false, 'message' => 'Database connection failed']);
+        exit;
+    }
     
     // Get form data
     $firstName = isset($_POST['firstName']) ? trim($_POST['firstName']) : '';

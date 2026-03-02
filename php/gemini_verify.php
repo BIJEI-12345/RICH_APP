@@ -49,9 +49,9 @@ $envPath = dirname(__DIR__) . DIRECTORY_SEPARATOR . '.env';
 loadEnv($envPath);
 
 // Get Groq API key from environment variable
-$API_KEY = getenv('GROG_API_KEY') ?: $_ENV['GROG_API_KEY'] ?? '';
+$API_KEY = getenv('GROQ_API_KEY') ?: $_ENV['GROQ_API_KEY'] ?? '';
 if (empty($API_KEY)) {
-    echo json_encode(['success' => false, 'ok' => false, 'message' => 'GROG_API_KEY not found in .env file']);
+    echo json_encode(['success' => false, 'ok' => false, 'message' => 'GROQ_API_KEY not found in .env file']);
     exit;
 }
 

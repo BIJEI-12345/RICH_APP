@@ -57,19 +57,13 @@ try {
     }
     $email = trim($input['email']);
 
-    $host = "rich.cmxcoo6yc8nh.us-east-1.rds.amazonaws.com"; 
-    $user = "admin";
-    $pass = "4mazonb33j4y!";
-    $db   = "rich_db";// Siguraduhin na nagawa mo na ang database na ito sa phpMyAdmin
-      
-     // $host = "rich.c4lc2owy0af4.us-east-1.rds.amazonaws.com";
-     // $username = "admin";
-     // $password = "4mazonb33j4y!"; 
-     // $dbname = "rich_db"; 
-      
-
-    $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8", $user, $pass);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    // Database connection - Load from config
+    require_once(__DIR__ . '/config.php');
+    $pdo = getDBConnection();
+    if (!$pdo) {
+        echo json_encode(['success' => false, 'message' => 'Database connection failed']);
+        exit;
+    }
     // Ensure binary data (LONGBLOB) is returned correctly - don't stringify
     $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
     $pdo->setAttribute(PDO::ATTR_STRINGIFY_FETCHES, false);
@@ -383,24 +377,19 @@ function serveAnnouncementImage($imageId) {
     header('Pragma: no-cache');
     header('Expires: 0');
     
-    $host = "rich.cmxcoo6yc8nh.us-east-1.rds.amazonaws.com"; 
-    $user = "admin";
-    $pass = "4mazonb33j4y!";
-    $db   = "rich_db";
-    
-    try {
-        $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8", $user, $pass);
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        // Ensure binary data (LONGBLOB) is returned correctly - don't stringify
-        $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
-        $pdo->setAttribute(PDO::ATTR_STRINGIFY_FETCHES, false);
-    } catch (PDOException $e) {
-        error_log("Database connection failed: " . $e->getMessage());
+    // Database connection - Load from config
+    require_once(__DIR__ . '/config.php');
+    $pdo = getDBConnection();
+    if (!$pdo) {
+        error_log("Database connection failed");
         http_response_code(500);
         header('Content-Type: text/plain');
         echo "Database connection failed";
         exit;
     }
+    // Ensure binary data (LONGBLOB) is returned correctly - don't stringify
+    $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
+    $pdo->setAttribute(PDO::ATTR_STRINGIFY_FETCHES, false);
     
     try {
         // CRITICAL: Fetch ONLY from the 'image' column in the announcements table
@@ -573,20 +562,15 @@ function serveAnnouncementImage($imageId) {
 
 // Function to fetch announcements (same as announcements.php)
 function fetchAnnouncements() {
-    $host = "rich.cmxcoo6yc8nh.us-east-1.rds.amazonaws.com"; 
-    $user = "admin";
-    $pass = "4mazonb33j4y!";
-    $db   = "rich_db";
-    
-    try {
-        $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8", $user, $pass);
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
-        $pdo->setAttribute(PDO::ATTR_STRINGIFY_FETCHES, false);
-    } catch (PDOException $e) {
-        error_log("Database connection failed: " . $e->getMessage());
+    // Database connection - Load from config
+    require_once(__DIR__ . '/config.php');
+    $pdo = getDBConnection();
+    if (!$pdo) {
+        error_log("Database connection failed");
         return ['success' => false, 'message' => 'Database connection failed'];
     }
+    $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
+    $pdo->setAttribute(PDO::ATTR_STRINGIFY_FETCHES, false);
     
     try {
         // Fetch announcements ordered by created_at descending (newest first)

@@ -19,8 +19,42 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// TODO: Move to environment variable or secure config
-$API_KEY = 'AIzaSyDjHCEp9AntErTKlMSNwkWCADw1nUk2okQ';
+// Load environment variables from .env file
+function loadEnv($path) {
+    if (!file_exists($path)) {
+        return;
+    }
+    $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        if (strpos(trim($line), '#') === 0) {
+            continue; // Skip comments
+        }
+        if (strpos($line, '=') !== false) {
+            list($name, $value) = explode('=', $line, 2);
+            $name = trim($name);
+            $value = trim($value);
+            // Remove quotes if present
+            $value = trim($value, '"\'');
+            if (!array_key_exists($name, $_SERVER) && !array_key_exists($name, $_ENV)) {
+                putenv(sprintf('%s=%s', $name, $value));
+                $_ENV[$name] = $value;
+                $_SERVER[$name] = $value;
+            }
+        }
+    }
+}
+
+// Load .env file from project root
+$envPath = dirname(__DIR__) . DIRECTORY_SEPARATOR . '.env';
+loadEnv($envPath);
+
+// Get Google Vision API key from environment variable
+$API_KEY = getenv('GOOGLE_VISION_API_KEY') ?: $_ENV['GOOGLE_VISION_API_KEY'] ?? '';
+if (empty($API_KEY)) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'GOOGLE_VISION_API_KEY not found in .env file']);
+    exit;
+}
 $VISION_URL = 'https://vision.googleapis.com/v1/images:annotate?key=' . urlencode($API_KEY);
 
 try {
