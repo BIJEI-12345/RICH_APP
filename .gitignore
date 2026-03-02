@@ -43,6 +43,9 @@ npm-debug.log
 uploads/
 temp/
 
+# Sent emails folder (not needed in repository)
+php/sent_emails/
+
 # PHP specific
 *.php~
 *.php.bak

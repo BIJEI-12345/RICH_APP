@@ -58,34 +58,18 @@ class EmailSender {
                     'otp_code' => $otpCode // Include OTP for testing
                 ];
             } else {
-                // If PHPMailer fails, try alternative method
-                error_log("✗ PHPMailer failed: " . $result['message']);
-                error_log("Attempting fallback method...");
-                $fallbackResult = $this->sendEmailAlternative($toEmail, $subject, $message);
+                // Log detailed error but still provide OTP for testing
+                error_log("✗ PHPMailer failed!");
+                error_log("  - SMTP Error: " . $result['message']);
+                error_log("  - OTP Code: " . $otpCode . " (for manual testing)");
                 
-                if ($fallbackResult['success']) {
-                    error_log("✓ Email saved to file: " . ($fallbackResult['file_path'] ?? 'unknown'));
-                    return [
-                        'success' => true,
-                        'message' => 'Verification email prepared (Check sent_emails folder or server logs for OTP)',
-                        'otp_code' => $otpCode, // Include OTP for testing
-                        'file_path' => $fallbackResult['file_path'] ?? null
-                    ];
-                } else {
-                    // Log detailed error but still provide OTP for testing
-                    error_log("✗ Both email methods failed!");
-                    error_log("  - SMTP Error: " . $result['message']);
-                    error_log("  - Fallback Error: " . $fallbackResult['message']);
-                    error_log("  - OTP Code: " . $otpCode . " (for manual testing)");
-                    
-                    // Return failure but include OTP for development/testing
-                    return [
-                        'success' => false,
-                        'message' => 'Failed to send email. Please check server logs for OTP code or contact support.',
-                        'error' => 'Email delivery failed: ' . $result['message'],
-                        'otp_code' => $otpCode // Still include OTP for testing/debugging
-                    ];
-                }
+                // Return failure but include OTP for development/testing
+                return [
+                    'success' => false,
+                    'message' => 'Failed to send email. Please check server logs for OTP code or contact support.',
+                    'error' => 'Email delivery failed: ' . $result['message'],
+                    'otp_code' => $otpCode // Still include OTP for testing/debugging
+                ];
             }
             
         } catch (Exception $e) {
@@ -172,53 +156,6 @@ class EmailSender {
                 'success' => false,
                 'message' => 'PHPMailer Error: ' . $errorMessage,
                 'detailed_error' => $errorMessage
-            ];
-        }
-    }
-    
-    /**
-     * Alternative email sending method using file output
-     */
-    private function sendEmailAlternative($toEmail, $subject, $message) {
-        try {
-            // Create email content
-            $emailContent = "To: $toEmail\n";
-            $emailContent .= "From: " . $this->fromName . " <" . $this->fromEmail . ">\n";
-            $emailContent .= "Subject: $subject\n";
-            $emailContent .= "Content-Type: text/html; charset=UTF-8\n\n";
-            $emailContent .= $message;
-            
-            // Save to a file that can be easily accessed
-            $emailDir = __DIR__ . '/sent_emails';
-            if (!is_dir($emailDir)) {
-                mkdir($emailDir, 0777, true);
-            }
-            
-            $filename = 'email_' . date('Y-m-d_H-i-s') . '_' . substr(md5($toEmail), 0, 8) . '.html';
-            $filepath = $emailDir . '/' . $filename;
-            
-            // Save the email content
-            file_put_contents($filepath, $message);
-            
-            // Also save a text version for easy reading
-            $textFilepath = str_replace('.html', '.txt', $filepath);
-            file_put_contents($textFilepath, $emailContent);
-            
-            error_log("Email saved to: $filepath");
-            error_log("You can open this file in your browser to see the email content");
-            
-            // For development, we'll consider this a success
-            return [
-                'success' => true,
-                'message' => 'Email content saved to file (check sent_emails folder)',
-                'file_path' => $filepath
-            ];
-            
-        } catch (Exception $e) {
-            error_log("Alternative email method failed: " . $e->getMessage());
-            return [
-                'success' => false,
-                'message' => 'Alternative email method failed: ' . $e->getMessage()
             ];
         }
     }
