@@ -48,3 +48,7 @@ php/sent_emails/
 # PHP specific
 *.php~
 *.php.bak
+
+# Test files
+test_login.php
+test_*.php
