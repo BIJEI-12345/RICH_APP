@@ -1,15 +1,27 @@
 <?php
+// TEMPORARY: Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 // Start output buffering to prevent any HTML output
 ob_start();
+
+// Handle CORS preflight (OPTIONS request)
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    header('Access-Control-Allow-Origin: *');
+    header('Access-Control-Allow-Methods: POST, OPTIONS');
+    header('Access-Control-Allow-Headers: Content-Type');
+    http_response_code(200);
+    exit;
+}
 
 // Registration processing script
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: POST');
+header('Access-Control-Allow-Methods: POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 
-// Disable error display to prevent HTML output
-ini_set('display_errors', 0);
+// Keep error logging enabled
 ini_set('log_errors', 1);
 
 // Register shutdown function to catch fatal errors and ensure JSON response
@@ -34,14 +46,36 @@ register_shutdown_function(function() {
 });
 
 // Only allow POST requests
-if (!isset($_SERVER['REQUEST_METHOD']) || $_SERVER['REQUEST_METHOD'] !== 'POST') {
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    ob_clean();
     http_response_code(405);
-    echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+    echo json_encode(['success' => false, 'message' => 'Method not allowed. Expected POST, got: ' . $_SERVER['REQUEST_METHOD']]);
+    ob_end_flush();
     exit;
 }
 
-// Get form data (FormData)
+// Get form data (FormData) - FormData sends data as multipart/form-data
+// Note: When using FormData, $_POST contains text fields and $_FILES contains file uploads
 $input = $_POST;
+
+// Debug: Check if POST data is empty (might indicate Content-Type issue)
+if (empty($input) && empty($_FILES)) {
+    ob_clean();
+    error_log("WARNING: Both POST and FILES are empty. Content-Type: " . ($_SERVER['CONTENT_TYPE'] ?? 'NOT SET'));
+    http_response_code(400);
+    echo json_encode([
+        'success' => false, 
+        'message' => 'No form data received. Content-Type: ' . ($_SERVER['CONTENT_TYPE'] ?? 'NOT SET'),
+        'debug' => [
+            'request_method' => $_SERVER['REQUEST_METHOD'],
+            'content_type' => $_SERVER['CONTENT_TYPE'] ?? 'NOT SET',
+            'post_empty' => empty($_POST),
+            'files_empty' => empty($_FILES)
+        ]
+    ]);
+    ob_end_flush();
+    exit;
+}
 
 // Debug: Log received data
 error_log("Received POST data: " . print_r($input, true));
@@ -49,13 +83,31 @@ error_log("Received FILES data: " . print_r($_FILES, true));
 error_log("ValidId value: " . (isset($input['validId']) ? $input['validId'] : 'NOT SET'));
 
 // Validate required fields
+// IMPORTANT: Field names must match EXACTLY what JavaScript sends (camelCase)
 $requiredFields = ['firstName', 'lastName', 'email', 'age', 'sex', 'birthday', 'status', 'address', 'validId'];
+$missingFields = [];
+
 foreach ($requiredFields as $field) {
+    // Check if field exists and is not empty
     if (!isset($input[$field]) || $input[$field] === '' || $input[$field] === null) {
-        http_response_code(400);
-        echo json_encode(['success' => false, 'message' => ucfirst($field) . ' is required']);
-        exit;
+        $missingFields[] = $field;
     }
+}
+
+// If any required fields are missing, return error with details
+if (!empty($missingFields)) {
+    ob_clean();
+    error_log("Missing required fields: " . implode(', ', $missingFields));
+    error_log("Available POST keys: " . implode(', ', array_keys($input)));
+    http_response_code(400);
+    echo json_encode([
+        'success' => false, 
+        'message' => 'Missing required fields: ' . implode(', ', $missingFields),
+        'missing_fields' => $missingFields,
+        'received_fields' => array_keys($input)
+    ]);
+    ob_end_flush();
+    exit;
 }
 
 // Sanitize and validate input
@@ -73,22 +125,93 @@ $validId = trim($input['validId']);
 $hasNoMiddleName = isset($input['hasNoMiddleName']) ? (bool)$input['hasNoMiddleName'] : false;
 
 // Handle image upload
+// IMPORTANT: File uploads use $_FILES, NOT $_POST
 $idImageData = null;
-if (isset($_FILES['idImage']) && $_FILES['idImage']['error'] === UPLOAD_ERR_OK) {
+
+// Check if file was uploaded
+if (isset($_FILES['idImage'])) {
     $imageFile = $_FILES['idImage'];
+    
+    // Check for upload errors
+    if ($imageFile['error'] !== UPLOAD_ERR_OK) {
+        $errorMessages = [
+            UPLOAD_ERR_INI_SIZE => 'File exceeds upload_max_filesize',
+            UPLOAD_ERR_FORM_SIZE => 'File exceeds MAX_FILE_SIZE',
+            UPLOAD_ERR_PARTIAL => 'File was only partially uploaded',
+            UPLOAD_ERR_NO_FILE => 'No file was uploaded',
+            UPLOAD_ERR_NO_TMP_DIR => 'Missing temporary folder',
+            UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk',
+            UPLOAD_ERR_EXTENSION => 'File upload stopped by extension'
+        ];
+        
+        ob_clean();
+        error_log("File upload error code: " . $imageFile['error']);
+        http_response_code(400);
+        echo json_encode([
+            'success' => false, 
+            'message' => 'File upload error: ' . ($errorMessages[$imageFile['error']] ?? 'Unknown error (' . $imageFile['error'] . ')')
+        ]);
+        ob_end_flush();
+        exit;
+    }
     
     // Validate image file
     $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
     $maxSize = 5 * 1024 * 1024; // 5MB
     
-    if (in_array($imageFile['type'], $allowedTypes) && $imageFile['size'] <= $maxSize) {
-        // Read image file and convert to binary data
-        $idImageData = file_get_contents($imageFile['tmp_name']);
-    } else {
+    // Check file type
+    if (!in_array($imageFile['type'], $allowedTypes)) {
+        ob_clean();
+        error_log("Invalid file type: " . $imageFile['type']);
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Invalid image file. Please upload JPG or PNG under 5MB']);
+        echo json_encode([
+            'success' => false, 
+            'message' => 'Invalid image file type. Please upload JPG or PNG. Received: ' . $imageFile['type']
+        ]);
+        ob_end_flush();
         exit;
     }
+    
+    // Check file size
+    if ($imageFile['size'] > $maxSize) {
+        ob_clean();
+        error_log("File too large: " . $imageFile['size'] . " bytes");
+        http_response_code(400);
+        echo json_encode([
+            'success' => false, 
+            'message' => 'Image file too large. Maximum size is 5MB. Your file: ' . round($imageFile['size'] / 1024 / 1024, 2) . 'MB'
+        ]);
+        ob_end_flush();
+        exit;
+    }
+    
+    // Read image file and convert to binary data
+    $idImageData = file_get_contents($imageFile['tmp_name']);
+    
+    if ($idImageData === false) {
+        ob_clean();
+        error_log("Failed to read uploaded file");
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Failed to read uploaded image file']);
+        ob_end_flush();
+        exit;
+    }
+} else {
+    // File is required - check if it's missing
+    ob_clean();
+    error_log("idImage file not found in FILES array");
+    error_log("Available FILES keys: " . implode(', ', array_keys($_FILES)));
+    http_response_code(400);
+    echo json_encode([
+        'success' => false, 
+        'message' => 'ID image is required. Please upload a valid ID image.',
+        'debug' => [
+            'files_keys' => array_keys($_FILES),
+            'post_idImage' => isset($input['idImage']) ? 'EXISTS (WRONG - should use $_FILES)' : 'NOT SET'
+        ]
+    ]);
+    ob_end_flush();
+    exit;
 }
 
 // Validate email format
