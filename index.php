@@ -11,14 +11,43 @@ if (isset($_SESSION['user_email']) && !empty($_SESSION['user_email'])) {
 
 // Handle login POST request
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Start output buffering to prevent any HTML output
+    ob_start();
+    
     // Set JSON headers
     header('Content-Type: application/json');
     header('Access-Control-Allow-Origin: *');
     header('Access-Control-Allow-Methods: POST');
     header('Access-Control-Allow-Headers: Content-Type');
     
-    // Get JSON input
-    $input = json_decode(file_get_contents('php://input'), true);
+    // Disable error display to prevent HTML output
+    ini_set('display_errors', 0);
+    ini_set('log_errors', 1);
+    
+    // Register shutdown function to catch fatal errors and ensure JSON response
+    register_shutdown_function(function() {
+        $error = error_get_last();
+        if ($error !== NULL && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+            // Clear any output
+            ob_clean();
+            
+            // Log the error
+            error_log("Fatal error in index.php: " . $error['message'] . " in " . $error['file'] . " on line " . $error['line']);
+            
+            // Return JSON error response
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Server error occurred. Please try again.'
+            ]);
+            ob_end_flush();
+            exit;
+        }
+    });
+    
+    try {
+        // Get JSON input
+        $input = json_decode(file_get_contents('php://input'), true);
     
     // Check if input is valid JSON
     if (json_last_error() !== JSON_ERROR_NONE) {
@@ -119,23 +148,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
     
-    // Get client IP
-    $ipAddress = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-    
-    // Process login
-    $result = authenticateUser($loginType, $credentials);
-    
-    // Log the attempt
-    logLoginAttempt($loginType, $credentials, $result['success'], $ipAddress);
-    
-    // Return response
-    if ($result['success']) {
-        http_response_code(200);
-        echo json_encode($result);
-    } else {
-        http_response_code(401);
-        echo json_encode($result);
+        // Get client IP
+        $ipAddress = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        
+        // Process login
+        $result = authenticateUser($loginType, $credentials);
+        
+        // Log the attempt
+        logLoginAttempt($loginType, $credentials, $result['success'], $ipAddress);
+        
+        // Clear any output buffer and return clean JSON response
+        ob_clean();
+        
+        // Return response
+        if ($result['success']) {
+            http_response_code(200);
+            echo json_encode($result);
+        } else {
+            http_response_code(401);
+            echo json_encode($result);
+        }
+        
+    } catch (Exception $e) {
+        // Clear any output buffer
+        ob_clean();
+        
+        // Log error
+        error_log("Login error: " . $e->getMessage());
+        
+        // Return error response
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Server error occurred. Please try again.'
+        ]);
     }
+    
+    // End output buffering
+    ob_end_flush();
     exit;
 }
 

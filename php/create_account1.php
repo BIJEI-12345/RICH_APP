@@ -12,6 +12,27 @@ header('Access-Control-Allow-Headers: Content-Type');
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 
+// Register shutdown function to catch fatal errors and ensure JSON response
+register_shutdown_function(function() {
+    $error = error_get_last();
+    if ($error !== NULL && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        // Clear any output
+        ob_clean();
+        
+        // Log the error
+        error_log("Fatal error in create_account1.php: " . $error['message'] . " in " . $error['file'] . " on line " . $error['line']);
+        
+        // Return JSON error response
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Server error occurred. Please try again.'
+        ]);
+        ob_end_flush();
+        exit;
+    }
+});
+
 // Only allow POST requests
 if (!isset($_SERVER['REQUEST_METHOD']) || $_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -145,13 +166,8 @@ if (!in_array($validId, $validIdTypes)) {
     exit;
 }
 
-<<<<<<< HEAD
 // Database connection - Load from centralized config
 require_once __DIR__ . '/env_loader.php';
-=======
-// Database connection - Load from config
-require_once(__DIR__ . '/config.php');
->>>>>>> 9fd9298ac44fc52b0333a0f2578e90264f9eb0ea
 
 // Check if email already exists
 function emailExists($email) {

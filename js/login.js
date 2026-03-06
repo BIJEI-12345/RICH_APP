@@ -92,7 +92,37 @@ document.addEventListener('DOMContentLoaded', function() {
                 credentials: email
             })
         })
-        .then(response => response.json())
+        .then(async response => {
+            // Check if response is OK and has JSON content type
+            const contentType = response.headers.get('content-type');
+            const isJson = contentType && contentType.includes('application/json');
+            
+            // Get response text first to handle both JSON and non-JSON responses
+            const responseText = await response.text();
+            
+            // If not JSON or empty response, handle error
+            if (!isJson || !responseText.trim()) {
+                console.error('Server returned non-JSON response:', response.status, responseText.substring(0, 200));
+                
+                // Try to parse as JSON anyway (in case content-type header is missing)
+                let errorData;
+                try {
+                    errorData = JSON.parse(responseText);
+                } catch (e) {
+                    // Not valid JSON - return a generic error
+                    throw new Error(`Server error (${response.status}): ${responseText.substring(0, 100) || 'Empty response from server'}`);
+                }
+                return errorData;
+            }
+            
+            // Parse JSON response
+            try {
+                return JSON.parse(responseText);
+            } catch (e) {
+                console.error('Failed to parse JSON:', responseText.substring(0, 200));
+                throw new Error('Invalid response from server. Please try again.');
+            }
+        })
         .then(data => {
             if (data.success) {
                 // Store email in sessionStorage for MPIN login
@@ -105,7 +135,13 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             console.error('Login error:', error);
-            showError(emailInput, 'Network error. Please try again.');
+            let errorMessage = 'Network error. Please try again.';
+            
+            if (error.message) {
+                errorMessage = error.message;
+            }
+            
+            showError(emailInput, errorMessage);
         })
         .finally(() => {
             // Reset button

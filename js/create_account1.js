@@ -894,7 +894,37 @@ document.addEventListener('DOMContentLoaded', function() {
             method: 'POST',
             body: formData
         })
-        .then(response => response.json())
+        .then(async response => {
+            // Check if response is OK and has JSON content type
+            const contentType = response.headers.get('content-type');
+            const isJson = contentType && contentType.includes('application/json');
+            
+            // Get response text first to handle both JSON and non-JSON responses
+            const responseText = await response.text();
+            
+            // If not JSON or empty response, handle error
+            if (!isJson || !responseText.trim()) {
+                console.error('Server returned non-JSON response:', response.status, responseText.substring(0, 200));
+                
+                // Try to parse as JSON anyway (in case content-type header is missing)
+                let errorData;
+                try {
+                    errorData = JSON.parse(responseText);
+                } catch (e) {
+                    // Not valid JSON - return a generic error
+                    throw new Error(`Server error (${response.status}): ${responseText.substring(0, 100) || 'Empty response from server'}`);
+                }
+                return errorData;
+            }
+            
+            // Parse JSON response
+            try {
+                return JSON.parse(responseText);
+            } catch (e) {
+                console.error('Failed to parse JSON:', responseText.substring(0, 200));
+                throw new Error('Invalid response from server. Please try again.');
+            }
+        })
         .then(async data => {
             if (data.success) {
                 // Store user data for next step
@@ -932,12 +962,19 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(async error => {
             console.error('Registration error:', error);
+            let errorMessage = 'An error occurred during registration. Please try again.';
+            
+            if (error.message) {
+                errorMessage = error.message;
+            }
+            
             await Swal.fire({
                 icon: 'error',
-                title: 'Network Error',
-                text: 'Network error. Please try again.',
+                title: 'Registration Error',
+                text: errorMessage,
                 confirmButtonText: 'OK',
-                confirmButtonColor: '#dc3545'
+                confirmButtonColor: '#dc3545',
+                width: '500px'
             });
         })
         .finally(() => {
