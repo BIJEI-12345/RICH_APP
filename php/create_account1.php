@@ -129,7 +129,7 @@ $hasNoMiddleName = isset($input['hasNoMiddleName']) ? (bool)$input['hasNoMiddleN
 $idImageData = null;
 
 // Check if file was uploaded
-if (isset($_FILES['idImage'])) {
+if (isset($_FILES['idImage']) && $_FILES['idImage']['error'] !== UPLOAD_ERR_NO_FILE) {
     $imageFile = $_FILES['idImage'];
     
     // Check for upload errors
@@ -201,14 +201,34 @@ if (isset($_FILES['idImage'])) {
     ob_clean();
     error_log("idImage file not found in FILES array");
     error_log("Available FILES keys: " . implode(', ', array_keys($_FILES)));
+    error_log("Content-Type: " . ($_SERVER['CONTENT_TYPE'] ?? 'NOT SET'));
+    error_log("POST keys: " . implode(', ', array_keys($input)));
+    
+    // Check if file might be in POST (wrong - but helpful for debugging)
+    $debugInfo = [
+        'files_keys' => array_keys($_FILES),
+        'content_type' => $_SERVER['CONTENT_TYPE'] ?? 'NOT SET',
+        'post_keys' => array_keys($input),
+        'post_idImage_exists' => isset($input['idImage']) ? 'YES (WRONG - should use $_FILES)' : 'NO'
+    ];
+    
+    // Check PHP upload settings
+    $uploadMaxFilesize = ini_get('upload_max_filesize');
+    $postMaxSize = ini_get('post_max_size');
+    $maxFileUploads = ini_get('max_file_uploads');
+    
+    $debugInfo['php_settings'] = [
+        'upload_max_filesize' => $uploadMaxFilesize,
+        'post_max_size' => $postMaxSize,
+        'max_file_uploads' => $maxFileUploads,
+        'file_uploads_enabled' => ini_get('file_uploads') ? 'YES' : 'NO'
+    ];
+    
     http_response_code(400);
     echo json_encode([
         'success' => false, 
-        'message' => 'ID image is required. Please upload a valid ID image.',
-        'debug' => [
-            'files_keys' => array_keys($_FILES),
-            'post_idImage' => isset($input['idImage']) ? 'EXISTS (WRONG - should use $_FILES)' : 'NOT SET'
-        ]
+        'message' => 'ID image is required. Please upload a valid ID image file.',
+        'debug' => $debugInfo
     ]);
     ob_end_flush();
     exit;
