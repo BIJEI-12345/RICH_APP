@@ -26,22 +26,14 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 // Load environment variables
 require_once __DIR__ . '/env_loader.php';
 
-<<<<<<< HEAD
-// Get Google Vision API URL
-$VISION_URL = getGoogleVisionApiUrl();
-if (!$VISION_URL) {
-    http_response_code(500);
-    echo json_encode(['success' => false, 'ok' => false, 'message' => 'API configuration error: GOOGLE_VISION_API_KEY is not set in .env file']);
-=======
-// Load .env file from project root (two levels up from php directory)
-$envPath = dirname(__DIR__) . DIRECTORY_SEPARATOR . '.env';
-loadEnv($envPath);
+// Load environment variables
+require_once __DIR__ . '/env_loader.php';
 
 // Get Groq API key from environment variable
-$API_KEY = getenv('GROQ_API_KEY') ?: $_ENV['GROQ_API_KEY'] ?? '';
+$API_KEY = getGroqApiKey();
 if (empty($API_KEY)) {
+    http_response_code(500);
     echo json_encode(['success' => false, 'ok' => false, 'message' => 'GROQ_API_KEY not found in .env file']);
->>>>>>> 9fd9298ac44fc52b0333a0f2578e90264f9eb0ea
     exit;
 }
 

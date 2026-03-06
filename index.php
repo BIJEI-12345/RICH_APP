@@ -1,18 +1,13 @@
 <?php
-// Start PHP session
-session_start();
-
-// Check if user is already logged in via PHP session
-if (isset($_SESSION['user_email']) && !empty($_SESSION['user_email'])) {
-    // User is logged in, redirect to main UI
-    header('Location: main_UI.html');
-    exit;
-}
-
-// Handle login POST request
+// Handle login POST request first (before session_start to avoid output issues)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Start output buffering to prevent any HTML output
+    // Start output buffering FIRST to catch any output
     ob_start();
+    
+    // Start PHP session (after output buffering)
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
     
     // Set JSON headers
     header('Content-Type: application/json');
@@ -27,20 +22,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Register shutdown function to catch fatal errors and ensure JSON response
     register_shutdown_function(function() {
         $error = error_get_last();
-        if ($error !== NULL && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        if ($error !== NULL && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_RECOVERABLE_ERROR])) {
             // Clear any output
-            ob_clean();
+            if (ob_get_level() > 0) {
+                ob_clean();
+            }
             
-            // Log the error
-            error_log("Fatal error in index.php: " . $error['message'] . " in " . $error['file'] . " on line " . $error['line']);
+            // Log the error with full details
+            $errorDetails = [
+                'message' => $error['message'],
+                'file' => $error['file'],
+                'line' => $error['line'],
+                'type' => $error['type']
+            ];
+            error_log("Fatal error in index.php: " . json_encode($errorDetails));
             
             // Return JSON error response
-            http_response_code(500);
+            if (!headers_sent()) {
+                http_response_code(500);
+                header('Content-Type: application/json');
+            }
             echo json_encode([
                 'success' => false,
-                'message' => 'Server error occurred. Please try again.'
+                'message' => 'Server error occurred. Please check server logs for details.',
+                'error_type' => 'fatal_error'
             ]);
-            ob_end_flush();
+            if (ob_get_level() > 0) {
+                ob_end_flush();
+            }
             exit;
         }
     });
@@ -89,13 +98,89 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     // Database connection - Load from centralized config
-    require_once __DIR__ . '/php/env_loader.php';
+    $envLoaderPath = __DIR__ . '/php/env_loader.php';
+    if (!file_exists($envLoaderPath)) {
+        error_log("ERROR: env_loader.php not found at: " . $envLoaderPath);
+        ob_clean();
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Server configuration error. Configuration file not found.'
+        ]);
+        ob_end_flush();
+        exit;
+    }
+    
+    // Load the configuration file
+    // Use include instead of require_once to catch errors better
+    $envLoaderLoaded = false;
+    try {
+        ob_start(); // Start buffering to catch any output
+        include $envLoaderPath;
+        $output = ob_get_clean();
+        if (!empty($output)) {
+            error_log("Warning: env_loader.php produced output: " . $output);
+        }
+        $envLoaderLoaded = true;
+    } catch (Throwable $e) {
+        ob_end_clean();
+        error_log("ERROR loading env_loader.php: " . $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine());
+        ob_clean();
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Server configuration error. Please check server logs.'
+        ]);
+        ob_end_flush();
+        exit;
+    }
+    
+    // Verify that getDBConnection function exists
+    if (!function_exists('getDBConnection')) {
+        error_log("ERROR: getDBConnection function not found after loading env_loader.php");
+        ob_clean();
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Server configuration error. Database functions not available.'
+        ]);
+        ob_end_flush();
+        exit;
+    }
     
     // Authenticate user
     function authenticateUser($loginType, $credentials) {
         $pdo = getDBConnection();
         if (!$pdo) {
-            return ['success' => false, 'message' => 'Database connection failed'];
+            // Check if .env file exists
+            $envPath = __DIR__ . '/.env';
+            $envExists = file_exists($envPath);
+            
+            if (!$envExists) {
+                return ['success' => false, 'message' => 'Database configuration missing. Please create a .env file in the project root with DB_HOST, DB_USER, DB_PASS, and DB_NAME.'];
+            }
+            
+            // Check which variables are missing
+            $host = $_ENV['DB_HOST'] ?? getenv('DB_HOST') ?: null;
+            $user = $_ENV['DB_USER'] ?? getenv('DB_USER') ?: null;
+            $pass = $_ENV['DB_PASS'] ?? getenv('DB_PASS');
+            $db   = $_ENV['DB_NAME'] ?? getenv('DB_NAME') ?: null;
+            
+            $missing = [];
+            if (!$host) $missing[] = 'DB_HOST';
+            if (!$user) $missing[] = 'DB_USER';
+            if ($pass === null) $missing[] = 'DB_PASS'; // Only check if null, allow empty string
+            if (!$db) $missing[] = 'DB_NAME';
+            
+            if (!empty($missing)) {
+                return ['success' => false, 'message' => 'Database configuration incomplete. Missing: ' . implode(', ', $missing) . '. Please check your .env file.'];
+            }
+            
+            // Try to get more specific error from logs or provide general guidance
+            $errorMsg = 'Database connection failed. ';
+            $errorMsg .= 'Please check: 1) MySQL is running in XAMPP, 2) Database exists, 3) Credentials in .env file are correct.';
+            $errorMsg .= ' Check PHP error logs for details.';
+            return ['success' => false, 'message' => $errorMsg];
         }
         
         try {
@@ -186,6 +271,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     // End output buffering
     ob_end_flush();
+    exit;
+}
+
+// For non-POST requests (GET requests to show the login page)
+// Start PHP session
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Check if user wants to logout/clear session (via ?logout=true parameter)
+$logoutRequest = isset($_GET['logout']) && $_GET['logout'] === 'true';
+if ($logoutRequest) {
+    // Clear all session data
+    $_SESSION = array();
+    
+    // Destroy session cookie if it exists
+    if (isset($_COOKIE[session_name()])) {
+        setcookie(session_name(), '', time() - 3600, '/');
+    }
+    
+    // Destroy the session
+    session_destroy();
+    
+    // Start a new session for the login page
+    session_start();
+}
+
+// Check if user is already logged in via PHP session
+// Allow bypass with ?force_login=true query parameter for testing
+$forceLogin = isset($_GET['force_login']) && $_GET['force_login'] === 'true';
+
+if (isset($_SESSION['user_email']) && !empty($_SESSION['user_email']) && !$forceLogin && !$logoutRequest) {
+    // User is logged in, redirect to main UI
+    header('Location: main_UI.html');
     exit;
 }
 

@@ -53,15 +53,8 @@ if ($mobile && !preg_match('/^[0-9]{10}$/', $mobile)) {
     exit;
 }
 
-<<<<<<< HEAD
-// Database connection
 // Database connection - Load from centralized config
 require_once __DIR__ . '/env_loader.php';
-}
-=======
-// Database connection - Load from config
-require_once(__DIR__ . '/config.php');
->>>>>>> 9fd9298ac44fc52b0333a0f2578e90264f9eb0ea
 
 // Verify MPIN
 function verifyMPIN($email, $mobile, $mpin) {

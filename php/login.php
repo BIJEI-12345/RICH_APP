@@ -54,8 +54,8 @@ if ($loginType === 'email') {
     }
 }
 
-// Database connection - Load from config
-require_once(__DIR__ . '/config.php');
+// Database connection - Load from centralized config
+require_once(__DIR__ . '/env_loader.php');
 
 // Authenticate user
 function authenticateUser($loginType, $credentials, $password = null) {

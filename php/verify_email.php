@@ -46,14 +46,8 @@ if (!preg_match('/^\d{6}$/', $verificationCode)) {
     exit;
 }
 
-<<<<<<< HEAD
-// Database connection
 // Database connection - Load from centralized config
 require_once __DIR__ . '/env_loader.php';
-=======
-// Database connection - Load from config
-require_once(__DIR__ . '/config.php');
->>>>>>> 9fd9298ac44fc52b0333a0f2578e90264f9eb0ea
 
 // Verify OTP and save user data
 function verifyOTPAndSaveUser($email, $verificationCode) {

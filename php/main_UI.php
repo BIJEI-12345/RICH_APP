@@ -38,15 +38,8 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     exit;
 }
 
-<<<<<<< HEAD
 // Database connection - Load from centralized config
 require_once __DIR__ . '/env_loader.php';
-
-try {
-    $pdo = getDBConnection();
-=======
-// Database connection - Load from config
-require_once(__DIR__ . '/config.php');
 
 try {
     $pdo = getDBConnection();
@@ -54,7 +47,6 @@ try {
         echo json_encode(['success' => false, 'message' => 'Database connection failed']);
         exit;
     }
->>>>>>> 9fd9298ac44fc52b0333a0f2578e90264f9eb0ea
     
     // Prepare and execute query to fetch user data
     $stmt = $pdo->prepare("SELECT first_name, middle_name, last_name, suffix, email, age, sex, birthday, civil_status, address, valid_id, id_image, profile_pic FROM resident_information WHERE email = ?");

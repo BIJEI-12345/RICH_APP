@@ -93,12 +93,16 @@ document.addEventListener('DOMContentLoaded', function() {
             })
         })
         .then(async response => {
+            // Get response text first to handle both JSON and non-JSON responses
+            const responseText = await response.text();
+            
+            // Log response for debugging
+            console.log('Response status:', response.status);
+            console.log('Response text:', responseText);
+            
             // Check if response is OK and has JSON content type
             const contentType = response.headers.get('content-type');
             const isJson = contentType && contentType.includes('application/json');
-            
-            // Get response text first to handle both JSON and non-JSON responses
-            const responseText = await response.text();
             
             // If not JSON or empty response, handle error
             if (!isJson || !responseText.trim()) {
@@ -116,12 +120,21 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             // Parse JSON response
+            let data;
             try {
-                return JSON.parse(responseText);
+                data = JSON.parse(responseText);
             } catch (e) {
                 console.error('Failed to parse JSON:', responseText.substring(0, 200));
                 throw new Error('Invalid response from server. Please try again.');
             }
+            
+            // Handle 401 Unauthorized explicitly
+            if (response.status === 401 || !data.success) {
+                // Return the error data so it can be handled in the next then block
+                return data;
+            }
+            
+            return data;
         })
         .then(data => {
             if (data.success) {
@@ -130,7 +143,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Redirect to MPIN login page
                 window.location.href = 'mpin_login.html';
             } else {
-                showError(emailInput, data.message || 'Login failed');
+                // Show the specific error message from server
+                const errorMsg = data.message || 'Login failed. Please check your email or verify your account.';
+                console.error('Login failed:', errorMsg);
+                showError(emailInput, errorMsg);
             }
         })
         .catch(error => {

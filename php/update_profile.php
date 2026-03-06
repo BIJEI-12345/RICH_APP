@@ -19,15 +19,8 @@ if (empty($email)) {
     exit;
 }
 
-<<<<<<< HEAD
 // Database connection - Load from centralized config
 require_once __DIR__ . '/env_loader.php';
-
-try {
-    $pdo = getDBConnection();
-=======
-// Database connection - Load from config
-require_once(__DIR__ . '/config.php');
 
 try {
     $pdo = getDBConnection();
@@ -35,7 +28,6 @@ try {
         echo json_encode(['success' => false, 'message' => 'Database connection failed']);
         exit;
     }
->>>>>>> 9fd9298ac44fc52b0333a0f2578e90264f9eb0ea
     
     // Get form data
     $firstName = isset($_POST['firstName']) ? trim($_POST['firstName']) : '';
