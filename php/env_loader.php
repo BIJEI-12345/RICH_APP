@@ -5,8 +5,13 @@
  * Includes database connection and API URL helpers
  */
 
+// Define project root path explicitly
+// This file is in php/env_loader.php, so parent directory is project root
+$projectRoot = dirname(__DIR__);
+$envFile = $projectRoot . DIRECTORY_SEPARATOR . '.env';
+
 // Load Composer autoloader
-$autoloadPath = __DIR__ . '/../vendor/autoload.php';
+$autoloadPath = $projectRoot . '/vendor/autoload.php';
 $autoloaderLoaded = false;
 
 if (file_exists($autoloadPath)) {
@@ -20,104 +25,134 @@ if (file_exists($autoloadPath)) {
     error_log("Warning: Composer autoloader not found at: " . $autoloadPath);
 }
 
-// Only load Dotenv if autoloader was loaded successfully
-if ($autoloaderLoaded) {
+// Try to load .env using Dotenv library first (if available)
+$dotenvLoaded = false;
+if ($autoloaderLoaded && class_exists('Dotenv\Dotenv')) {
     try {
-        // Use Dotenv namespace (must be at top level, but we check if class exists)
-        if (class_exists('Dotenv\Dotenv')) {
-            // Load .env file from project root directory
-            // Handle missing .env file gracefully
-            $envPath = __DIR__ . '/..';
+        if (is_dir($projectRoot)) {
+            $dotenv = \Dotenv\Dotenv::createImmutable($projectRoot);
             
-            // Check if directory exists before trying to create Dotenv instance
-            if (is_dir($envPath)) {
-                try {
-                    $dotenv = \Dotenv\Dotenv::createImmutable($envPath);
-                    
-                    // Try to use safeLoad() if available (phpdotenv v5+), otherwise use load() with error handling
-                    if (method_exists($dotenv, 'safeLoad')) {
-                        $result = $dotenv->safeLoad();
-                        if ($result === false) {
-                            error_log("Warning: Dotenv safeLoad() returned false - .env file may have issues");
-                        }
-                    } else {
-                        // For older versions, check if .env file exists first
-                        $envFile = $envPath . DIRECTORY_SEPARATOR . '.env';
-                        if (file_exists($envFile)) {
-                            try {
-                                $dotenv->load();
-                            } catch (Exception $loadException) {
-                                error_log("Warning: Could not load .env file: " . $loadException->getMessage());
-                            }
-                        }
-                    }
-                    
-                    // Verify that at least one variable was loaded
-                    if (empty($_ENV['DB_HOST']) && empty(getenv('DB_HOST'))) {
-                        error_log("Warning: .env file loaded but DB_HOST is not set. Check .env file format.");
-                        // Try to read .env file directly for debugging
-                        $envFile = $envPath . DIRECTORY_SEPARATOR . '.env';
-                        if (file_exists($envFile)) {
-                            error_log("Debug: .env file exists at: " . $envFile);
-                            $envContent = file_get_contents($envFile);
-                            $lines = explode("\n", $envContent);
-                            error_log("Debug: .env file has " . count($lines) . " lines");
-                            // Log first few lines (without sensitive data)
-                            foreach (array_slice($lines, 0, 10) as $i => $line) {
-                                if (strpos($line, 'DB_') === 0) {
-                                    $parts = explode('=', $line, 2);
-                                    if (count($parts) === 2) {
-                                        $key = trim($parts[0]);
-                                        $value = trim($parts[1]);
-                                        if ($key === 'DB_PASS') {
-                                            error_log("Debug: Line " . ($i+1) . ": $key=" . (empty($value) ? '(empty)' : '(set)'));
-                                        } else {
-                                            error_log("Debug: Line " . ($i+1) . ": $key=$value");
-                                        }
-                                    }
-                                }
-                            }
-                        } else {
-                            error_log("Debug: .env file does NOT exist at: " . $envFile);
-                        }
-                    }
-                } catch (Exception $dotenvException) {
-                    // Log error but don't fail - environment variables might be set another way
-                    error_log("Warning: Could not initialize Dotenv: " . $dotenvException->getMessage());
+            // Use safeLoad() if available (phpdotenv v5+), otherwise use load()
+            if (method_exists($dotenv, 'safeLoad')) {
+                $dotenv->safeLoad();
+                $dotenvLoaded = true;
+            } else {
+                // For older versions, check if .env file exists first
+                if (file_exists($envFile)) {
+                    $dotenv->load();
+                    $dotenvLoaded = true;
                 }
             }
         }
     } catch (Exception $e) {
-        // Log error but don't fail - environment variables might be set another way
-        error_log("Warning: Could not load .env file: " . $e->getMessage());
+        error_log("Warning: Dotenv failed to load: " . $e->getMessage());
+        $dotenvLoaded = false;
     }
 }
 
-// Fallback: If Dotenv didn't load variables, try manual parsing
-if (empty($_ENV['DB_HOST']) && empty(getenv('DB_HOST'))) {
-    $envFile = __DIR__ . '/../.env';
-    if (file_exists($envFile)) {
-        error_log("Attempting manual .env file parsing as fallback");
-        $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-        foreach ($lines as $line) {
-            // Skip comments
-            if (strpos(trim($line), '#') === 0) {
+// Check if critical variables were loaded by Dotenv
+$criticalVarsLoaded = !empty($_ENV['DB_HOST']) || !empty(getenv('DB_HOST'));
+if ($dotenvLoaded && !$criticalVarsLoaded) {
+    error_log("Warning: Dotenv loaded but DB_HOST not found. Will try manual parsing.");
+}
+
+// CRITICAL: Always use manual parsing as fallback/backup
+// This ensures .env is loaded even if Dotenv library fails or doesn't set variables properly
+// Also ensures compatibility with Ubuntu servers where path resolution might differ
+// Check multiple possible paths for .env file (for Ubuntu compatibility)
+$possibleEnvPaths = [
+    $envFile, // Primary path: project root
+    dirname(__DIR__) . '/.env', // Explicit project root
+    __DIR__ . '/../.env', // Relative from php directory
+    realpath(__DIR__ . '/../.env'), // Real path resolution
+];
+
+$envFileFound = false;
+$envFileUsed = null;
+
+foreach ($possibleEnvPaths as $testPath) {
+    if ($testPath && file_exists($testPath) && is_readable($testPath)) {
+        $envFileUsed = $testPath;
+        $envFileFound = true;
+        break;
+    }
+}
+
+// Always run manual parsing as backup/ensure variables are loaded
+// This is especially important on Ubuntu where Dotenv might fail silently
+if ($envFileFound && $envFileUsed) {
+    // Only log if we're doing manual parsing because Dotenv didn't work
+    if (!$criticalVarsLoaded) {
+        error_log("Loading .env manually (Dotenv didn't load variables) from: " . $envFileUsed);
+    } else {
+        error_log("Verifying .env variables via manual parsing from: " . $envFileUsed);
+    }
+    
+    // Read file with error handling
+    $lines = @file($envFileUsed, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    
+    if ($lines === false) {
+        error_log("ERROR: Failed to read .env file at: " . $envFileUsed);
+        error_log("Debug: File readable: " . (is_readable($envFileUsed) ? 'YES' : 'NO'));
+        error_log("Debug: File permissions: " . substr(sprintf('%o', fileperms($envFileUsed)), -4));
+    } else {
+        $varsLoaded = 0;
+        foreach ($lines as $lineNum => $line) {
+            $line = trim($line);
+            
+            // Skip empty lines and comments
+            if (empty($line) || strpos($line, '#') === 0) {
                 continue;
             }
+            
             // Parse KEY=VALUE format
             if (strpos($line, '=') !== false) {
                 list($key, $value) = explode('=', $line, 2);
                 $key = trim($key);
                 $value = trim($value);
-                // Remove quotes if present
-                $value = trim($value, '"\'');
-                // Set in $_ENV
+                
+                // Remove quotes if present (handle both single and double quotes)
+                $value = trim($value, '"\''); 
+                
+                // Set in $_ENV and putenv() for compatibility
                 $_ENV[$key] = $value;
                 putenv("$key=$value");
+                $varsLoaded++;
             }
         }
-        error_log("Manual parsing complete. DB_HOST: " . ($_ENV['DB_HOST'] ?? 'NOT SET'));
+        
+        error_log("Loaded $varsLoaded environment variables from .env file");
+        
+        // Verify critical variables were loaded
+        $dbHost = $_ENV['DB_HOST'] ?? getenv('DB_HOST') ?: null;
+        $dbUser = $_ENV['DB_USER'] ?? getenv('DB_USER') ?: null;
+        $dbName = $_ENV['DB_NAME'] ?? getenv('DB_NAME') ?: null;
+        
+        if (!$dbHost || !$dbUser || !$dbName) {
+            error_log("ERROR: .env file exists but critical variables not loaded. File path: " . $envFileUsed);
+            error_log("Debug: File readable: " . (is_readable($envFileUsed) ? 'YES' : 'NO'));
+            error_log("Debug: File size: " . filesize($envFileUsed) . " bytes");
+            error_log("Debug: Variables loaded: $varsLoaded");
+            error_log("Debug: DB_HOST=" . ($dbHost ?: 'NOT SET') . ", DB_USER=" . ($dbUser ?: 'NOT SET') . ", DB_NAME=" . ($dbName ?: 'NOT SET'));
+            error_log("Debug: First 10 lines of .env: " . implode(' | ', array_slice($lines, 0, 10)));
+            error_log("Debug: All _ENV keys: " . implode(', ', array_keys($_ENV)));
+        } else {
+            error_log("SUCCESS: Critical database variables loaded from .env file");
+        }
     }
+} else {
+    error_log("ERROR: .env file not found or not readable");
+    error_log("Debug: Checked paths:");
+    foreach ($possibleEnvPaths as $path) {
+        if ($path) {
+            $exists = file_exists($path) ? 'EXISTS' : 'NOT FOUND';
+            $readable = file_exists($path) && is_readable($path) ? 'READABLE' : 'NOT READABLE';
+            error_log("  - $path: $exists, $readable");
+        }
+    }
+    error_log("Debug: Project root (dirname(__DIR__)): " . dirname(__DIR__));
+    error_log("Debug: Current directory (__DIR__): " . __DIR__);
+    error_log("Debug: Real path of php dir: " . realpath(__DIR__));
 }
 
 /**
@@ -125,25 +160,36 @@ if (empty($_ENV['DB_HOST']) && empty(getenv('DB_HOST'))) {
  * @return PDO|null Returns PDO connection or null on failure
  */
 function getDBConnection() {
-    // Get database credentials from environment variables (required - no fallbacks)
+    // Get database credentials from environment variables
     // Try both $_ENV and getenv() as some PHP configs use different methods
     $host = $_ENV['DB_HOST'] ?? getenv('DB_HOST') ?: null;
     $user = $_ENV['DB_USER'] ?? getenv('DB_USER') ?: null;
     $pass = $_ENV['DB_PASS'] ?? getenv('DB_PASS');
     $db   = $_ENV['DB_NAME'] ?? getenv('DB_NAME') ?: null;
     
+    // IMPORTANT: If DB_PASS is not set at all, set it to empty string
+    // This handles cases where .env has DB_PASS= (empty) or DB_PASS="" 
+    if ($pass === null || $pass === false) {
+        $pass = '';
+    }
+    
     // Debug: Log what we got (without password)
-    error_log("DB Connection attempt - Host: " . ($host ?: 'NULL') . ", User: " . ($user ?: 'NULL') . ", DB: " . ($db ?: 'NULL') . ", Pass: " . ($pass !== null ? 'SET' : 'NULL'));
+    error_log("DB Connection attempt - Host: " . ($host ?: 'NULL') . ", User: " . ($user ?: 'NULL') . ", DB: " . ($db ?: 'NULL') . ", Pass: " . ($pass !== null && $pass !== '' ? 'SET' : ($pass === '' ? 'EMPTY' : 'NULL')));
     
     // Validate that all required environment variables are set
-    // Note: $pass can be empty string (for XAMPP default), but not null
-    if (!$host || !$user || $pass === null || !$db) {
-        $missing = [];
-        if (!$host) $missing[] = 'DB_HOST';
-        if (!$user) $missing[] = 'DB_USER';
-        if ($pass === null) $missing[] = 'DB_PASS'; // Only check if null, allow empty string
-        if (!$db) $missing[] = 'DB_NAME';
+    // Note: $pass can be empty string, but we need to check if it was explicitly set
+    $missing = [];
+    if (!$host) $missing[] = 'DB_HOST';
+    if (!$user) $missing[] = 'DB_USER';
+    if (!isset($_ENV['DB_PASS']) && getenv('DB_PASS') === false) {
+        $missing[] = 'DB_PASS'; // DB_PASS must exist in .env (even if empty)
+    }
+    if (!$db) $missing[] = 'DB_NAME';
+    
+    if (!empty($missing)) {
         error_log("Database configuration error: Missing required environment variables: " . implode(', ', $missing));
+        error_log("Debug: Check .env file at: " . dirname(__DIR__) . '/.env');
+        error_log("Debug: Current _ENV keys: " . implode(', ', array_keys($_ENV)));
         return null;
     }
     
@@ -207,5 +253,38 @@ function getGoogleGeminiApiUrl() {
     }
     
     return $baseUrl . '?key=' . urlencode($apiKey);
+}
+
+/**
+ * Debug function to check .env loading status
+ * Call this temporarily in your code to see what's loaded
+ * Usage: debugEnvStatus();
+ */
+function debugEnvStatus() {
+    $projectRoot = dirname(__DIR__);
+    $envFile = $projectRoot . DIRECTORY_SEPARATOR . '.env';
+    
+    $debug = [
+        'env_file_exists' => file_exists($envFile),
+        'env_file_path' => $envFile,
+        'env_file_readable' => file_exists($envFile) ? is_readable($envFile) : false,
+        'project_root' => $projectRoot,
+        'current_dir' => __DIR__,
+        'env_vars_loaded' => [
+            'DB_HOST' => $_ENV['DB_HOST'] ?? getenv('DB_HOST') ?: 'NOT SET',
+            'DB_USER' => $_ENV['DB_USER'] ?? getenv('DB_USER') ?: 'NOT SET',
+            'DB_PASS' => isset($_ENV['DB_PASS']) || getenv('DB_PASS') !== false ? 'SET (hidden)' : 'NOT SET',
+            'DB_NAME' => $_ENV['DB_NAME'] ?? getenv('DB_NAME') ?: 'NOT SET',
+        ],
+        'all_env_keys' => array_keys($_ENV),
+        'composer_autoload_exists' => file_exists($projectRoot . '/vendor/autoload.php'),
+        'dotenv_class_exists' => class_exists('Dotenv\Dotenv'),
+    ];
+    
+    error_log("=== ENV DEBUG INFO ===");
+    error_log(json_encode($debug, JSON_PRETTY_PRINT));
+    error_log("======================");
+    
+    return $debug;
 }
 

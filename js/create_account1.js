@@ -895,70 +895,66 @@ document.addEventListener('DOMContentLoaded', function() {
             body: formData
         })
         .then(async response => {
-            // Check if response is OK and has JSON content type
-            const contentType = response.headers.get('content-type');
-            const isJson = contentType && contentType.includes('application/json');
-            
-            // Get response text first to handle both JSON and non-JSON responses
+            // Get response text first
             const responseText = await response.text();
             
-            // If not JSON or empty response, handle error
-            if (!isJson || !responseText.trim()) {
-                console.error('Server returned non-JSON response:', response.status, responseText.substring(0, 200));
-                
-                // Try to parse as JSON anyway (in case content-type header is missing)
-                let errorData;
-                try {
-                    errorData = JSON.parse(responseText);
-                } catch (e) {
-                    // Not valid JSON - return a generic error
-                    throw new Error(`Server error (${response.status}): ${responseText.substring(0, 100) || 'Empty response from server'}`);
-                }
-                return errorData;
+            // Log the raw response for debugging
+            console.log('Server response status:', response.status);
+            console.log('Server response text:', responseText.substring(0, 500));
+            
+            // Try to parse as JSON (PHP should always return JSON)
+            let data;
+            try {
+                data = JSON.parse(responseText);
+            } catch (e) {
+                // If not valid JSON, show the raw response
+                console.error('Failed to parse JSON response:', responseText);
+                throw new Error(`Server returned invalid response (${response.status}): ${responseText.substring(0, 200) || 'Empty response'}`);
             }
             
-            // Parse JSON response
-            try {
-                return JSON.parse(responseText);
-            } catch (e) {
-                console.error('Failed to parse JSON:', responseText.substring(0, 200));
-                throw new Error('Invalid response from server. Please try again.');
-            }
-        })
-        .then(async data => {
-            if (data.success) {
-                // Store user data for next step
-                localStorage.setItem('registrationEmail', data.email);
+            // If response is not OK, handle error
+            if (!response.ok || !data.success) {
+                // Build detailed error message
+                let errorMessage = data.message || `Server error (${response.status})`;
                 
-                // If OTP code is provided (for testing), show it
-                if (data.otp_code) {
-                    console.log('OTP Code for testing:', data.otp_code);
-                    // Optionally show OTP in console or alert for development
-                    // Uncomment the line below for development/testing:
-                    // console.log('🔐 OTP Code:', data.otp_code);
+                // Add debug information if available
+                if (data.debug) {
+                    console.error('Server debug info:', data.debug);
+                    errorMessage += '\n\nDebug Info:';
+                    if (data.missing_fields) {
+                        errorMessage += `\nMissing fields: ${data.missing_fields.join(', ')}`;
+                    }
+                    if (data.received_fields) {
+                        errorMessage += `\nReceived fields: ${data.received_fields.join(', ')}`;
+                    }
+                    if (data.debug.files_keys) {
+                        errorMessage += `\nFiles keys: ${data.debug.files_keys.join(', ')}`;
+                    }
                 }
                 
-                // Redirect to email verification page
-                window.location.href = 'email_verification.html';
-            } else {
-                // Show detailed error message
-                let errorMessage = data.message || 'Registration failed. Please try again.';
-                
-                // If OTP code is available even on failure (for testing), include it
-                if (data.otp_code) {
-                    console.error('Registration failed but OTP generated:', data.otp_code);
-                    errorMessage += '\n\nNote: OTP code was generated but email delivery failed. Check server logs for the code.';
-                }
-                
+                // Show error alert
                 await Swal.fire({
                     icon: 'error',
                     title: 'Registration Failed',
                     html: errorMessage.replace(/\n/g, '<br>'),
                     confirmButtonText: 'OK',
                     confirmButtonColor: '#dc3545',
-                    width: '500px'
+                    width: '600px'
                 });
+                
+                return; // Stop execution
             }
+            
+            // Success - store user data for next step
+            localStorage.setItem('registrationEmail', data.email);
+            
+            // If OTP code is provided (for testing), show it
+            if (data.otp_code) {
+                console.log('OTP Code for testing:', data.otp_code);
+            }
+            
+            // Redirect to email verification page
+            window.location.href = 'email_verification.html';
         })
         .catch(async error => {
             console.error('Registration error:', error);
