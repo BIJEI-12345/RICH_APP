@@ -67,8 +67,14 @@ class EmailSender {
                     'otp_code' => $otpCode // Include OTP for testing
                 ];
             } else {
+<<<<<<< HEAD
                 // If PHPMailer fails, log error and return failure
                 error_log("✗ PHPMailer failed: " . $result['message']);
+=======
+                // Log detailed error but still provide OTP for testing
+                error_log("✗ PHPMailer failed!");
+                error_log("  - SMTP Error: " . $result['message']);
+>>>>>>> 9fd9298ac44fc52b0333a0f2578e90264f9eb0ea
                 error_log("  - OTP Code: " . $otpCode . " (for manual testing)");
                 
                 // Return failure but include OTP for development/testing

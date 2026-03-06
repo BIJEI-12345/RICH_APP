@@ -49,6 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     exit;
 }
 
+<<<<<<< HEAD
 // Database connection - Load from centralized config
 require_once __DIR__ . '/env_loader.php';
 
@@ -62,6 +63,10 @@ function getAnnouncementDBConnection() {
     }
     return $pdo;
 }
+=======
+// Database connection - Load from config
+require_once(__DIR__ . '/config.php');
+>>>>>>> 9fd9298ac44fc52b0333a0f2578e90264f9eb0ea
 
 // Function to serve default image when announcement image is missing
 function serveDefaultImage() {

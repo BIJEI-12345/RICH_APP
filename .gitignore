@@ -17,3 +17,41 @@ debug.log
 # OS
 .DS_Store
 Thumbs.db
+<<<<<<< HEAD
+=======
+desktop.ini
+
+# Environment and config files
+.env
+config.php
+*.env
+
+# Temporary files
+*.tmp
+*.bak
+*.cache
+*.temp
+
+# Composer
+/vendor/
+composer.phar
+
+# Node modules (if any)
+node_modules/
+npm-debug.log
+
+# Database dumps (if any)
+*.sql.gz
+*.sql.bak
+
+# Uploaded files (if stored locally)
+uploads/
+temp/
+
+# Sent emails folder (not needed in repository)
+php/sent_emails/
+
+# PHP specific
+*.php~
+*.php.bak
+>>>>>>> 9fd9298ac44fc52b0333a0f2578e90264f9eb0ea

@@ -11,7 +11,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Check if email exists
     if (!email) {
         // Redirect back to login if no email found
+<<<<<<< HEAD
         window.location.href = 'index.php';
+=======
+        window.location.href = 'index.html';
+>>>>>>> 9fd9298ac44fc52b0333a0f2578e90264f9eb0ea
         return;
     }
     
@@ -183,6 +187,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 sessionStorage.removeItem('loginEmail');
                 sessionStorage.removeItem('loginMobile');
                 
+<<<<<<< HEAD
                 // Show success message with SweetAlert and redirect
                 Swal.fire({
                     title: 'Success!',
@@ -199,6 +204,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 }).then(() => {
                     window.location.href = 'index.php';
                 });
+=======
+                // Show success message and redirect
+                alert('MPIN reset successfully! Redirecting to login...');
+                window.location.href = 'index.html';
+>>>>>>> 9fd9298ac44fc52b0333a0f2578e90264f9eb0ea
             } else {
                 showError(data.message || 'Failed to reset MPIN. Please try again.');
                 // Clear inputs

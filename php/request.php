@@ -12,8 +12,13 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+<<<<<<< HEAD
 // Database connection - Load from centralized config
 require_once __DIR__ . '/env_loader.php';
+=======
+// Database connection - Load from config
+require_once(__DIR__ . '/config.php');
+>>>>>>> 9fd9298ac44fc52b0333a0f2578e90264f9eb0ea
 
 // Function to insert indigency form data
 function insertIndigencyForm($data) {

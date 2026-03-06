@@ -57,6 +57,7 @@ try {
     }
     $email = trim($input['email']);
 
+<<<<<<< HEAD
     // Database connection - Load from centralized config
     require_once __DIR__ . '/env_loader.php';
     
@@ -66,6 +67,18 @@ try {
         $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
         $pdo->setAttribute(PDO::ATTR_STRINGIFY_FETCHES, false);
     }
+=======
+    // Database connection - Load from config
+    require_once(__DIR__ . '/config.php');
+    $pdo = getDBConnection();
+    if (!$pdo) {
+        echo json_encode(['success' => false, 'message' => 'Database connection failed']);
+        exit;
+    }
+    // Ensure binary data (LONGBLOB) is returned correctly - don't stringify
+    $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
+    $pdo->setAttribute(PDO::ATTR_STRINGIFY_FETCHES, false);
+>>>>>>> 9fd9298ac44fc52b0333a0f2578e90264f9eb0ea
 
     // Fetch user info including address for more accurate matching
     $stmt = $pdo->prepare("SELECT id, first_name, last_name, address FROM resident_information WHERE email = ?");
@@ -376,6 +389,7 @@ function serveAnnouncementImage($imageId) {
     header('Pragma: no-cache');
     header('Expires: 0');
     
+<<<<<<< HEAD
     // Database connection - Load from centralized config
     require_once __DIR__ . '/env_loader.php';
     
@@ -388,11 +402,21 @@ function serveAnnouncementImage($imageId) {
         }
     } catch (PDOException $e) {
         error_log("Database connection failed: " . $e->getMessage());
+=======
+    // Database connection - Load from config
+    require_once(__DIR__ . '/config.php');
+    $pdo = getDBConnection();
+    if (!$pdo) {
+        error_log("Database connection failed");
+>>>>>>> 9fd9298ac44fc52b0333a0f2578e90264f9eb0ea
         http_response_code(500);
         header('Content-Type: text/plain');
         echo "Database connection failed";
         exit;
     }
+    // Ensure binary data (LONGBLOB) is returned correctly - don't stringify
+    $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
+    $pdo->setAttribute(PDO::ATTR_STRINGIFY_FETCHES, false);
     
     try {
         // CRITICAL: Fetch ONLY from the 'image' column in the announcements table
@@ -565,6 +589,7 @@ function serveAnnouncementImage($imageId) {
 
 // Function to fetch announcements (same as announcements.php)
 function fetchAnnouncements() {
+<<<<<<< HEAD
     // Database connection - Load from centralized config
     require_once __DIR__ . '/env_loader.php';
     
@@ -576,8 +601,17 @@ function fetchAnnouncements() {
         }
     } catch (PDOException $e) {
         error_log("Database connection failed: " . $e->getMessage());
+=======
+    // Database connection - Load from config
+    require_once(__DIR__ . '/config.php');
+    $pdo = getDBConnection();
+    if (!$pdo) {
+        error_log("Database connection failed");
+>>>>>>> 9fd9298ac44fc52b0333a0f2578e90264f9eb0ea
         return ['success' => false, 'message' => 'Database connection failed'];
     }
+    $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
+    $pdo->setAttribute(PDO::ATTR_STRINGIFY_FETCHES, false);
     
     try {
         // Fetch announcements ordered by created_at descending (newest first)
