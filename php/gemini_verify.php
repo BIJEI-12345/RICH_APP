@@ -29,14 +29,6 @@ require_once __DIR__ . '/env_loader.php';
 // Load environment variables
 require_once __DIR__ . '/env_loader.php';
 
-// Get Groq API key from environment variable
-$API_KEY = getGroqApiKey();
-if (empty($API_KEY)) {
-    http_response_code(500);
-    echo json_encode(['success' => false, 'ok' => false, 'message' => 'GROQ_API_KEY not found in .env file']);
-    exit;
-}
-
 try {
     $raw = file_get_contents('php://input');
     $payload = json_decode($raw, true);

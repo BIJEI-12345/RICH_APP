@@ -209,18 +209,3 @@ function getGoogleGeminiApiUrl() {
     return $baseUrl . '?key=' . urlencode($apiKey);
 }
 
-/**
- * Get Groq API base URL
- * @return string|null Returns Groq API base URL or null if not set
- */
-function getGroqApiUrl() {
-    return $_ENV['GROQ_API_URL'] ?? null;
-}
-
-/**
- * Get Groq API Key
- * @return string|null Returns API key or null if not set
- */
-function getGroqApiKey() {
-    return $_ENV['GROQ_API_KEY'] ?? null;
-}
