@@ -19,9 +19,16 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// TODO: Move to environment variable or secure config
-$API_KEY = 'AIzaSyDjHCEp9AntErTKlMSNwkWCADw1nUk2okQ';
-$VISION_URL = 'https://vision.googleapis.com/v1/images:annotate?key=' . urlencode($API_KEY);
+// Load environment variables
+require_once __DIR__ . '/env_loader.php';
+
+// Get Google Vision API URL
+$VISION_URL = getGoogleVisionApiUrl();
+if (!$VISION_URL) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'API configuration error: GOOGLE_VISION_API_KEY is not set in .env file']);
+    exit;
+}
 
 try {
     $raw = file_get_contents('php://input');

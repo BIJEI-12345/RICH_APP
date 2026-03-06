@@ -483,21 +483,20 @@ document.addEventListener('DOMContentLoaded', function() {
             try {
                 data = JSON.parse(text);
             } catch (e) {
-                console.error('Vision API error: Non-JSON response:', text.slice(0, 200));
-                return { ok: false, hasBigte: false };
+                // Silent fallback to Tesseract - no error shown
+                const fallback = await ocrWithTesseract(base64Image);
+                return fallback;
             }
             if (!data.success || !data.ok) {
-                console.log('Vision proxy error:', data.message || 'Unknown');
-                // Fallback to local OCR
+                // Silent fallback to Tesseract for any error
                 const fallback = await ocrWithTesseract(base64Image);
                 return fallback;
             }
 
-            console.log('Extracted text from ID:', data.fullText || data.addressText);
+            // Success - return Google Vision API result
             return { ok: true, hasBigte: !!data.hasMatch, name: { first: data.firstName || '', middle: data.middleName || '', last: data.lastName || '' }, fullText: data.fullText || '' };
         } catch (error) {
-            console.error('Vision API error:', error);
-            // Fallback to local OCR
+            // Silent fallback on any error
             const fallback = await ocrWithTesseract(base64Image);
             return fallback;
         }
@@ -953,12 +952,12 @@ document.addEventListener('DOMContentLoaded', function() {
         if (window.history.length > 1) {
             window.history.back();
         } else {
-            window.location.href = 'index.html';
+            window.location.href = 'index.php';
         }
     };
 
     window.goToLogin = function() {
-        window.location.href = 'index.html';
+        window.location.href = 'index.php';
     };
 
     // Terms and Conditions links

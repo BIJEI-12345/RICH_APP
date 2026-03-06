@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Check if user came from login page
     if (!loginEmail && !loginMobile) {
         // Redirect back to login if no credentials found
-        window.location.href = 'index.html';
+        window.location.href = 'index.php';
         return;
     }
     
@@ -354,17 +354,14 @@ document.addEventListener('DOMContentLoaded', function() {
         // Clear session storage
         sessionStorage.removeItem('loginEmail');
         sessionStorage.removeItem('loginMobile');
-        window.location.href = 'index.html';
+        window.location.href = 'index.php';
     };
     
     // Forgot MPIN
     window.forgotMPIN = function() {
-        if (confirm('Forgot your MPIN? You will need to reset it through the registration process.')) {
-            // Clear session storage
-            sessionStorage.removeItem('loginEmail');
-            sessionStorage.removeItem('loginMobile');
-            window.location.href = 'create_account1.html';
-        }
+        // Navigate to forgot MPIN OTP page
+        // Email is already stored in sessionStorage as loginEmail
+        window.location.href = 'forgot_mpin_otp.html';
     };
     
     // Mobile keyboard handling - adjust modal position when keyboard appears

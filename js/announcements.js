@@ -619,21 +619,136 @@ function removeStickyScrollBehavior() {
 function shareAnnouncement() {
     const title = document.getElementById('detail-title').textContent;
     const description = document.getElementById('detail-description').textContent;
+    const category = document.getElementById('detail-category').textContent;
+    const timestamp = document.getElementById('detail-timestamp').textContent;
     
+    // Create share text with formatted content
+    const shareText = `${title}\n\n${description}\n\nCategory: ${category}\nPosted: ${timestamp}\n\nShared from RICH App`;
+    
+    // Check if Web Share API is available (mobile browsers)
     if (navigator.share) {
+        // Use native share dialog on mobile
         navigator.share({
             title: title,
-            text: description,
+            text: shareText,
             url: window.location.href
-        }).catch(err => console.log('Error sharing:', err));
+        }).then(() => {
+            // Show success message using SweetAlert if available
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Shared!',
+                    text: 'Announcement shared successfully.',
+                    timer: 2000,
+                    showConfirmButton: false,
+                    toast: true,
+                    position: 'bottom',
+                    customClass: {
+                        popup: 'swal2-share-popup'
+                    }
+                });
+            }
+        }).catch((err) => {
+            // User cancelled or error occurred
+            if (err.name !== 'AbortError') {
+                console.error('Error sharing:', err);
+                // Fallback to clipboard
+                fallbackShare(shareText);
+            }
+        });
     } else {
         // Fallback for browsers that don't support Web Share API
-        const shareText = `${title}\n\n${description}\n\nShared from RICH App`;
+        fallbackShare(shareText);
+    }
+}
+
+// Fallback share function using clipboard
+function fallbackShare(shareText) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(shareText).then(() => {
-            alert('Announcement details copied to clipboard!');
+            // Show success message using SweetAlert if available
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Copied!',
+                    text: 'Announcement details copied to clipboard.',
+                    timer: 2000,
+                    showConfirmButton: false,
+                    toast: true,
+                    position: 'bottom',
+                    customClass: {
+                        popup: 'swal2-share-popup'
+                    }
+                });
+            } else {
+                alert('Announcement details copied to clipboard!');
+            }
         }).catch(() => {
-            alert('Share functionality not available in this browser.');
+            // Clipboard API failed, show manual copy option
+            showManualShareDialog(shareText);
         });
+    } else {
+        // Clipboard API not available, show manual copy option
+        showManualShareDialog(shareText);
+    }
+}
+
+// Show manual share dialog with text to copy
+function showManualShareDialog(shareText) {
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            icon: 'info',
+            title: 'Share Announcement',
+            html: `
+                <p style="text-align: left; margin-bottom: 15px;">Copy the text below to share:</p>
+                <textarea id="shareTextArea" readonly style="width: 100%; min-height: 150px; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; font-family: inherit; resize: vertical;">${shareText}</textarea>
+            `,
+            showCancelButton: true,
+            confirmButtonText: 'Copy Text',
+            cancelButtonText: 'Close',
+            customClass: {
+                popup: 'swal2-share-popup',
+                confirmButton: 'swal2-share-confirm'
+            },
+            didOpen: () => {
+                const textarea = document.getElementById('shareTextArea');
+                if (textarea) {
+                    textarea.select();
+                    textarea.setSelectionRange(0, 99999); // For mobile devices
+                }
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const textarea = document.getElementById('shareTextArea');
+                if (textarea) {
+                    textarea.select();
+                    textarea.setSelectionRange(0, 99999);
+                    try {
+                        document.execCommand('copy');
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Copied!',
+                            text: 'Text copied to clipboard.',
+                            timer: 1500,
+                            showConfirmButton: false,
+                            toast: true,
+                            position: 'bottom'
+                        });
+                    } catch (err) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Copy Failed',
+                            text: 'Please manually select and copy the text.',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                    }
+                }
+            }
+        });
+    } else {
+        // Fallback alert
+        prompt('Copy this text to share:', shareText);
     }
 }
 
@@ -646,6 +761,9 @@ function handleResize() {
 document.addEventListener('DOMContentLoaded', async function() {
     // Add smooth scrolling for better UX
     document.documentElement.style.scrollBehavior = 'smooth';
+    
+    // Setup scroll-based animations for announcement detail containers
+    setupScrollBasedAnimations();
     
     // Fetch and display announcements
     const announcements = await fetchAnnouncements();
@@ -662,3 +780,103 @@ document.addEventListener('DOMContentLoaded', async function() {
 
 // Add resize event listener
 window.addEventListener('resize', handleResize);
+
+// Function to setup scroll-based animations for announcement detail containers
+function setupScrollBasedAnimations() {
+    const detailSection = document.getElementById('announcement-detail-section');
+    if (!detailSection) return;
+    
+    let lastScrollTop = 0;
+    let scrollDirection = 'down';
+    const observedContainers = new Set();
+    
+    // Track scroll direction
+    detailSection.addEventListener('scroll', function() {
+        const currentScrollTop = detailSection.scrollTop;
+        
+        if (currentScrollTop > lastScrollTop) {
+            scrollDirection = 'down';
+        } else if (currentScrollTop < lastScrollTop) {
+            scrollDirection = 'up';
+        }
+        
+        lastScrollTop = currentScrollTop;
+    }, { passive: true });
+    
+    // Intersection Observer to detect when containers enter viewport
+    const observerOptions = {
+        root: detailSection,
+        rootMargin: '-20% 0px -20% 0px',
+        threshold: [0, 0.3, 0.7, 1]
+    };
+    
+    const observer = new IntersectionObserver(function(entries) {
+        entries.forEach(entry => {
+            const container = entry.target;
+            
+            if (entry.isIntersecting && entry.intersectionRatio > 0.3) {
+                // Container is entering viewport
+                if (!container.classList.contains('visible')) {
+                    // Remove any existing animation classes
+                    container.classList.remove('slide-in-from-top', 'slide-in-from-bottom', 'slide-out-to-top', 'slide-out-to-bottom');
+                    
+                    // Apply animation based on scroll direction
+                    if (scrollDirection === 'down') {
+                        container.classList.add('slide-in-from-bottom');
+                    } else {
+                        container.classList.add('slide-in-from-top');
+                    }
+                    
+                    // Mark as visible
+                    container.classList.add('visible');
+                    
+                    // Remove animation class after animation completes
+                    setTimeout(() => {
+                        container.classList.remove('slide-in-from-bottom', 'slide-in-from-top');
+                    }, 700);
+                }
+            } else if (!entry.isIntersecting && entry.intersectionRatio === 0) {
+                // Container is leaving viewport
+                if (container.classList.contains('visible')) {
+                    // Remove visible class and add exit animation
+                    container.classList.remove('visible');
+                    
+                    if (scrollDirection === 'down') {
+                        container.classList.add('slide-out-to-top');
+                    } else {
+                        container.classList.add('slide-out-to-bottom');
+                    }
+                    
+                    // Remove exit animation after it completes
+                    setTimeout(() => {
+                        container.classList.remove('slide-out-to-top', 'slide-out-to-bottom');
+                    }, 600);
+                }
+            }
+        });
+    }, observerOptions);
+    
+    // Observe all announcement detail containers
+    function observeContainers() {
+        const containers = document.querySelectorAll('.announcement-detail-container');
+        containers.forEach(container => {
+            if (!observedContainers.has(container)) {
+                observer.observe(container);
+                observedContainers.add(container);
+            }
+        });
+    }
+    
+    // Initial observation
+    observeContainers();
+    
+    // Re-observe when new containers are added (e.g., when navigating)
+    const mutationObserver = new MutationObserver(function(mutations) {
+        observeContainers();
+    });
+    
+    mutationObserver.observe(detailSection, {
+        childList: true,
+        subtree: true
+    });
+}

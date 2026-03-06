@@ -1,5 +1,5 @@
 <?php
-// Groq-based ID address verification
+// Google Vision API-based ID address verification
 // Input JSON: { image_base64: "data:image/...;base64,XXXX" }
 // Output JSON: { success: bool, ok: bool, hasMatch: bool, addressText: string, fullText?: string, message?: string }
 
@@ -23,39 +23,16 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// Load environment variables from .env file
-function loadEnv($path) {
-    if (!file_exists($path)) {
-        return;
-    }
-    $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    foreach ($lines as $line) {
-        if (strpos(trim($line), '#') === 0) {
-            continue; // Skip comments
-        }
-        list($name, $value) = explode('=', $line, 2);
-        $name = trim($name);
-        $value = trim($value);
-        if (!array_key_exists($name, $_SERVER) && !array_key_exists($name, $_ENV)) {
-            putenv(sprintf('%s=%s', $name, $value));
-            $_ENV[$name] = $value;
-            $_SERVER[$name] = $value;
-        }
-    }
-}
+// Load environment variables
+require_once __DIR__ . '/env_loader.php';
 
-// Load .env file from project root (two levels up from php directory)
-$envPath = dirname(__DIR__) . DIRECTORY_SEPARATOR . '.env';
-loadEnv($envPath);
-
-// Get Groq API key from environment variable
-$API_KEY = getenv('GROG_API_KEY') ?: $_ENV['GROG_API_KEY'] ?? '';
-if (empty($API_KEY)) {
-    echo json_encode(['success' => false, 'ok' => false, 'message' => 'GROG_API_KEY not found in .env file']);
+// Get Google Vision API URL
+$VISION_URL = getGoogleVisionApiUrl();
+if (!$VISION_URL) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'ok' => false, 'message' => 'API configuration error: GOOGLE_VISION_API_KEY is not set in .env file']);
     exit;
 }
-
-$URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 try {
     $raw = file_get_contents('php://input');
@@ -70,104 +47,147 @@ try {
         $imageBase64 = explode(',', $imageBase64, 2)[1];
     }
 
-    $prompt = <<<PROMPT
-You are an OCR assistant. Read ONLY what is necessary.
-Return JSON only (no prose) with this exact shape:
-{"hasMatch": true|false, "firstName": "", "middleName": "", "lastName": ""}
-Where hasMatch is true if and only if the printed ADDRESS on the ID contains the word "Bigte" (case-insensitive, any format).
-Extract the printed person name fields if visible; otherwise keep them empty strings.
-No extra keys, no comments, JSON only.
-PROMPT;
-
-    // Groq API format (OpenAI-compatible)
-    $body = [
-        'model' => 'llama-3.2-11b-vision-preview',
-        'messages' => [
-            [
-                'role' => 'user',
-                'content' => [
-                    [
-                        'type' => 'image_url',
-                        'image_url' => [
-                            'url' => 'data:image/jpeg;base64,' . $imageBase64
-                        ]
-                    ],
-                    [
-                        'type' => 'text',
-                        'text' => $prompt
-                    ]
-                ]
-            ]
-        ],
-        'temperature' => 0.1,
-        'max_tokens' => 500
+    // Call Google Vision API to extract text from image
+    $requestBody = [
+        'requests' => [[
+            'image' => ['content' => $imageBase64],
+            'features' => [['type' => 'TEXT_DETECTION', 'maxResults' => 1]]
+        ]]
     ];
 
-    $ch = curl_init($URL);
+    $ch = curl_init($VISION_URL);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        'Content-Type: application/json',
-        'Authorization: Bearer ' . $API_KEY
-    ]);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($requestBody));
     $resp = curl_exec($ch);
+    
     if ($resp === false) {
         $err = curl_error($ch);
         curl_close($ch);
-        echo json_encode(['success' => false, 'ok' => false, 'message' => $err]);
+        echo json_encode(['success' => false, 'ok' => false, 'message' => 'Vision API request failed: ' . $err]);
         exit;
     }
+    
     $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
 
-    if ($status < 200 || $status >= 300) {
-        echo json_encode(['success' => false, 'ok' => false, 'message' => 'Groq API returned status ' . $status, 'raw' => $resp]);
+    // Handle specific HTTP status codes
+    if ($status === 401) {
+        echo json_encode([
+            'success' => false, 
+            'ok' => false, 
+            'message' => 'Invalid API key. Please check your Google Vision API key.',
+            'status' => 401,
+            'error_type' => 'authentication_failed'
+        ]);
         exit;
     }
 
-    $data = json_decode($resp, true);
-    $text = '';
-    // Groq response format
-    if (isset($data['choices'][0]['message']['content'])) {
-        $text = $data['choices'][0]['message']['content'];
-    }
-
-    // Attempt to decode JSON response from model
-    $extracted = null;
-    if ($text) {
-        $jsonStart = strpos($text, '{');
-        $jsonEnd = strrpos($text, '}');
-        if ($jsonStart !== false && $jsonEnd !== false && $jsonEnd > $jsonStart) {
-            $jsonStr = substr($text, $jsonStart, $jsonEnd - $jsonStart + 1);
-            $extracted = json_decode($jsonStr, true);
+    if ($status === 403) {
+        // Parse error details from Google Vision API response
+        $errorData = json_decode($resp, true);
+        $detailedMessage = 'API key does not have permission to access this resource.';
+        
+        // Extract more specific error message if available
+        if (isset($errorData['error']['message'])) {
+            $apiErrorMessage = $errorData['error']['message'];
+            $detailedMessage = $apiErrorMessage;
+            
+            // Check if it's specifically about API not being enabled
+            if (stripos($apiErrorMessage, 'has not been used') !== false || stripos($apiErrorMessage, 'is disabled') !== false) {
+                $detailedMessage = 'Cloud Vision API is not enabled for this project. Please enable it in Google Cloud Console.';
+            }
         }
+        
+        echo json_encode([
+            'success' => false, 
+            'ok' => false, 
+            'message' => $detailedMessage,
+            'status' => 403,
+            'error_type' => 'permission_denied',
+            'raw_error' => isset($errorData['error']) ? $errorData['error'] : null
+        ]);
+        exit;
     }
 
-    $address = '';
+    if ($status === 429) {
+        echo json_encode([
+            'success' => false, 
+            'ok' => false, 
+            'message' => 'API rate limit exceeded. Please try again later.',
+            'status' => 429,
+            'error_type' => 'rate_limit_exceeded'
+        ]);
+        exit;
+    }
+
+    if ($status < 200 || $status >= 300) {
+        $errorData = json_decode($resp, true);
+        $errorMessage = 'Google Vision API returned status ' . $status;
+        if (isset($errorData['error']['message'])) {
+            $errorMessage .= ': ' . $errorData['error']['message'];
+        }
+        
+        echo json_encode([
+            'success' => false, 
+            'ok' => false, 
+            'message' => $errorMessage,
+            'status' => $status,
+            'raw' => substr($resp, 0, 500)
+        ]);
+        exit;
+    }
+
+    // Parse Google Vision API response
+    $data = json_decode($resp, true);
     $fullText = '';
+    $textAnnotations = $data['responses'][0]['textAnnotations'] ?? null;
+    
+    if (is_array($textAnnotations) && count($textAnnotations) > 0) {
+        $fullText = $textAnnotations[0]['description'] ?? '';
+    }
+
+    // Extract address and name fields from the text
+    $address = '';
     $firstName = '';
     $middleName = '';
     $lastName = '';
-    if (is_array($extracted)) {
-        // New compact schema
-        if (isset($extracted['hasMatch'])) {
-            $hasBigte = (bool)$extracted['hasMatch'];
+    
+    // Check if "Bigte" is in the text (case-insensitive)
+    $hasBigte = stripos($fullText, 'bigte') !== false;
+    
+    // Try to extract address - look for lines containing "Bigte" or address-like patterns
+    $lines = explode("\n", $fullText);
+    foreach ($lines as $line) {
+        $line = trim($line);
+        if (stripos($line, 'bigte') !== false || 
+            stripos($line, 'address') !== false ||
+            preg_match('/\d+\s+[A-Za-z\s]+(?:Street|St|Avenue|Ave|Road|Rd|Barangay|Brgy)/i', $line)) {
+            $address = $line;
+            break;
         }
-        $address = isset($extracted['address']) ? (string)$extracted['address'] : '';
-        $fullText = isset($extracted['fullText']) ? (string)$extracted['fullText'] : '';
-        $firstName = isset($extracted['firstName']) ? (string)$extracted['firstName'] : '';
-        $middleName = isset($extracted['middleName']) ? (string)$extracted['middleName'] : '';
-        $lastName = isset($extracted['lastName']) ? (string)$extracted['lastName'] : '';
-    } else {
-        // Fallback: use model text as fullText
-        $fullText = $text;
     }
-
-    if (!isset($hasBigte)) {
-        // Fallback: check if "Bigte" is in the address or full text (case-insensitive)
-        $haystack = strtolower($address . ' ' . $fullText);
-        $hasBigte = strpos($haystack, 'bigte') !== false;
+    
+    // Try to extract name fields - look for common name patterns
+    // This is a simple extraction - can be improved with better pattern matching
+    $namePatterns = [
+        '/\b([A-Z][a-z]+)\s+([A-Z][a-z]+)\s+([A-Z][a-z]+)\b/', // First Middle Last
+        '/\b([A-Z][a-z]+)\s+([A-Z][a-z]+)\b/', // First Last
+    ];
+    
+    foreach ($namePatterns as $pattern) {
+        if (preg_match($pattern, $fullText, $matches)) {
+            if (count($matches) >= 4) {
+                $firstName = $matches[1];
+                $middleName = $matches[2];
+                $lastName = $matches[3];
+            } elseif (count($matches) >= 3) {
+                $firstName = $matches[1];
+                $lastName = $matches[2];
+            }
+            break;
+        }
     }
 
     echo json_encode([
@@ -185,5 +205,3 @@ PROMPT;
 }
 
 ?>
-
-

@@ -1,3 +1,183 @@
+/* Loading Screen Styles */
+.loading-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    animation: fadeOut 0.5s ease-out 3.5s forwards;
+}
+
+.loading-content {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 4vw;
+    width: 100%;
+    height: 100%;
+    padding: 20px;
+    box-sizing: border-box;
+    flex-wrap: nowrap;
+    overflow: hidden;
+}
+
+.logo-container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 4vw;
+    width: 100%;
+    max-width: 1400px;
+    height: 100%;
+    padding: 20px;
+    box-sizing: border-box;
+    flex-wrap: nowrap;
+    overflow: hidden;
+}
+
+.rotating-circle {
+    width: min(35vw, 400px);
+    height: min(35vw, 400px);
+    min-width: 200px;
+    min-height: 200px;
+    max-width: 400px;
+    max-height: 400px;
+    position: relative;
+    animation: rotate 3s linear infinite, shrinkCircle 0.5s ease-out 3.5s forwards;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 1;
+}
+
+.circle-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.fixed-text {
+    width: min(40vw, 500px);
+    height: min(32vw, 400px);
+    min-width: 250px;
+    min-height: 200px;
+    max-width: 500px;
+    max-height: 400px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 1;
+    animation: centerAndGrow 0.8s ease-out 3.2s forwards;
+}
+
+/* Responsive animation adjustments for mobile */
+@media (max-width: 768px) {
+    .fixed-text {
+        animation: centerAndGrowMobile 0.8s ease-out 3.2s forwards;
+    }
+}
+
+@media (max-width: 480px) {
+    .fixed-text {
+        animation: centerAndGrowSmall 0.8s ease-out 3.2s forwards;
+    }
+}
+
+@keyframes centerAndGrowMobile {
+    0% {
+        transform: translateX(0) scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: translateX(calc(-50vw + 20%)) scale(2);
+        opacity: 0;
+    }
+}
+
+@keyframes centerAndGrowSmall {
+    0% {
+        transform: translateX(0) scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: translateX(calc(-50vw + 15%)) scale(1.8);
+        opacity: 0;
+    }
+}
+
+@keyframes centerAndGrow {
+    0% {
+        transform: translateX(0) scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: translateX(calc(-50vw + 25%)) scale(2.5);
+        opacity: 0;
+    }
+}
+
+.text-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+@keyframes rotate {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes shrinkCircle {
+    from {
+        transform: scale(1);
+        opacity: 1;
+    }
+    to {
+        transform: scale(0);
+        opacity: 0;
+    }
+}
+
+.main-content {
+    animation: fadeIn 0.5s ease-in;
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+        visibility: hidden;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
 /* Reset and Base Styles */
 * {
     margin: 0;
@@ -60,8 +240,7 @@ body {
 .ph {
     color: #1a1a1a;
     font-size: 18px;
-    
-    font-weight: 6  00;
+    font-weight: 600;
 }
 
 /* Forms Container */
@@ -254,7 +433,83 @@ body {
     transform: translateY(0);
 }
 
-/* Responsive Design */
+/* Responsive Design - Loading Screen */
+/* Tablet and smaller desktop */
+@media (max-width: 1024px) {
+    .rotating-circle {
+        width: min(30vw, 350px);
+        height: min(30vw, 350px);
+    }
+    
+    .fixed-text {
+        width: min(35vw, 450px);
+        height: min(28vw, 350px);
+    }
+    
+    .logo-container {
+        gap: 3vw;
+    }
+    
+    .loading-content {
+        gap: 3vw;
+    }
+}
+
+/* Tablet portrait */
+@media (max-width: 768px) {
+    .rotating-circle {
+        width: min(28vw, 280px);
+        height: min(28vw, 280px);
+        min-width: 180px;
+        min-height: 180px;
+    }
+    
+    .fixed-text {
+        width: min(32vw, 320px);
+        height: min(25vw, 250px);
+        min-width: 200px;
+        min-height: 160px;
+    }
+    
+    .logo-container {
+        gap: 2.5vw;
+        padding: 15px;
+    }
+    
+    .loading-content {
+        gap: 2.5vw;
+        padding: 15px;
+    }
+}
+
+/* Mobile landscape and large phones */
+@media (max-width: 768px) and (orientation: landscape) {
+    .rotating-circle {
+        width: min(20vh, 200px);
+        height: min(20vh, 200px);
+        min-width: 150px;
+        min-height: 150px;
+    }
+    
+    .fixed-text {
+        width: min(25vh, 250px);
+        height: min(20vh, 200px);
+        min-width: 180px;
+        min-height: 140px;
+    }
+    
+    .logo-container {
+        gap: 2vw;
+        padding: 10px;
+    }
+    
+    .loading-content {
+        gap: 2vw;
+        padding: 10px;
+    }
+}
+
+/* Medium phones */
 @media (max-width: 480px) {
     .container {
         padding: 16px;
@@ -272,8 +527,61 @@ body {
     .app-name {
         font-size: 16px;
     }
+    
+    .rotating-circle {
+        width: min(35vw, 220px);
+        height: min(35vw, 220px);
+        min-width: 150px;
+        min-height: 150px;
+    }
+    
+    .fixed-text {
+        width: min(40vw, 260px);
+        height: min(32vw, 200px);
+        min-width: 180px;
+        min-height: 140px;
+    }
+    
+    .logo-container {
+        gap: 15px;
+        padding: 10px;
+        flex-wrap: nowrap;
+    }
+    
+    .loading-content {
+        gap: 15px;
+        padding: 10px;
+    }
 }
 
+/* Medium phones landscape */
+@media (max-width: 480px) and (orientation: landscape) {
+    .rotating-circle {
+        width: min(18vh, 180px);
+        height: min(18vh, 180px);
+        min-width: 130px;
+        min-height: 130px;
+    }
+    
+    .fixed-text {
+        width: min(22vh, 220px);
+        height: min(18vh, 180px);
+        min-width: 160px;
+        min-height: 120px;
+    }
+    
+    .logo-container {
+        gap: 12px;
+        padding: 8px;
+    }
+    
+    .loading-content {
+        gap: 12px;
+        padding: 8px;
+    }
+}
+
+/* Small phones */
 @media (max-width: 360px) {
     .welcome-text {
         font-size: 24px;
@@ -281,6 +589,186 @@ body {
     
     .login-card {
         padding: 24px 16px;
+    }
+    
+    .rotating-circle {
+        width: min(38vw, 180px);
+        height: min(38vw, 180px);
+        min-width: 130px;
+        min-height: 130px;
+    }
+    
+    .fixed-text {
+        width: min(42vw, 220px);
+        height: min(35vw, 180px);
+        min-width: 150px;
+        min-height: 120px;
+    }
+    
+    .logo-container {
+        gap: 10px;
+        padding: 8px;
+    }
+    
+    .loading-content {
+        gap: 10px;
+        padding: 8px;
+    }
+}
+
+/* Small phones landscape */
+@media (max-width: 360px) and (orientation: landscape) {
+    .rotating-circle {
+        width: min(16vh, 160px);
+        height: min(16vh, 160px);
+        min-width: 110px;
+        min-height: 110px;
+    }
+    
+    .fixed-text {
+        width: min(20vh, 200px);
+        height: min(16vh, 160px);
+        min-width: 140px;
+        min-height: 100px;
+    }
+    
+    .logo-container {
+        gap: 8px;
+        padding: 6px;
+    }
+    
+    .loading-content {
+        gap: 8px;
+        padding: 6px;
+    }
+}
+
+/* Very small phones */
+@media (max-width: 320px) {
+    .rotating-circle {
+        width: min(40vw, 160px);
+        height: min(40vw, 160px);
+        min-width: 120px;
+        min-height: 120px;
+    }
+    
+    .fixed-text {
+        width: min(45vw, 200px);
+        height: min(38vw, 160px);
+        min-width: 140px;
+        min-height: 110px;
+    }
+    
+    .logo-container {
+        gap: 8px;
+        padding: 6px;
+    }
+    
+    .loading-content {
+        gap: 8px;
+        padding: 6px;
+    }
+}
+
+/* Very small phones landscape */
+@media (max-width: 320px) and (orientation: landscape) {
+    .rotating-circle {
+        width: min(15vh, 140px);
+        height: min(15vh, 140px);
+        min-width: 100px;
+        min-height: 100px;
+    }
+    
+    .fixed-text {
+        width: min(18vh, 180px);
+        height: min(15vh, 140px);
+        min-width: 130px;
+        min-height: 90px;
+    }
+    
+    .logo-container {
+        gap: 6px;
+        padding: 5px;
+    }
+    
+    .loading-content {
+        gap: 6px;
+        padding: 5px;
+    }
+}
+
+/* Short screens (landscape phones, etc.) */
+@media (max-height: 600px) {
+    .rotating-circle {
+        width: min(25vh, 250px);
+        height: min(25vh, 250px);
+    }
+    
+    .fixed-text {
+        width: min(30vh, 300px);
+        height: min(24vh, 240px);
+    }
+    
+    .logo-container {
+        gap: 2vw;
+    }
+    
+    .loading-content {
+        gap: 2vw;
+    }
+}
+
+/* Very short screens */
+@media (max-height: 500px) {
+    .rotating-circle {
+        width: min(20vh, 200px);
+        height: min(20vh, 200px);
+        min-width: 120px;
+        min-height: 120px;
+    }
+    
+    .fixed-text {
+        width: min(25vh, 250px);
+        height: min(20vh, 200px);
+        min-width: 150px;
+        min-height: 120px;
+    }
+    
+    .logo-container {
+        gap: 1.5vw;
+        padding: 5px;
+    }
+    
+    .loading-content {
+        gap: 1.5vw;
+        padding: 5px;
+    }
+}
+
+/* Extra short screens */
+@media (max-height: 400px) {
+    .rotating-circle {
+        width: min(18vh, 180px);
+        height: min(18vh, 180px);
+        min-width: 100px;
+        min-height: 100px;
+    }
+    
+    .fixed-text {
+        width: min(22vh, 220px);
+        height: min(18vh, 180px);
+        min-width: 130px;
+        min-height: 100px;
+    }
+    
+    .logo-container {
+        gap: 1vw;
+        padding: 4px;
+    }
+    
+    .loading-content {
+        gap: 1vw;
+        padding: 4px;
     }
 }
 

@@ -173,6 +173,35 @@ body {
 
 .form-group label { 
     font-weight:600; 
+    position: relative;
+    display: inline-block;
+}
+
+/* Required indicator for labels with required inputs */
+.form-group:has(input[required]) > label::after,
+.form-group:has(textarea[required]) > label::after {
+    content: ' *';
+    color: #dc3545;
+    font-weight: 700;
+    margin-left: 2px;
+}
+
+/* Alternative method for browsers that don't support :has() */
+.form-group label.required::after {
+    content: ' *';
+    color: #dc3545;
+    font-weight: 700;
+    margin-left: 2px;
+}
+
+/* Optional indicator for labels with optional fields */
+.form-group:has(input:not([required])) > label.optional::after,
+.form-group:has(textarea:not([required])) > label.optional::after {
+    content: ' (optional)';
+    color: #6c757d;
+    font-weight: 400;
+    font-size: 0.9em;
+    margin-left: 4px;
 }
 
 .form-group input, 
@@ -182,13 +211,49 @@ body {
     border-radius:8px; 
     font-size:1rem; 
     background:#fff; 
+    transition: all 0.3s ease;
 }
 
-.form-group input:focus, 
-.form-group textarea:focus { 
+/* Required input styling */
+.form-group input[required], 
+.form-group textarea[required] { 
+    border-left: 3px solid #dc3545;
+}
+
+.form-group input[required]:focus, 
+.form-group textarea[required]:focus { 
     outline:none; 
     border-color:#667eea; 
+    border-left-color: #dc3545;
     box-shadow:0 0 0 3px rgba(102,126,234,.12); 
+}
+
+/* Optional input styling */
+.form-group input:not([required]):not([readonly]), 
+.form-group textarea:not([required]) { 
+    border-left: 3px solid #6c757d;
+}
+
+.form-group input:not([required]):focus, 
+.form-group textarea:not([required]):focus { 
+    outline:none; 
+    border-color:#667eea; 
+    border-left-color: #6c757d;
+    box-shadow:0 0 0 3px rgba(102,126,234,.12); 
+}
+
+/* Readonly input styling - red border to match required fields */
+.form-group input[readonly]:not([required]) {
+    background-color: #f8f9fa;
+    border-left: 3px solid #dc3545;
+    cursor: not-allowed;
+}
+
+/* Required readonly inputs should still show red border */
+.form-group input[readonly][required] {
+    background-color: #f8f9fa;
+    border-left: 3px solid #dc3545;
+    cursor: not-allowed;
 }
 
 .location-input-container {
@@ -359,7 +424,7 @@ body {
 }
 
 .btn-secondary { 
-    background:#6c757d; 
+    background:linear-gradient(135deg, #007bff 0%, #0056b3 100%); 
     color:#fff; 
 }
 

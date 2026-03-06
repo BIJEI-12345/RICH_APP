@@ -2,6 +2,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     setupEmergencyForm();
     setupNavigation();
+    setupHotlineRecommendation();
     
     // Check if reporter name is already filled (for page refreshes)
     const reporterField = document.getElementById('reporterName');
@@ -592,4 +593,120 @@ function showMessage(message, type) {
             messageDiv.remove();
         }
     }, 5000);
+}
+
+// Setup hotline recommendation
+function setupHotlineRecommendation() {
+    const emergencyTypeSelect = document.getElementById('emergencyType');
+    const descriptionField = document.getElementById('description');
+    const hotlineSection = document.getElementById('hotlineRecommendations');
+    
+    // Show recommendations when emergency type is selected
+    if (emergencyTypeSelect) {
+        emergencyTypeSelect.addEventListener('change', function() {
+            if (this.value) {
+                loadHotlineRecommendations(this.value, descriptionField.value);
+            } else {
+                hotlineSection.style.display = 'none';
+            }
+        });
+    }
+    
+    // Update recommendations when description changes (debounced)
+    let descriptionTimeout;
+    if (descriptionField) {
+        descriptionField.addEventListener('input', function() {
+            clearTimeout(descriptionTimeout);
+            const emergencyType = emergencyTypeSelect?.value;
+            if (emergencyType) {
+                descriptionTimeout = setTimeout(() => {
+                    loadHotlineRecommendations(emergencyType, this.value);
+                }, 1000); // Wait 1 second after user stops typing
+            }
+        });
+    }
+}
+
+// Load hotline recommendations
+async function loadHotlineRecommendations(emergencyType, description = '') {
+    const hotlineSection = document.getElementById('hotlineRecommendations');
+    const hotlineContainer = document.getElementById('hotlineContainer');
+    
+    if (!hotlineSection || !hotlineContainer) return;
+    
+    // Show loading state
+    hotlineSection.style.display = 'block';
+    hotlineContainer.innerHTML = '<div class="hotline-loading">Analyzing emergency type...</div>';
+    
+    try {
+        const response = await fetch('php/emergency_hotline_recommendation.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                emergency_type: emergencyType,
+                description: description
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.hotlines && data.hotlines.length > 0) {
+            displayHotlines(data.hotlines);
+        } else {
+            hotlineContainer.innerHTML = '<div class="hotline-error">Unable to load recommendations. Please call 911 for emergencies.</div>';
+        }
+    } catch (error) {
+        console.error('Error loading hotline recommendations:', error);
+        hotlineContainer.innerHTML = '<div class="hotline-error">Unable to load recommendations. Please call 911 for emergencies.</div>';
+    }
+}
+
+// Function to make a call - opens phone dialer on mobile devices
+function makeCall(phoneNumber) {
+    // Remove any non-digit characters except + for international numbers
+    const cleanNumber = phoneNumber.replace(/[^\d+]/g, '');
+    // Use tel: protocol to open phone dialer
+    window.location.href = `tel:${cleanNumber}`;
+}
+
+// Display hotlines
+function displayHotlines(hotlines) {
+    const hotlineContainer = document.getElementById('hotlineContainer');
+    if (!hotlineContainer) return;
+    
+    hotlineContainer.innerHTML = '';
+    
+    hotlines.forEach((hotline, index) => {
+        const hotlineCard = document.createElement('div');
+        hotlineCard.className = 'hotline-card';
+        if (index === 0) {
+            hotlineCard.classList.add('hotline-primary');
+        }
+        
+        // Clean phone number for tel: link (remove spaces and dashes)
+        const cleanNumber = hotline.number.replace(/[\s-]/g, '');
+        
+        // Make entire card clickable for mobile
+        hotlineCard.style.cursor = 'pointer';
+        hotlineCard.onclick = function() {
+            makeCall(hotline.number);
+        };
+        
+        hotlineCard.innerHTML = `
+            <div class="hotline-header">
+                <i class="fas fa-phone-alt"></i>
+                <div class="hotline-info">
+                    <div class="hotline-name">${hotline.name}</div>
+                    <div class="hotline-number">
+                        <a href="tel:${cleanNumber}" onclick="event.stopPropagation(); return false;">${hotline.number}</a>
+                    </div>
+                </div>
+            </div>
+            <div class="hotline-description">${hotline.description}</div>
+        `;
+        
+        hotlineContainer.appendChild(hotlineCard);
+    });
 }

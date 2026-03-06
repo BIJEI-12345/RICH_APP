@@ -1,10 +1,15 @@
 // ID Validation Objects for each form type
 let idOcrValidation = {
-    barangayId: { ok: false, hasBigte: false, name: { first: '', middle: '', last: '' }, fullText: '' },
-    certification: { ok: false, hasBigte: false, name: { first: '', middle: '', last: '' }, fullText: '' },
-    coe: { ok: false, hasBigte: false, name: { first: '', middle: '', last: '' }, fullText: '' },
-    indigency: { ok: false, hasBigte: false, name: { first: '', middle: '', last: '' }, fullText: '' },
-    clearance: { ok: false, hasBigte: false, name: { first: '', middle: '', last: '' }, fullText: '' }
+    barangayId: { ok: false, hasBigte: false, name: { first: '', middle: '', last: '' }, fullText: '', validatedFile: null },
+    certification: { ok: false, hasBigte: false, name: { first: '', middle: '', last: '' }, fullText: '', validatedFile: null },
+    coe: { ok: false, hasBigte: false, name: { first: '', middle: '', last: '' }, fullText: '', validatedFile: null },
+    indigency: { ok: false, hasBigte: false, name: { first: '', middle: '', last: '' }, fullText: '', validatedFile: null },
+    clearance: { ok: false, hasBigte: false, name: { first: '', middle: '', last: '' }, fullText: '', validatedFile: null }
+};
+
+// ID Type Validation Objects for each form type
+let idTypeValidation = {
+    certification: { ok: false, idTypeMatch: false, validatedFile: null, expectedIdType: null, detectedIdType: null, errorMessage: null }
 };
 
 // ID Validation Helper Functions
@@ -17,7 +22,8 @@ function fileToBase64(file) {
     });
 }
 
-// Validate address on the ID image using Gemini backend
+// Validate address on the ID image using Google Vision API
+// Silently falls back to Tesseract.js if Google Vision API fails
 async function validateIDAddressWithGemini(file) {
     const base64Image = await fileToBase64(file);
 
@@ -35,20 +41,16 @@ async function validateIDAddressWithGemini(file) {
         try {
             data = JSON.parse(text);
         } catch (e) {
-            console.error('Vision API error: Non-JSON response:', text.slice(0, 200));
-            // Fallback to Tesseract with File object instead of base64
-            const fallback = await ocrWithTesseract(file);
-            return fallback;
+            // Silent fallback to Tesseract - no error shown
+            return await ocrWithTesseract(file);
         }
         
         if (!data.success || !data.ok) {
-            console.log('Vision proxy error:', data.message || 'Unknown');
-            // Fallback to Tesseract with File object instead of base64
-            const fallback = await ocrWithTesseract(file);
-            return fallback;
+            // Silent fallback to Tesseract for any error
+            return await ocrWithTesseract(file);
         }
 
-        console.log('Extracted text from ID:', data.fullText || data.addressText);
+        // Success - return Google Vision API result
         return { 
             ok: true, 
             hasBigte: !!data.hasMatch, 
@@ -60,10 +62,265 @@ async function validateIDAddressWithGemini(file) {
             fullText: data.fullText || '' 
         };
     } catch (error) {
-        console.error('Vision API error:', error);
-        // Fallback to Tesseract with File object instead of base64
-        const fallback = await ocrWithTesseract(file);
-        return fallback;
+        // Silent fallback on any error
+        return await ocrWithTesseract(file);
+    }
+}
+
+// Convert image element to base64
+function imageElementToBase64(imgElement) {
+    return new Promise((resolve, reject) => {
+        // Create a canvas element
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Set canvas dimensions to match image
+        canvas.width = imgElement.naturalWidth || imgElement.width;
+        canvas.height = imgElement.naturalHeight || imgElement.height;
+        
+        // Draw image on canvas
+        ctx.drawImage(imgElement, 0, 0);
+        
+        // Convert to base64
+        try {
+            const base64 = canvas.toDataURL('image/jpeg', 0.9);
+            resolve(base64);
+        } catch (error) {
+            reject(error);
+        }
+    });
+}
+
+// Validate ID type using Google Gemini Vision API - reads from certIdPreview image element
+// Silently falls back to Tesseract.js if Google Vision API fails
+async function validateIDTypeWithGoogleGemini(imageElement, expectedIdType) {
+    // Convert image element to base64
+    const base64Image = await imageElementToBase64(imageElement);
+
+    try {
+        const response = await fetch('php/google_gemini_id_type_verify.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ 
+                image_base64: base64Image,
+                expected_id_type: expectedIdType
+            })
+        });
+
+        let data;
+        const text = await response.text();
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
+            // Silent fallback to Tesseract - no error shown
+            return await fallbackToTesseractForIDType(imageElement, expectedIdType);
+        }
+        
+        if (!data.success || !data.ok) {
+            // Silent fallback to Tesseract for any error (billing, permission, rate limit, etc.)
+            return await fallbackToTesseractForIDType(imageElement, expectedIdType);
+        }
+
+        // Success - return Google Vision API result
+        return {
+            ok: true,
+            idTypeMatch: data.idTypeMatch,
+            detectedIdType: data.detectedIdType,
+            expectedIdType: data.expectedIdType,
+            expectedName: data.expectedName,
+            fullText: data.fullText || '',
+            confidence: data.confidence || 'low'
+        };
+    } catch (error) {
+        // Silent fallback on any error
+        return await fallbackToTesseractForIDType(imageElement, expectedIdType);
+    }
+}
+
+// Helper function for silent Tesseract fallback for ID type validation
+async function fallbackToTesseractForIDType(imageElement, expectedIdType) {
+    try {
+        const tesseractResult = await ocrWithTesseract(imageElement);
+        if (tesseractResult.ok && tesseractResult.fullText) {
+            const idTypeMatchResult = performIDTypeMatching(tesseractResult.fullText, expectedIdType);
+            
+            // Get expected name from idTypeMap (defined in performIDTypeMatching)
+            const idTypeMap = {
+                'driver-license': { name: "Driver's License" },
+                'passport': { name: 'Passport' },
+                'sss-id': { name: 'SSS ID' },
+                'philhealth-id': { name: 'PhilHealth ID' },
+                'postal-id': { name: 'Postal ID' },
+                'voter-id': { name: "Voter's ID" },
+                'senior-citizen-id': { name: 'Senior Citizen ID' },
+                'pwd-id': { name: 'PWD ID' },
+                'barangay-id': { name: 'Barangay ID' },
+                'company-id': { name: 'Company ID' }
+            };
+            const expectedName = idTypeMap[expectedIdType]?.name || expectedIdType;
+            
+            return {
+                ok: true,
+                idTypeMatch: idTypeMatchResult.idTypeMatch,
+                detectedIdType: idTypeMatchResult.detectedIdType,
+                expectedIdType: expectedIdType,
+                expectedName: expectedName,
+                fullText: tesseractResult.fullText,
+                confidence: 'medium',
+                usingFallback: true // Flag to indicate using Tesseract
+            };
+        }
+        return { ok: false, idTypeMatch: false, message: '' };
+    } catch (e) {
+        return { ok: false, idTypeMatch: false, message: '' };
+    }
+}
+
+// Validate if uploaded ID image matches selected ID type using Google Gemini Vision API
+// Reads from certIdPreview image element
+async function validateIDTypeMatch(file, inputElement) {
+    const certIdType = document.getElementById('certIdType');
+    if (!certIdType || !certIdType.value) {
+        return; // No ID type selected yet
+    }
+    
+    // Skip validation for "other" type
+    if (certIdType.value === 'other') {
+        clearFieldError(inputElement);
+        return;
+    }
+    
+    // Show loading state
+    const uploadBtn = inputElement.parentNode.querySelector('.upload-btn');
+    const certIdPreview = document.getElementById('certIdPreview');
+    
+    // Check if preview image exists and is loaded
+    if (!certIdPreview || certIdPreview.style.display === 'none' || !certIdPreview.src) {
+        console.warn('certIdPreview image not available for validation');
+        return;
+    }
+    
+    if (uploadBtn) {
+        const originalText = uploadBtn.textContent;
+        uploadBtn.textContent = 'Validating ID Type...';
+        uploadBtn.disabled = true;
+    }
+    
+    // Add loading indicator to preview
+    if (certIdPreview) {
+        certIdPreview.style.opacity = '0.5';
+    }
+    
+    try {
+        // Wait for image to be fully loaded before reading
+        await new Promise((resolve) => {
+            if (certIdPreview.complete) {
+                resolve();
+            } else {
+                certIdPreview.onload = resolve;
+                certIdPreview.onerror = resolve; // Continue even if error
+            }
+        });
+        
+        // Validate using Google Gemini Vision API - read from certIdPreview image element
+        // Function now handles fallback to Tesseract internally and silently
+        const validationResult = await validateIDTypeWithGoogleGemini(certIdPreview, certIdType.value);
+        
+        // validationResult.ok will be true even if using Tesseract fallback
+        // The function handles fallback internally and silently
+        if (!validationResult.ok) {
+            // This should rarely happen now since fallback is automatic
+            // But handle it gracefully if it does
+            if (uploadBtn) {
+                uploadBtn.textContent = 'Upload Image';
+                uploadBtn.disabled = false;
+            }
+            if (certIdPreview) {
+                certIdPreview.style.opacity = '1';
+            }
+            return;
+        }
+        
+        // Store validation result
+        const fileIdentifier = file.name + '_' + file.size + '_' + file.lastModified;
+        idTypeValidation.certification = {
+            ok: validationResult.ok,
+            idTypeMatch: validationResult.idTypeMatch,
+            validatedFile: fileIdentifier,
+            expectedIdType: validationResult.expectedIdType,
+            detectedIdType: validationResult.detectedIdType,
+            errorMessage: null
+        };
+        
+        if (!validationResult.idTypeMatch) {
+            // ID type mismatch - show error
+            const detectedName = validationResult.detectedIdType !== 'unknown' 
+                ? (validationResult.detectedIdType.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()))
+                : 'Unknown ID Type';
+            
+            // Build specific error message
+            const specificError = 'The uploaded image is invalid. Please upload a valid ID and select correct ID type.';
+            
+            // Store error message
+            idTypeValidation.certification.errorMessage = specificError;
+            const errorMessage = specificError;
+            
+            showFieldError(inputElement, errorMessage);
+            
+            // Add error styling to upload button
+            if (uploadBtn) {
+                uploadBtn.classList.add('error-indicator');
+            }
+            
+            // Add error border to preview
+            if (certIdPreview) {
+                certIdPreview.style.border = '3px solid #dc3545';
+                certIdPreview.style.opacity = '1';
+            }
+            
+            // Show SweetAlert for better UX
+            await Swal.fire({
+                icon: 'error',
+                title: 'ID Type Mismatch',
+                text: specificError,
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#dc3545',
+                width: '500px'
+            });
+        } else {
+            // Match found - clear any previous errors
+            clearFieldError(inputElement);
+            if (uploadBtn) {
+                uploadBtn.classList.remove('error-indicator');
+            }
+            if (certIdPreview) {
+                certIdPreview.style.border = '';
+                certIdPreview.style.opacity = '1';
+            }
+            
+            // Show success message briefly
+            if (uploadBtn) {
+                uploadBtn.textContent = '✓ Valid ID Type';
+                setTimeout(() => {
+                    uploadBtn.textContent = 'Upload Image';
+                }, 2000);
+            }
+        }
+        
+    } catch (error) {
+        console.error('ID type validation error:', error);
+        // Don't block user if validation fails
+    } finally {
+        // Restore button state
+        if (uploadBtn && uploadBtn.textContent === 'Validating ID Type...') {
+            uploadBtn.textContent = 'Upload Image';
+            uploadBtn.disabled = false;
+        }
+        if (certIdPreview) {
+            certIdPreview.style.opacity = '1';
+        }
     }
 }
 
@@ -128,6 +385,101 @@ async function ocrWithTesseract(fileOrBase64) {
     }
 }
 
+// Perform ID type matching using extracted text (for Tesseract fallback)
+function performIDTypeMatching(fullText, expectedIdType) {
+    const lowerText = fullText.toLowerCase();
+    let detectedIdType = 'unknown';
+    let idTypeMatch = false;
+    
+    // ID type mapping
+    const idTypeMap = {
+        'driver-license': {
+            name: "Driver's License",
+            keywords: ['driver', 'license', 'drivers license', 'driving license', 'lto', 'land transportation office']
+        },
+        'passport': {
+            name: 'Passport',
+            keywords: ['passport', 'department of foreign affairs', 'dfa']
+        },
+        'sss-id': {
+            name: 'SSS ID',
+            keywords: ['sss', 'social security', 'social security system']
+        },
+        'philhealth-id': {
+            name: 'PhilHealth ID',
+            keywords: ['philhealth', 'phil health', 'national health insurance']
+        },
+        'postal-id': {
+            name: 'Postal ID',
+            keywords: ['postal', 'philpost', 'philippine postal']
+        },
+        'voter-id': {
+            name: "Voter's ID",
+            keywords: ['voter', 'voters', 'comelec', 'commission on elections']
+        },
+        'senior-citizen-id': {
+            name: 'Senior Citizen ID',
+            keywords: ['senior citizen', 'oscad']
+        },
+        'pwd-id': {
+            name: 'PWD ID',
+            keywords: ['pwd', 'person with disability']
+        },
+        'barangay-id': {
+            name: 'Barangay ID',
+            keywords: ['barangay']
+        },
+        'company-id': {
+            name: 'Company ID',
+            keywords: ['company', 'employee', 'staff']
+        }
+    };
+    
+    // Detect ID type
+    if (/\bpassport\b/i.test(fullText) || /\bdfa\b/i.test(fullText)) {
+        detectedIdType = 'passport';
+    } else if (/\bdriver\b/i.test(fullText) && /\blicense\b/i.test(fullText)) {
+        detectedIdType = 'driver-license';
+    } else if (/\bsss\b/i.test(fullText)) {
+        detectedIdType = 'sss-id';
+    } else if (/\bphilhealth\b/i.test(fullText)) {
+        detectedIdType = 'philhealth-id';
+    } else if (/\bpostal\b/i.test(fullText)) {
+        detectedIdType = 'postal-id';
+    } else if (/\bvoter\b/i.test(fullText) || /\bcomelec\b/i.test(fullText)) {
+        detectedIdType = 'voter-id';
+    } else if (/\bsenior citizen\b/i.test(fullText)) {
+        detectedIdType = 'senior-citizen-id';
+    } else if (/\bpwd\b/i.test(fullText)) {
+        detectedIdType = 'pwd-id';
+    } else if (/\bbarangay\b/i.test(fullText)) {
+        detectedIdType = 'barangay-id';
+    } else if (/\bcompany\b/i.test(fullText) || /\bemployee\b/i.test(fullText)) {
+        detectedIdType = 'company-id';
+    }
+    
+    // Check if detected matches expected
+    if (detectedIdType === expectedIdType) {
+        idTypeMatch = true;
+    } else if (idTypeMap[expectedIdType]) {
+        // Check keywords
+        const keywords = idTypeMap[expectedIdType].keywords;
+        for (const keyword of keywords) {
+            if (lowerText.includes(keyword.toLowerCase())) {
+                idTypeMatch = true;
+                break;
+            }
+        }
+    }
+    
+    return { idTypeMatch, detectedIdType };
+}
+
+// Get error message for ID type mismatch
+function getIDTypeMismatchError(expectedIdType, detectedIdType) {
+    return 'The uploaded image is invalid. Please upload a valid ID and select correct ID type.';
+}
+
 // Handle ID image upload and validation for a specific form type
 async function handleIDImageUpload(file, formType) {
     if (!file) return;
@@ -135,19 +487,22 @@ async function handleIDImageUpload(file, formType) {
     try {
         const result = await validateIDAddressWithGemini(file);
         
+        // Store file identifier to track which file was validated
+        const fileIdentifier = file.name + '_' + file.size + '_' + file.lastModified;
+        
         if (!result.ok) {
             console.log('ID validation not available, skipping validation');
-            idOcrValidation[formType] = { ok: false, hasBigte: false, name: { first: '', middle: '', last: '' }, fullText: '' };
+            idOcrValidation[formType] = { ok: false, hasBigte: false, name: { first: '', middle: '', last: '' }, fullText: '', validatedFile: fileIdentifier };
         } else if (!result.hasBigte) {
             console.warn('ID validation: "Bigte" not found in address.');
-            idOcrValidation[formType] = { ok: true, hasBigte: false, name: result.name, fullText: result.fullText || '' };
+            idOcrValidation[formType] = { ok: true, hasBigte: false, name: result.name, fullText: result.fullText || '', validatedFile: fileIdentifier };
         } else {
             console.log('✓ ID validated - Bigte found in address');
-            idOcrValidation[formType] = { ok: true, hasBigte: true, name: result.name, fullText: result.fullText || '' };
+            idOcrValidation[formType] = { ok: true, hasBigte: true, name: result.name, fullText: result.fullText || '', validatedFile: fileIdentifier };
         }
     } catch (error) {
         console.error('ID validation error:', error);
-        idOcrValidation[formType] = { ok: false, hasBigte: false, name: { first: '', middle: '', last: '' }, fullText: '' };
+        idOcrValidation[formType] = { ok: false, hasBigte: false, name: { first: '', middle: '', last: '' }, fullText: '', validatedFile: null };
     }
 }
 
@@ -800,8 +1155,10 @@ function showFullScreenLoading(message = 'Submitting...') {
     overlay.className = 'fullscreen-loading';
     overlay.innerHTML = `
         <div class="loading-content">
-            <div class="loading-spinner"></div>
-            <div class="loading-text">${message}</div>
+            <div class="rotating-circle">
+                <img src="Images/cricle-removebg.png" alt="Loading Circle" class="circle-image">
+            </div>
+            <div class="loading-label">Loading Please Wait...</div>
         </div>
     `;
     
@@ -924,14 +1281,19 @@ async function showFormSwitchConfirmation(documentType) {
     return result.isConfirmed;
 }
 
-// Hide all report displays
+// Hide all report displays (both preview and success reports)
 function hideAllReportDisplays() {
     const reportDisplays = [
         'barangayIdReportDisplay',
-        'certificationReportDisplay', 
+        'barangayIdPreviewDisplay',
+        'certificationReportDisplay',
+        'certificationPreviewDisplay',
         'coeReportDisplay',
+        'coePreviewDisplay',
         'indigencyReportDisplay',
-        'clearanceReportDisplay'
+        'indigencyPreviewDisplay',
+        'clearanceReportDisplay',
+        'clearancePreviewDisplay'
     ];
     
     reportDisplays.forEach(displayId => {
@@ -1164,6 +1526,33 @@ function showCertificationForm() {
         // Reset multi-step form
         resetCertFormSteps();
         
+        // Hide Out of School Youth checkbox by default
+        const outOfSchoolYouthGroup = document.getElementById('certOutOfSchoolYouthGroup');
+        if (outOfSchoolYouthGroup) {
+            outOfSchoolYouthGroup.style.display = 'none';
+        }
+        const outOfSchoolYouthCheckbox = document.getElementById('certOutOfSchoolYouthCheckbox');
+        if (outOfSchoolYouthCheckbox) {
+            outOfSchoolYouthCheckbox.checked = false;
+        }
+        
+        // Set Date Issued to current date
+        const certDateIssued = document.getElementById('certDateIssued');
+        if (certDateIssued) {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            const currentDate = `${year}-${month}-${day}`;
+            certDateIssued.value = currentDate;
+        }
+        
+        // Initialize conditional fields based on current purpose selection
+        const certPurpose = document.getElementById('certPurpose');
+        if (certPurpose && typeof toggleCertificationConditionalFields === 'function') {
+            toggleCertificationConditionalFields();
+        }
+        
         // Populate with cached data immediately, then refresh in background
         const stored = sessionStorage.getItem('resident_data');
         if (stored) {
@@ -1330,10 +1719,20 @@ function hideAllForms() {
     const emblemSection = document.getElementById('emblemSection');
     const barangayIdForm = document.getElementById('barangayIdForm');
     const certificationForm = document.getElementById('certificationForm');
+    const certificationPreviewDisplay = document.getElementById('certificationPreviewDisplay');
+    const certificationReportDisplay = document.getElementById('certificationReportDisplay');
     const coeForm = document.getElementById('coeForm');
     const indigencyForm = document.getElementById('indigencyForm');
     const clearanceForm = document.getElementById('clearanceForm');
     const sidebar = document.querySelector('.sidebar');
+    
+    // Special case: if Certification preview or report is visible, go back to Step 3 instead of main layout
+    const isCertificationPreviewVisible = certificationPreviewDisplay && certificationPreviewDisplay.style.display === 'block';
+    const isCertificationReportVisible = certificationReportDisplay && certificationReportDisplay.style.display === 'block';
+    if ((isCertificationPreviewVisible || isCertificationReportVisible) && typeof goBackToCertificationStep3 === 'function') {
+        goBackToCertificationStep3();
+        return;
+    }
     
     // Hide all report displays
     hideAllReportDisplays();
@@ -1479,15 +1878,162 @@ function setupCertificationForm() {
     }
     
     // Setup ID upload validation
+    // Setup ID upload validation with ID type checking using Google Gemini Vision API
     const certIdUpload = document.getElementById('certIdUpload');
     if (certIdUpload) {
         certIdUpload.addEventListener('change', async function(e) {
             const file = e.target.files[0];
             if (file) {
+                // Validate ID type match using Google Gemini Vision API
+                await validateIDTypeMatch(file, this);
+                // Also handle the standard ID upload for address validation
                 await handleIDImageUpload(file, 'certification');
             }
         });
     }
+    
+    // Also validate when ID type changes (if image already uploaded)
+    const certIdType = document.getElementById('certIdType');
+    if (certIdType) {
+        certIdType.addEventListener('change', async function() {
+            const certIdUpload = document.getElementById('certIdUpload');
+            const certIdPreview = document.getElementById('certIdPreview');
+            // Check if preview image exists and is visible
+            if (certIdUpload && certIdUpload.files && certIdUpload.files[0] && 
+                certIdPreview && certIdPreview.style.display !== 'none' && certIdPreview.src) {
+                // Wait for image to be fully loaded
+                await new Promise((resolve) => {
+                    if (certIdPreview.complete) {
+                        resolve();
+                    } else {
+                        certIdPreview.onload = resolve;
+                        certIdPreview.onerror = resolve;
+                    }
+                });
+                // Re-validate if image is already uploaded - reads from certIdPreview
+                await validateIDTypeMatch(certIdUpload.files[0], certIdUpload);
+            }
+        });
+    }
+    
+    // Setup Date Issued - automatically set to current date
+    const certDateIssued = document.getElementById('certDateIssued');
+    if (certDateIssued) {
+        // Set current date in YYYY-MM-DD format
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        const currentDate = `${year}-${month}-${day}`;
+        certDateIssued.value = currentDate;
+    }
+    
+    // Setup font size adjustment for Course dropdown
+    const certPurpose = document.getElementById('certPurpose');
+    if (certPurpose) {
+        certPurpose.addEventListener('change', function() {
+            // Small delay to ensure the dropdown is shown before adjusting
+            setTimeout(() => {
+                adjustEducationalLevelFontSize();
+            }, 100);
+        });
+    }
+    
+    // Setup event listener for Educational Attainment to toggle Course field
+    const certEducationalAttainment = document.getElementById('certEducationalAttainment');
+    if (certEducationalAttainment) {
+        certEducationalAttainment.addEventListener('change', function() {
+            // When an Educational Level is selected, auto-deselect Out of School Youth
+            const outOfSchoolYouthCheckbox = document.getElementById('certOutOfSchoolYouthCheckbox');
+            const educationalLevelRequiredIndicator = document.getElementById('educationalLevelRequiredIndicator');
+            
+            const hasValue = this.value && this.value.trim() !== '';
+            
+            if (outOfSchoolYouthCheckbox && hasValue) {
+                outOfSchoolYouthCheckbox.checked = false;
+                clearFieldError(outOfSchoolYouthCheckbox);
+            }
+            
+            // Set required status based on JobSeeker purpose
+            const certPurposeSelect = document.getElementById('certPurpose');
+            const isJobSeeker = certPurposeSelect && certPurposeSelect.value === 'jobseeker';
+            const certEducationalLevelGroup = document.getElementById('certEducationalLevelGroup');
+            const isVisible = certEducationalLevelGroup && 
+                (certEducationalLevelGroup.style.display === 'block' || 
+                 certEducationalLevelGroup.style.display === 'flex');
+            
+            if (isJobSeeker && isVisible && !outOfSchoolYouthCheckbox?.checked) {
+                this.required = true;
+                this.setAttribute('required', 'required');
+            }
+            
+            toggleCourseField();
+            toggleOutOfSchoolYouthRequirement();
+            toggleEducationalLevelRequiredIndicator();
+        });
+    }
+    
+    // Setup event listener for Out of School Youth checkbox to control Educational Attainment
+    const outOfSchoolYouthCheckbox = document.getElementById('certOutOfSchoolYouthCheckbox');
+    if (outOfSchoolYouthCheckbox) {
+        outOfSchoolYouthCheckbox.addEventListener('change', function() {
+            const educationalAttainmentSelect = document.getElementById('certEducationalAttainment');
+            const educationalAttainmentLabel = document.querySelector('label[for="certEducationalAttainment"]');
+            const requiredIndicator = educationalAttainmentLabel ? educationalAttainmentLabel.querySelector('.required-indicator') : null;
+            
+            if (educationalAttainmentSelect) {
+                if (this.checked) {
+                    // Clear Educational Attainment value and remove required when OOSY is selected
+                    educationalAttainmentSelect.value = '';
+                    educationalAttainmentSelect.required = false;
+                    educationalAttainmentSelect.removeAttribute('required');
+                    clearFieldError(educationalAttainmentSelect);
+                    toggleEducationalLevelRequiredIndicator();
+                } else {
+                    // Restore required status when OOSY is unchecked and JobSeeker purpose is active
+                    const certPurposeSelect = document.getElementById('certPurpose');
+                    const isJobSeeker = certPurposeSelect && certPurposeSelect.value === 'jobseeker';
+                    const certEducationalLevelGroup = document.getElementById('certEducationalLevelGroup');
+                    const isVisible = certEducationalLevelGroup && 
+                        (certEducationalLevelGroup.style.display === 'block' || 
+                         certEducationalLevelGroup.style.display === 'flex');
+                    
+                    if (isJobSeeker && isVisible) {
+                        educationalAttainmentSelect.required = true;
+                        educationalAttainmentSelect.setAttribute('required', 'required');
+                        toggleEducationalLevelRequiredIndicator();
+                    }
+                }
+            }
+            
+            // Re-evaluate Course visibility and OOSY requirement
+            toggleCourseField();
+            toggleOutOfSchoolYouthRequirement();
+        });
+    }
+    
+    // Setup event listener for Course to toggle Out of School Youth requirement
+    const certEducationalLevel = document.getElementById('certEducationalLevel');
+    if (certEducationalLevel) {
+        certEducationalLevel.addEventListener('change', function() {
+            toggleOutOfSchoolYouthRequirement();
+            toggleCourseRequiredIndicator();
+            adjustEducationalLevelFontSize();
+            adjustSelectCoursePlaceholderFontSize();
+        });
+    }
+    
+    // Initialize font size adjustment if Course is already visible
+    setTimeout(() => {
+        const educationalLevelGroup = document.getElementById('certEducationalLevelGroup');
+        if (educationalLevelGroup && educationalLevelGroup.style.display !== 'none') {
+            toggleCourseField();
+            adjustEducationalLevelFontSize();
+            adjustSelectCoursePlaceholderFontSize();
+        }
+        // Initialize Out of School Youth requirement
+        toggleOutOfSchoolYouthRequirement();
+    }, 500);
 }
 
 // Setup COE Form
@@ -1638,9 +2184,12 @@ async function handleBarangayIdSubmission(e) {
     
     // Validate ID address contains "Bigte"
     if (idUpload.files && idUpload.files[0]) {
-        // If validation hasn't been done yet, do it now
-        if (!idOcrValidation.barangayId.ok || idOcrValidation.barangayId.hasBigte === undefined) {
-            await handleIDImageUpload(idUpload.files[0], 'barangayId');
+        const currentFile = idUpload.files[0];
+        const currentFileIdentifier = currentFile.name + '_' + currentFile.size + '_' + currentFile.lastModified;
+        
+        // Always validate if file hasn't been validated yet, or if it's a different file
+        if (!idOcrValidation.barangayId.validatedFile || idOcrValidation.barangayId.validatedFile !== currentFileIdentifier) {
+            await handleIDImageUpload(currentFile, 'barangayId');
         }
         
         // Show SweetAlert if Bigte not found
@@ -1714,12 +2263,34 @@ function displayBarangayIdPreview(formData) {
     document.getElementById('previewBarangayIdValidId').textContent = validId ? validId.charAt(0).toUpperCase() + validId.slice(1).replace('-', ' ') : '-';
 }
 
-// Go back to Barangay ID form
+// Go back to Barangay ID form at Step 3 (Contact and Documents)
 function goBackToBarangayIdForm() {
-    document.getElementById('barangayIdPreviewDisplay').style.display = 'none';
-    document.getElementById('barangayIdForm').style.display = 'block';
-    document.getElementById('barangayIdForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const previewDisplay = document.getElementById('barangayIdPreviewDisplay');
+    const reportDisplay = document.getElementById('barangayIdReportDisplay');
+    const barangayIdForm = document.getElementById('barangayIdForm');
+    
+    if (previewDisplay) previewDisplay.style.display = 'none';
+    if (reportDisplay) reportDisplay.style.display = 'none';
+    
+    if (barangayIdForm) {
+        barangayIdForm.style.display = 'block';
+        
+        // Reset validation state so credentials will be validated again on submit
+        idOcrValidation.barangayId = { ok: false, hasBigte: false, name: { first: '', middle: '', last: '' }, fullText: '', validatedFile: null };
+        
+        // Force multi-step form to Step 3 (Contact and Documents)
+        if (typeof currentStep !== 'undefined') {
+            currentStep = 3;
+            showStep(3);
+            updatePageIndicator();
+        }
+        
+        barangayIdForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
 }
+
+// Ensure function is available globally for inline onclick handlers
+window.goBackToBarangayIdForm = goBackToBarangayIdForm;
 
 // Final submit Barangay ID
 async function finalSubmitBarangayId() {
@@ -1914,6 +2485,7 @@ async function handleCertificationSubmission(e) {
     const certMonthlyIncome = document.getElementById('certMonthlyIncome');
     const certYearResiding = document.getElementById('certYearResiding');
     const certMonthYearPassing = document.getElementById('certMonthYearPassing');
+    const certEducationalLevel = document.getElementById('certEducationalLevel');
     
     if (certPurpose === 'pag-ibig-loan') {
         if (!certCitizenship || !certCitizenship.value.trim()) {
@@ -1969,6 +2541,55 @@ async function handleCertificationSubmission(e) {
             isValid = false;
             showFieldError(certMonthYearPassing, 'Please enter both month and year (e.g. January 2020)');
         }
+    } else if (certPurpose === 'jobseeker') {
+        // Validate Educational Attainment
+        const certEducationalAttainment = document.getElementById('certEducationalAttainment');
+        const certOutOfSchoolYouth = formData.get('certOutOfSchoolYouth');
+        const isOutOfSchoolYouth = certOutOfSchoolYouth === 'yes';
+        const hasEducationalAttainment = certEducationalAttainment && certEducationalAttainment.value.trim() !== '';
+        
+        // If Out of School Youth is selected, Educational Attainment can be empty
+        if (!hasEducationalAttainment && !isOutOfSchoolYouth) {
+            isValid = false;
+            if (certEducationalAttainment) {
+                showFieldError(certEducationalAttainment, 'Educational Level is required');
+            }
+        } else if (certEducationalAttainment) {
+            // Clear any previous error once a value is selected
+            clearFieldError(certEducationalAttainment);
+        }
+        
+        // Validate Course - required only if Educational Attainment is "college"
+        const certEducationalLevel = document.getElementById('certEducationalLevel');
+        const courseGroup = document.getElementById('certCourseGroup');
+        if (certEducationalAttainment && certEducationalAttainment.value === 'college') {
+            if (!certEducationalLevel || !certEducationalLevel.value.trim()) {
+                isValid = false;
+                if (certEducationalLevel) {
+                    showFieldError(certEducationalLevel, 'Course is required');
+                }
+            }
+        }
+        
+        // Validate Out of School Youth
+        // Requirement: ONLY required when BOTH Educational Attainment and Course are empty
+        const outOfSchoolYouthCheckbox = document.getElementById('certOutOfSchoolYouthCheckbox');
+        const hasCourse = certEducationalLevel && certEducationalLevel.value && certEducationalLevel.value.trim() !== '';
+        
+        if (!hasEducationalAttainment && !hasCourse) {
+            // If neither Educational Attainment nor Course has value, Out of School Youth is required
+            if (!certOutOfSchoolYouth || certOutOfSchoolYouth !== 'yes') {
+                isValid = false;
+                if (outOfSchoolYouthCheckbox) {
+                    showFieldError(outOfSchoolYouthCheckbox, 'Out of School Youth is required when no Educational Level or Course is provided');
+                }
+            } else if (outOfSchoolYouthCheckbox) {
+                clearFieldError(outOfSchoolYouthCheckbox);
+            }
+        } else if (outOfSchoolYouthCheckbox) {
+            // If Educational Attainment or Course has value, Out of School Youth becomes optional
+            clearFieldError(outOfSchoolYouthCheckbox);
+        }
     }
     
     // Validate required file upload
@@ -1979,8 +2600,94 @@ async function handleCertificationSubmission(e) {
         showFieldError(certIdUpload, 'Please upload an ID image.');
     }
     
-    // If validation failed, scroll to the first error field
+    // Validate ID type match if ID is uploaded
+    const certIdType = document.getElementById('certIdType');
+    if (certIdUpload.files && certIdUpload.files[0] && certIdType && certIdType.value && certIdType.value !== 'other') {
+        const currentFile = certIdUpload.files[0];
+        const currentFileIdentifier = currentFile.name + '_' + currentFile.size + '_' + currentFile.lastModified;
+        
+        // Check if ID type validation was performed and if it matches
+        if (idTypeValidation.certification.validatedFile === currentFileIdentifier) {
+            if (!idTypeValidation.certification.idTypeMatch) {
+                isValid = false;
+                const errorMsg = idTypeValidation.certification.errorMessage || 'The uploaded image is invalid. Please upload a valid ID and select correct ID type.';
+                showFieldError(certIdUpload, errorMsg);
+            }
+        } else {
+            // ID type validation not performed yet - trigger validation
+            const certIdPreview = document.getElementById('certIdPreview');
+            if (certIdPreview && certIdPreview.src) {
+                // Perform validation synchronously before allowing submission
+                const validationResult = await validateIDTypeWithGoogleGemini(certIdPreview, certIdType.value);
+                
+                if (validationResult.ok && !validationResult.idTypeMatch) {
+                    isValid = false;
+                    const errorMsg = getIDTypeMismatchError(certIdType.value, validationResult.detectedIdType);
+                    showFieldError(certIdUpload, errorMsg);
+                    
+                    // Store validation result for later check
+                    idTypeValidation.certification = {
+                        ok: true,
+                        idTypeMatch: false,
+                        validatedFile: currentFileIdentifier,
+                        expectedIdType: certIdType.value,
+                        detectedIdType: validationResult.detectedIdType,
+                        errorMessage: errorMsg
+                    };
+                } else if (!validationResult.ok) {
+                    // This should rarely happen now since fallback is automatic
+                    // But handle it gracefully - allow submission if validation unavailable
+                    isValid = true; // Don't block submission if validation fails
+                } else if (validationResult.ok && validationResult.idTypeMatch) {
+                    // Store successful validation
+                    idTypeValidation.certification = {
+                        ok: true,
+                        idTypeMatch: true,
+                        validatedFile: currentFileIdentifier,
+                        expectedIdType: certIdType.value,
+                        detectedIdType: validationResult.detectedIdType,
+                        errorMessage: null
+                    };
+                }
+            }
+        }
+    }
+    
+    // If validation failed, scroll to the first error field and show error message
     if (!isValid) {
+        // Show SweetAlert if ID type mismatch
+        if (certIdUpload.files && certIdUpload.files[0] && certIdType && certIdType.value && certIdType.value !== 'other') {
+            const currentFile = certIdUpload.files[0];
+            const currentFileIdentifier = currentFile.name + '_' + currentFile.size + '_' + currentFile.lastModified;
+            
+            // Check if ID type validation failed
+            if (idTypeValidation.certification.validatedFile === currentFileIdentifier && !idTypeValidation.certification.idTypeMatch) {
+                await Swal.fire({
+                    icon: 'error',
+                    title: 'ID Type Mismatch',
+                    text: 'The uploaded image is invalid. Please upload a valid ID and select correct ID type.',
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#dc3545',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false
+                });
+            } else {
+                // Check if there's an error message on the certIdUpload field (from recent validation)
+                const uploadFieldError = certIdUpload.parentElement.querySelector('.error-message');
+                if (uploadFieldError && uploadFieldError.textContent.includes('does not match') || uploadFieldError.textContent.includes('does not contain') || uploadFieldError.textContent.includes('is invalid')) {
+                    await Swal.fire({
+                        icon: 'error',
+                        title: 'ID Type Mismatch',
+                        text: 'The uploaded image is invalid. Please upload a valid ID and select correct ID type.',
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: '#dc3545',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false
+                    });
+                }
+            }
+        }
+        
         scrollToFirstError();
         return;
     }
@@ -1993,9 +2700,12 @@ async function handleCertificationSubmission(e) {
     
     // Validate ID address contains "Bigte"
     if (certIdUpload.files && certIdUpload.files[0]) {
-        // If validation hasn't been done yet, do it now
-        if (!idOcrValidation.certification.ok || idOcrValidation.certification.hasBigte === undefined) {
-            await handleIDImageUpload(certIdUpload.files[0], 'certification');
+        const currentFile = certIdUpload.files[0];
+        const currentFileIdentifier = currentFile.name + '_' + currentFile.size + '_' + currentFile.lastModified;
+        
+        // Always validate if file hasn't been validated yet, or if it's a different file
+        if (!idOcrValidation.certification.validatedFile || idOcrValidation.certification.validatedFile !== currentFileIdentifier) {
+            await handleIDImageUpload(currentFile, 'certification');
         }
         
         // Show SweetAlert if Bigte not found
@@ -2044,21 +2754,130 @@ function displayCertificationPreview(formData) {
         validId = formData.get('otherCertIdType');
     }
     
-    const fullName = `${formData.get('certFirstName') || ''} ${formData.get('certMiddleName') || ''} ${formData.get('certLastName') || ''}`.trim();
+    // Format Educational Attainment
+    let educationalAttainmentText = '-';
+    const educationalAttainment = formData.get('certEducationalAttainment');
+    if (educationalAttainment) {
+        const selectElement = document.getElementById('certEducationalAttainment');
+        if (selectElement) {
+            const selectedOption = selectElement.options[selectElement.selectedIndex];
+            educationalAttainmentText = selectedOption ? selectedOption.text : educationalAttainment;
+        } else {
+            educationalAttainmentText = educationalAttainment.charAt(0).toUpperCase() + educationalAttainment.slice(1).replace(/-/g, ' ');
+        }
+    }
     
-    document.getElementById('previewCertificationName').textContent = fullName || '-';
-    document.getElementById('previewCertificationAddress').textContent = formData.get('certAddress') || '-';
+    // Format Course
+    let educationalLevelText = '-';
+    const educationalLevel = formData.get('certEducationalLevel');
+    if (educationalLevel) {
+        const selectElement = document.getElementById('certEducationalLevel');
+        if (selectElement) {
+            const selectedOption = selectElement.options[selectElement.selectedIndex];
+            educationalLevelText = selectedOption ? selectedOption.text : educationalLevel;
+        } else {
+            educationalLevelText = educationalLevel.charAt(0).toUpperCase() + educationalLevel.slice(1).replace(/-/g, ' ');
+        }
+    }
+    
+    // Format Out of School Youth
+    const outOfSchoolYouth = formData.get('certOutOfSchoolYouth');
+    const outOfSchoolYouthText = outOfSchoolYouth === 'yes' ? 'Yes' : '-';
+    
+    // Format gender
+    const gender = formData.get('certGender');
+    const genderText = gender ? gender.charAt(0).toUpperCase() + gender.slice(1) : '-';
+    
+    // Format civil status
+    const civilStatus = formData.get('certCivilStatus');
+    const civilStatusText = civilStatus ? civilStatus.charAt(0).toUpperCase() + civilStatus.slice(1) : '-';
+    
+    // Format purpose
+    const purposeText = finalPurpose ? finalPurpose.charAt(0).toUpperCase() + finalPurpose.slice(1).replace(/-/g, ' ') : '-';
+    
+    // Format valid ID
+    const validIdText = validId ? validId.charAt(0).toUpperCase() + validId.slice(1).replace(/-/g, ' ') : '-';
+    
+    // Set all preview fields
+    document.getElementById('previewCertificationFirstName').textContent = formData.get('certFirstName') || '-';
+    document.getElementById('previewCertificationMiddleName').textContent = formData.get('certMiddleName') || '-';
+    document.getElementById('previewCertificationLastName').textContent = formData.get('certLastName') || '-';
     document.getElementById('previewCertificationBirthDate').textContent = formData.get('certBirthDate') || '-';
-    document.getElementById('previewCertificationPurpose').textContent = finalPurpose ? finalPurpose.charAt(0).toUpperCase() + finalPurpose.slice(1).replace('-', ' ') : '-';
-    document.getElementById('previewCertificationValidId').textContent = validId ? validId.charAt(0).toUpperCase() + validId.slice(1).replace('-', ' ') : '-';
+    document.getElementById('previewCertificationBirthPlace').textContent = formData.get('certBirthPlace') || '-';
+    document.getElementById('previewCertificationPurpose').textContent = purposeText;
+    document.getElementById('previewCertificationAddress').textContent = formData.get('certAddress') || '-';
+    document.getElementById('previewCertificationDateIssued').textContent = formData.get('certDateIssued') || '-';
+    
+    // Show/hide Educational Level and Course based on values
+    const educationalAttainmentItem = document.getElementById('previewEducationalAttainmentItem');
+    const courseItem = document.getElementById('previewCourseItem');
+    const hasEducationalAttainmentValue = !!educationalAttainment;
+    const hasCourseValue = !!educationalLevel;
+    
+    if (educationalAttainmentItem) {
+        if (hasEducationalAttainmentValue) {
+            educationalAttainmentItem.style.display = 'flex';
+            document.getElementById('previewCertificationEducationalAttainment').textContent = educationalAttainmentText;
+        } else {
+            educationalAttainmentItem.style.display = 'none';
+        }
+    }
+    
+    if (courseItem) {
+        if (hasCourseValue) {
+            courseItem.style.display = 'flex';
+            document.getElementById('previewCertificationEducationalLevel').textContent = educationalLevelText;
+        } else {
+            courseItem.style.display = 'none';
+        }
+    }
+    
+    // Handle Out of School Youth in preview
+    const outOfSchoolYouthItem = document.getElementById('previewOutOfSchoolYouthItem');
+    const outOfSchoolYouthValueEl = document.getElementById('previewCertificationOutOfSchoolYouth');
+    if (outOfSchoolYouthItem && outOfSchoolYouthValueEl) {
+        if (outOfSchoolYouth === 'yes') {
+            outOfSchoolYouthItem.style.display = 'flex';
+            outOfSchoolYouthValueEl.textContent = outOfSchoolYouthText;
+        } else {
+            outOfSchoolYouthItem.style.display = 'none';
+            outOfSchoolYouthValueEl.textContent = '-';
+        }
+    }
+    
+    document.getElementById('previewCertificationGender').textContent = genderText;
+    document.getElementById('previewCertificationCivilStatus').textContent = civilStatusText;
+    document.getElementById('previewCertificationValidId').textContent = validIdText;
 }
 
-// Go back to Certification form
-function goBackToCertificationForm() {
-    document.getElementById('certificationPreviewDisplay').style.display = 'none';
-    document.getElementById('certificationForm').style.display = 'block';
-    document.getElementById('certificationForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
+// Go back to Certification form at Step 3 (Documents)
+function goBackToCertificationStep3() {
+    const previewDisplay = document.getElementById('certificationPreviewDisplay');
+    const reportDisplay = document.getElementById('certificationReportDisplay');
+    const certForm = document.getElementById('certificationForm');
+    
+    if (previewDisplay) previewDisplay.style.display = 'none';
+    if (reportDisplay) reportDisplay.style.display = 'none';
+    
+    if (certForm) {
+        certForm.style.display = 'block';
+        
+        // Reset validation state so credentials will be validated again on submit
+        idOcrValidation.certification = { ok: false, hasBigte: false, name: { first: '', middle: '', last: '' }, fullText: '', validatedFile: null };
+        
+        // Force multi-step form to Step 3 (Documents)
+        if (typeof currentCertStep !== 'undefined') {
+            currentCertStep = 3;
+            showCertStep(3);
+            updateCertPageIndicator();
+        }
+        
+        certForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
 }
+
+// Ensure function is available globally for inline onclick handlers
+window.goBackToCertificationStep3 = goBackToCertificationStep3;
 
 // Final submit Certification
 async function finalSubmitCertification() {
@@ -2092,6 +2911,12 @@ async function finalSubmitCertification() {
             monthly_income: formData.get('certMonthlyIncome') ? formData.get('certMonthlyIncome').replace(/,/g, '') : null,
             year_residing: formData.get('certYearResiding') || null,
             month_year_passing: formData.get('certMonthYearPassing') || null,
+            // Map Educational Level dropdown to 'educational_level' column
+            educational_level: formData.get('certEducationalAttainment') || null,
+            // Map Course dropdown to 'course' column
+            course: formData.get('certEducationalLevel') || null,
+            // Map Out of School Youth checkbox to 'out_of_school_youth' column ('yes' when checked, null otherwise)
+            out_of_school_youth: formData.get('certOutOfSchoolYouth') === 'yes' ? 'yes' : null,
             valid_id: formData.get('certIdType'),
             id_image: formData.get('certIdUpload') ? await fileToBase64(formData.get('certIdUpload')) : null
         };
@@ -2265,9 +3090,12 @@ async function handleCoeSubmission(e) {
     
     // Validate ID address contains "Bigte"
     if (coeIdUpload.files && coeIdUpload.files[0]) {
-        // If validation hasn't been done yet, do it now
-        if (!idOcrValidation.coe.ok || idOcrValidation.coe.hasBigte === undefined) {
-            await handleIDImageUpload(coeIdUpload.files[0], 'coe');
+        const currentFile = coeIdUpload.files[0];
+        const currentFileIdentifier = currentFile.name + '_' + currentFile.size + '_' + currentFile.lastModified;
+        
+        // Always validate if file hasn't been validated yet, or if it's a different file
+        if (!idOcrValidation.coe.validatedFile || idOcrValidation.coe.validatedFile !== currentFileIdentifier) {
+            await handleIDImageUpload(currentFile, 'coe');
         }
         
         // Show SweetAlert if Bigte not found
@@ -2483,9 +3311,12 @@ async function handleIndigencySubmission(e) {
     
     // Validate ID address contains "Bigte"
     if (indIdUpload.files && indIdUpload.files[0]) {
-        // If validation hasn't been done yet, do it now
-        if (!idOcrValidation.indigency.ok || idOcrValidation.indigency.hasBigte === undefined) {
-            await handleIDImageUpload(indIdUpload.files[0], 'indigency');
+        const currentFile = indIdUpload.files[0];
+        const currentFileIdentifier = currentFile.name + '_' + currentFile.size + '_' + currentFile.lastModified;
+        
+        // Always validate if file hasn't been validated yet, or if it's a different file
+        if (!idOcrValidation.indigency.validatedFile || idOcrValidation.indigency.validatedFile !== currentFileIdentifier) {
+            await handleIDImageUpload(currentFile, 'indigency');
         }
         
         // Show SweetAlert if Bigte not found
@@ -2815,8 +3646,12 @@ async function confirmClearanceSubmission() {
 
     // Validate ID address contains "Bigte" via OCR (if not already validated)
     if (clearIdUpload && clearIdUpload.files && clearIdUpload.files[0]) {
-        if (!idOcrValidation.clearance.ok || idOcrValidation.clearance.hasBigte === undefined) {
-            await handleIDImageUpload(clearIdUpload.files[0], 'clearance');
+        const currentFile = clearIdUpload.files[0];
+        const currentFileIdentifier = currentFile.name + '_' + currentFile.size + '_' + currentFile.lastModified;
+        
+        // Always validate if file hasn't been validated yet, or if it's a different file
+        if (!idOcrValidation.clearance.validatedFile || idOcrValidation.clearance.validatedFile !== currentFileIdentifier) {
+            await handleIDImageUpload(currentFile, 'clearance');
         }
 
         if (idOcrValidation.clearance.ok && !idOcrValidation.clearance.hasBigte) {
@@ -3119,6 +3954,7 @@ function displayCertificationForm(formData) {
         document.getElementById('certJobContainer').style.display = 'flex';
         document.getElementById('certDateHireContainer').style.display = 'flex';
         document.getElementById('certMonthlyIncomeContainer').style.display = 'flex';
+        document.getElementById('certEducationalLevelContainer').style.display = 'none';
     } else if (actualPurpose === 'certification-for-dead') {
         // For Certification for Dead: hide Year Residing, show Month Year Passing, hide other fields
         document.getElementById('certYearResidingItem').style.display = 'none';
@@ -3126,6 +3962,15 @@ function displayCertificationForm(formData) {
         document.getElementById('certJobContainer').style.display = 'none';
         document.getElementById('certDateHireContainer').style.display = 'none';
         document.getElementById('certMonthlyIncomeContainer').style.display = 'none';
+        document.getElementById('certEducationalLevelContainer').style.display = 'none';
+    } else if (actualPurpose === 'jobseeker') {
+        // For JobSeeker: show Course, hide other fields
+        document.getElementById('certYearResidingItem').style.display = 'none';
+        document.getElementById('certMonthYearPassingContainer').style.display = 'none';
+        document.getElementById('certJobContainer').style.display = 'none';
+        document.getElementById('certDateHireContainer').style.display = 'none';
+        document.getElementById('certMonthlyIncomeContainer').style.display = 'none';
+        document.getElementById('certEducationalLevelContainer').style.display = 'flex';
     } else {
         // For other purposes (like proof-of-residency): show Year Start Residing, hide other fields
         document.getElementById('certYearResidingItem').style.display = 'flex';
@@ -3133,6 +3978,7 @@ function displayCertificationForm(formData) {
         document.getElementById('certJobContainer').style.display = 'none';
         document.getElementById('certDateHireContainer').style.display = 'none';
         document.getElementById('certMonthlyIncomeContainer').style.display = 'none';
+        document.getElementById('certEducationalLevelContainer').style.display = 'none';
     }
     
     // Update display elements
@@ -3152,6 +3998,17 @@ function displayCertificationForm(formData) {
     document.getElementById('displayCertificationDateHire').textContent = formData.get('certDateHire') || '-';
     const monthlyIncome = formData.get('certMonthlyIncome');
     document.getElementById('displayCertificationMonthlyIncome').textContent = monthlyIncome ? '₱' + parseFloat(monthlyIncome.replace(/,/g, '')).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-';
+    
+    // Update Course
+    const educationalLevel = formData.get('certEducationalLevel');
+    if (educationalLevel) {
+        const educationalLevelSelect = document.getElementById('certEducationalLevel');
+        const selectedOption = educationalLevelSelect ? educationalLevelSelect.querySelector(`option[value="${educationalLevel}"]`) : null;
+        const educationalLevelText = selectedOption ? selectedOption.textContent : educationalLevel;
+        document.getElementById('displayCertificationEducationalLevel').textContent = educationalLevelText;
+    } else {
+        document.getElementById('displayCertificationEducationalLevel').textContent = '-';
+    }
     
     document.getElementById('displayCertificationPurpose').textContent = purpose.charAt(0).toUpperCase() + purpose.slice(1).replace('-', ' ');
     document.getElementById('displayCertificationValidId').textContent = validId.charAt(0).toUpperCase() + validId.slice(1).replace('-', ' ');
@@ -3272,31 +4129,7 @@ function displayClearanceForm(formData) {
 }
 
 // Go back functions for each form
-function goBackToBarangayIdForm() {
-    // Hide the success report display
-    const reportDisplay = document.getElementById('barangayIdReportDisplay');
-    if (reportDisplay) {
-        reportDisplay.style.display = 'none';
-    }
-    
-    // Show sidebar
-    const sidebar = document.querySelector('.sidebar');
-    if (sidebar && sidebar.classList.contains('collapsed')) {
-        sidebar.classList.remove('collapsed');
-    }
-    
-    // Show emblem section
-    const emblemSection = document.getElementById('emblemSection');
-    if (emblemSection) {
-        emblemSection.style.display = 'block';
-    }
-    
-    // Clear all form inputs
-    clearAllFormInputs();
-    
-    // Show the barangay ID form again
-    showBarangayIdForm();
-}
+// Note: goBackToBarangayIdForm() is defined earlier and handles preview display -> step 3 navigation
 
 function goBackToFormChoices() {
     // Hide the success report display
@@ -3444,7 +4277,7 @@ function validate1x1Photo(file, input) {
     reader.readAsDataURL(file);
 }
 
-// Image preview function
+// Image preview function with ID type validation
 function previewImage(input, previewId) {
     const preview = document.getElementById(previewId);
     const file = input.files[0];
@@ -3459,10 +4292,31 @@ function previewImage(input, previewId) {
             uploadBtn.classList.remove('error-indicator');
         }
         
+        // Remove error border from preview
+        if (preview) {
+            preview.style.border = '';
+        }
+        
         const reader = new FileReader();
-        reader.onload = function(e) {
+        reader.onload = async function(e) {
             preview.src = e.target.result;
             preview.style.display = 'block';
+            
+            // Wait for image to load completely before validation
+            await new Promise((resolve) => {
+                if (preview.complete) {
+                    resolve();
+                } else {
+                    preview.onload = resolve;
+                    preview.onerror = resolve; // Continue even if error
+                }
+            });
+            
+            // Validate ID type match if this is certIdUpload
+            // Pass the file for reference, but validation will read from certIdPreview
+            if (input.id === 'certIdUpload') {
+                await validateIDTypeMatch(file, input);
+            }
         };
         reader.readAsDataURL(file);
     } else {
@@ -3564,6 +4418,12 @@ function toggleCertificationConditionalFields() {
     const yearResidingInput = document.getElementById('certYearResiding');
     const monthYearPassingGroup = document.getElementById('certMonthYearPassingGroup');
     const monthYearPassingInput = document.getElementById('certMonthYearPassing');
+    const educationalLevelGroup = document.getElementById('certEducationalLevelGroup');
+    const educationalAttainmentSelect = document.getElementById('certEducationalAttainment');
+    const courseGroup = document.getElementById('certCourseGroup');
+    const educationalLevelSelect = document.getElementById('certEducationalLevel');
+    const outOfSchoolYouthGroup = document.getElementById('certOutOfSchoolYouthGroup');
+    const outOfSchoolYouthCheckbox = document.getElementById('certOutOfSchoolYouthCheckbox');
     
     // Hide all conditional fields first
     citizenshipGroup.style.display = 'none';
@@ -3594,6 +4454,26 @@ function toggleCertificationConditionalFields() {
     monthYearPassingInput.required = false;
     monthYearPassingInput.value = '';
     
+    educationalLevelGroup.style.display = 'none';
+    if (educationalAttainmentSelect) {
+        educationalAttainmentSelect.required = false;
+        educationalAttainmentSelect.value = '';
+    }
+    
+    courseGroup.style.display = 'none';
+    educationalLevelSelect.required = false;
+    educationalLevelSelect.value = '';
+    
+    // Hide Out of School Youth checkbox by default
+    if (outOfSchoolYouthGroup) {
+        outOfSchoolYouthGroup.style.display = 'none';
+    }
+    if (outOfSchoolYouthCheckbox) {
+        outOfSchoolYouthCheckbox.checked = false;
+        outOfSchoolYouthCheckbox.required = false;
+        outOfSchoolYouthCheckbox.removeAttribute('required');
+    }
+    
     // Show fields based on selected purpose
     if (purpose === 'pag-ibig-loan') {
         // For Pag-Ibig Loan: show Citizenship, Job, Date of Hire, and Monthly Income
@@ -3622,6 +4502,385 @@ function toggleCertificationConditionalFields() {
         
         monthYearPassingGroup.style.display = 'block';
         monthYearPassingInput.required = true;
+    } else if (purpose === 'jobseeker') {
+        // For JobSeeker: show Educational Level and Out of School Youth checkbox
+        educationalLevelGroup.style.display = 'block';
+        if (educationalAttainmentSelect) {
+            // Check if Out of School Youth is checked - if not, make Educational Level required
+            const isOOSYChecked = outOfSchoolYouthCheckbox && outOfSchoolYouthCheckbox.checked;
+            
+            if (!isOOSYChecked) {
+                educationalAttainmentSelect.required = true;
+                educationalAttainmentSelect.setAttribute('required', 'required');
+            } else {
+                educationalAttainmentSelect.required = false;
+                educationalAttainmentSelect.removeAttribute('required');
+            }
+        }
+        // Show Out of School Youth checkbox for JobSeeker
+        if (outOfSchoolYouthGroup) {
+            outOfSchoolYouthGroup.style.display = 'block';
+        }
+        // Course will be shown/hidden based on Educational Level selection
+        toggleCourseField();
+    }
+    
+    // Adjust font size for Course when shown
+    if (courseGroup && courseGroup.style.display === 'block') {
+        adjustEducationalLevelFontSize();
+    }
+    
+    // Toggle required indicators
+    toggleEducationalLevelRequiredIndicator();
+    toggleCourseRequiredIndicator();
+    
+    // Toggle Out of School Youth requirement based on Course
+    toggleOutOfSchoolYouthRequirement();
+}
+
+// Toggle Course field based on Educational Attainment
+function toggleCourseField() {
+    const certEducationalAttainment = document.getElementById('certEducationalAttainment');
+    const courseGroup = document.getElementById('certCourseGroup');
+    const certEducationalLevel = document.getElementById('certEducationalLevel');
+    
+    if (!certEducationalAttainment || !courseGroup || !certEducationalLevel) return;
+    
+    // Only show Course if Educational Attainment is "college"
+    if (certEducationalAttainment.value === 'college') {
+        courseGroup.style.display = 'block';
+        certEducationalLevel.required = true;
+        certEducationalLevel.setAttribute('required', 'required');
+        toggleCourseRequiredIndicator();
+        adjustEducationalLevelFontSize();
+        adjustSelectCoursePlaceholderFontSize();
+    } else {
+        courseGroup.style.display = 'none';
+        certEducationalLevel.required = false;
+        certEducationalLevel.removeAttribute('required');
+        certEducationalLevel.value = '';
+        clearFieldError(certEducationalLevel);
+        const courseRequiredIndicator = document.getElementById('courseRequiredIndicator');
+        if (courseRequiredIndicator) {
+            courseRequiredIndicator.style.display = 'none';
+        }
+    }
+}
+
+// Adjust font size for "Select Course" placeholder to match Educational Attainment
+function adjustSelectCoursePlaceholderFontSize() {
+    const certEducationalLevel = document.getElementById('certEducationalLevel');
+    const certEducationalAttainment = document.getElementById('certEducationalAttainment');
+    
+    if (!certEducationalLevel || !certEducationalAttainment) return;
+    
+    // Check if placeholder is selected (empty value)
+    if (certEducationalLevel.value === '') {
+        // Get the font size from Educational Attainment select to match it
+        const computedStyle = window.getComputedStyle(certEducationalAttainment);
+        const attainmentFontSize = computedStyle.fontSize;
+        // Apply the same font size as Educational Attainment
+        certEducationalLevel.style.fontSize = attainmentFontSize;
+    } else {
+        // Reset to default when a course is selected
+        // The adjustEducationalLevelFontSize function will handle the actual font size
+        certEducationalLevel.style.fontSize = '';
+    }
+}
+
+// Toggle Educational Level required indicator
+function toggleEducationalLevelRequiredIndicator() {
+    const certEducationalAttainment = document.getElementById('certEducationalAttainment');
+    const educationalLevelRequiredIndicator = document.getElementById('educationalLevelRequiredIndicator');
+    const certEducationalLevelGroup = document.getElementById('certEducationalLevelGroup');
+    const outOfSchoolYouthCheckbox = document.getElementById('certOutOfSchoolYouthCheckbox');
+    const certPurposeSelect = document.getElementById('certPurpose');
+    
+    if (!certEducationalAttainment || !educationalLevelRequiredIndicator) return;
+    
+    const isVisible = certEducationalLevelGroup && 
+        (certEducationalLevelGroup.style.display === 'block' || 
+         certEducationalLevelGroup.style.display === 'flex');
+    
+    if (!isVisible) {
+        educationalLevelRequiredIndicator.style.display = 'none';
+        return;
+    }
+    
+    const isOOSYChecked = outOfSchoolYouthCheckbox && outOfSchoolYouthCheckbox.checked;
+    const isJobSeeker = certPurposeSelect && certPurposeSelect.value === 'jobseeker';
+    
+    // Show indicator when field should be required (JobSeeker purpose and OOSY is not checked)
+    // Hide indicator only if OOSY is checked (making Educational Level not required) or not JobSeeker purpose
+    if (isJobSeeker && !isOOSYChecked) {
+        educationalLevelRequiredIndicator.style.display = 'inline';
+    } else {
+        educationalLevelRequiredIndicator.style.display = 'none';
+    }
+}
+
+// Toggle Course required indicator
+function toggleCourseRequiredIndicator() {
+    const certEducationalLevel = document.getElementById('certEducationalLevel');
+    const courseRequiredIndicator = document.getElementById('courseRequiredIndicator');
+    const courseGroup = document.getElementById('certCourseGroup');
+    
+    if (!certEducationalLevel || !courseRequiredIndicator) return;
+    
+    const isVisible = courseGroup && 
+        (courseGroup.style.display === 'block' || 
+         courseGroup.style.display === 'flex');
+    
+    if (!isVisible) {
+        courseRequiredIndicator.style.display = 'none';
+        return;
+    }
+    
+    const hasValue = certEducationalLevel.value && certEducationalLevel.value.trim() !== '';
+    
+    // Hide indicator if field has value (satisfied)
+    if (hasValue) {
+        courseRequiredIndicator.style.display = 'none';
+    } else {
+        // Show indicator if field is empty and required
+        courseRequiredIndicator.style.display = 'inline';
+    }
+}
+
+// Toggle Out of School Youth requirement based on Course
+function toggleOutOfSchoolYouthRequirement() {
+    const certEducationalLevel = document.getElementById('certEducationalLevel');
+    const certEducationalAttainment = document.getElementById('certEducationalAttainment');
+    const courseGroup = document.getElementById('certCourseGroup');
+    const certEducationalLevelGroup = document.getElementById('certEducationalLevelGroup');
+    const outOfSchoolYouthCheckbox = document.getElementById('certOutOfSchoolYouthCheckbox');
+    const requiredIndicator = document.getElementById('outOfSchoolYouthRequiredIndicator');
+    
+    if (!outOfSchoolYouthCheckbox) return;
+    
+    // Only apply logic if Educational Level group is visible (JobSeeker purpose)
+    const isEducationalLevelVisible = certEducationalLevelGroup && 
+        (certEducationalLevelGroup.style.display === 'block' || 
+         certEducationalLevelGroup.style.display === 'flex');
+    
+    if (isEducationalLevelVisible) {
+        // Set Educational Attainment required status based on Out of School Youth checkbox
+        const isOOSYChecked = outOfSchoolYouthCheckbox.checked;
+        if (certEducationalAttainment) {
+            if (isOOSYChecked) {
+                // If Out of School Youth is checked, Educational Level is not required
+                certEducationalAttainment.required = false;
+                certEducationalAttainment.removeAttribute('required');
+            } else {
+                // If Out of School Youth is not checked, Educational Level is required
+                certEducationalAttainment.required = true;
+                certEducationalAttainment.setAttribute('required', 'required');
+            }
+        }
+        
+        // If Educational Attainment already has a value, Out of School Youth is optional
+        const hasEducationalAttainment = certEducationalAttainment && certEducationalAttainment.value && certEducationalAttainment.value.trim() !== '';
+        if (hasEducationalAttainment) {
+            outOfSchoolYouthCheckbox.required = false;
+            outOfSchoolYouthCheckbox.removeAttribute('required');
+            if (requiredIndicator) {
+                requiredIndicator.style.display = 'none';
+            }
+            clearFieldError(outOfSchoolYouthCheckbox);
+            return;
+        }
+        
+        // Check if Course field is visible and has value
+        const isCourseVisible = courseGroup && 
+            (courseGroup.style.display === 'block' || 
+             courseGroup.style.display === 'flex');
+        const hasCourse = certEducationalLevel && certEducationalLevel.value && certEducationalLevel.value.trim() !== '';
+        
+        if (isCourseVisible && hasCourse) {
+            // If Course is visible and has value, make Out of School Youth optional
+            outOfSchoolYouthCheckbox.required = false;
+            outOfSchoolYouthCheckbox.removeAttribute('required');
+            if (requiredIndicator) {
+                requiredIndicator.style.display = 'none';
+            }
+            // Clear any errors
+            clearFieldError(outOfSchoolYouthCheckbox);
+        } else {
+            // If Course is not visible or has no value, make Out of School Youth required
+            outOfSchoolYouthCheckbox.required = true;
+            outOfSchoolYouthCheckbox.setAttribute('required', 'required');
+            if (requiredIndicator) {
+                requiredIndicator.style.display = 'inline';
+            }
+        }
+    } else {
+        // If Educational Level group is not visible, make Out of School Youth optional
+        outOfSchoolYouthCheckbox.required = false;
+        outOfSchoolYouthCheckbox.removeAttribute('required');
+        if (requiredIndicator) {
+            requiredIndicator.style.display = 'none';
+        }
+        // Clear any errors
+        clearFieldError(outOfSchoolYouthCheckbox);
+    }
+    
+    // Update Educational Level required indicator based on OOSY status
+    toggleEducationalLevelRequiredIndicator();
+}
+
+// Adjust font size for Course dropdown based on selected text length
+let fontSizeAdjustmentInitialized = false;
+
+function adjustEducationalLevelFontSize() {
+    const selectElement = document.getElementById('certEducationalLevel');
+    if (!selectElement) return;
+    
+    // Function to calculate and apply font size
+    const applyFontSize = () => {
+        const currentSelect = document.getElementById('certEducationalLevel');
+        if (!currentSelect) return;
+        
+        const selectedOption = currentSelect.options[currentSelect.selectedIndex];
+        if (!selectedOption || !selectedOption.text) return;
+        
+        const text = selectedOption.text;
+        const textLength = text.length;
+        const selectWidth = currentSelect.offsetWidth;
+        
+        // Calculate appropriate font size based on text length and available width
+        // Range: minimum 0.7rem, maximum 1.5rem
+        let fontSize = 1.0; // Base font size
+        
+        // Adjust based on text length
+        // Shorter text = MUCH larger font, longer text = smaller font
+        if (textLength <= 15) {
+            fontSize = 1.5; // Very short text - very large font
+        } else if (textLength <= 25) {
+            fontSize = 1.3; // Short text - large font (e.g., "Diploma in Caregiving" = 24 chars)
+        } else if (textLength <= 35) {
+            fontSize = 1.15; // Medium-short text - larger font
+        } else if (textLength <= 45) {
+            fontSize = 1.0; // Medium text - normal font
+        } else if (textLength <= 55) {
+            fontSize = 0.9; // Medium-long text - slightly smaller
+        } else if (textLength <= 65) {
+            fontSize = 0.8; // Long text - smaller font
+        } else {
+            fontSize = 0.75; // Very long text - smallest font
+        }
+        
+        // Calculate if text will fit in one line
+        // Estimate: average character width is approximately 0.6em of font size
+        const estimatedTextWidth = textLength * fontSize * 0.6;
+        const availableWidth = selectWidth - 60; // Account for padding and dropdown arrow
+        
+        // If text is too long for one line, reduce font size to ensure it fits or wraps properly
+        if (estimatedTextWidth > availableWidth && textLength > 30) {
+            // Calculate font size that will fit the text
+            const maxFontSizeForWidth = (availableWidth / (textLength * 0.6));
+            fontSize = Math.min(fontSize, maxFontSizeForWidth);
+        }
+        
+        // Adjust based on available width (narrower = slightly smaller, but keep short text large)
+        if (selectWidth < 300) {
+            // On very narrow screens, reduce but keep short text reasonably large
+            if (textLength <= 25) {
+                fontSize = Math.max(1.1, fontSize - 0.1);
+            } else {
+                fontSize = Math.max(0.65, fontSize - 0.05);
+            }
+        } else if (selectWidth < 400) {
+            // On narrow screens, slight reduction
+            if (textLength <= 25) {
+                fontSize = Math.max(1.2, fontSize - 0.05);
+            } else {
+                fontSize = Math.max(0.7, fontSize - 0.03);
+            }
+        } else if (selectWidth >= 500) {
+            // Wider screens can accommodate even larger fonts for short text
+            if (textLength <= 15) {
+                fontSize = Math.min(1.6, fontSize + 0.1);
+            } else if (textLength <= 25) {
+                fontSize = Math.min(1.4, fontSize + 0.1);
+            }
+        }
+        
+        // For very long text, ensure it can wrap and be fully visible
+        if (textLength > 60) {
+            // Make sure font is small enough that text can wrap and be fully visible
+            const minFontForVisibility = Math.max(0.65, (availableWidth / (textLength * 0.6)) * 0.8);
+            fontSize = Math.min(fontSize, Math.max(minFontForVisibility, 0.65));
+        }
+        
+        // Ensure font size stays within bounds
+        fontSize = Math.max(0.65, Math.min(1.6, fontSize));
+        
+        // Apply the calculated font size first
+        currentSelect.style.setProperty('font-size', fontSize + 'rem', 'important');
+        
+        // Ensure text wrapping and visibility
+        const lineHeight = 1.4;
+        currentSelect.style.setProperty('white-space', 'normal', 'important');
+        currentSelect.style.setProperty('word-wrap', 'break-word', 'important');
+        currentSelect.style.setProperty('overflow-wrap', 'break-word', 'important');
+        currentSelect.style.setProperty('text-overflow', 'clip', 'important');
+        currentSelect.style.setProperty('overflow', 'visible', 'important');
+        currentSelect.style.setProperty('line-height', lineHeight.toString(), 'important');
+        
+        // Create a temporary element to measure actual text height
+        const tempDiv = document.createElement('div');
+        tempDiv.style.position = 'absolute';
+        tempDiv.style.visibility = 'hidden';
+        tempDiv.style.whiteSpace = 'normal';
+        tempDiv.style.wordWrap = 'break-word';
+        tempDiv.style.overflowWrap = 'break-word';
+        tempDiv.style.width = selectWidth - 60 + 'px'; // Same width as select minus padding
+        tempDiv.style.fontSize = fontSize + 'rem';
+        tempDiv.style.lineHeight = lineHeight.toString();
+        tempDiv.style.fontFamily = window.getComputedStyle(currentSelect).fontFamily;
+        tempDiv.style.fontWeight = window.getComputedStyle(currentSelect).fontWeight;
+        tempDiv.style.padding = '0.6rem 0.75rem';
+        tempDiv.style.boxSizing = 'border-box';
+        tempDiv.textContent = text;
+        
+        document.body.appendChild(tempDiv);
+        const measuredHeight = tempDiv.offsetHeight;
+        document.body.removeChild(tempDiv);
+        
+        // Convert measured height to rem and add some buffer
+        const heightInRem = (measuredHeight / 16) + 0.2; // Convert px to rem and add buffer
+        
+        // Set minimum and maximum heights
+        const minHeight = 2.5; // Minimum height in rem
+        const maxHeight = 10; // Maximum height in rem (for very long text)
+        let finalHeight = Math.max(minHeight, Math.min(maxHeight, heightInRem));
+        
+        // Apply the calculated height
+        currentSelect.style.setProperty('height', finalHeight + 'rem', 'important');
+        currentSelect.style.setProperty('min-height', finalHeight + 'rem', 'important');
+        
+        // Also set max-height to allow expansion
+        currentSelect.style.setProperty('max-height', maxHeight + 'rem', 'important');
+    };
+    
+    // Apply initially
+    applyFontSize();
+    
+    // Apply on change (only add listener once)
+    if (!fontSizeAdjustmentInitialized) {
+        selectElement.addEventListener('change', applyFontSize);
+        
+        // Apply on window resize (use debounce to avoid too many calls)
+        let resizeTimeout;
+        const resizeHandler = () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                applyFontSize();
+            }, 100);
+        };
+        window.addEventListener('resize', resizeHandler);
+        
+        fontSizeAdjustmentInitialized = true;
     }
 }
 
@@ -4525,6 +5784,16 @@ function initializeRequiredIndicatorToggle() {
             return;
         }
         
+        // Skip Educational Level field - it has its own custom toggle function
+        if (input.id === 'certEducationalAttainment') {
+            return;
+        }
+        
+        // Skip Purpose field - it should always show required indicator when required
+        if (input.id === 'certPurpose' || input.id === 'indPurpose' || input.id === 'clearPurpose') {
+            return;
+        }
+        
         // Find the associated label
         const label = document.querySelector(`label[for="${input.id}"]`);
         if (!label) return;
@@ -4535,20 +5804,32 @@ function initializeRequiredIndicatorToggle() {
         
         // Function to toggle required indicator visibility
         function toggleRequiredIndicator() {
-            let hasValue = false;
+            // Check if field is required - if yes, always show indicator
+            const isRequired = input.hasAttribute('required') || input.required;
             
-            if (input.type === 'file') {
-                hasValue = input.files && input.files.length > 0;
+            if (isRequired) {
+                // For required fields, always show the indicator
+                requiredIndicator.style.display = 'inline';
             } else {
-                hasValue = input.value.trim() !== '';
+                // For optional fields, show/hide based on value
+                let hasValue = false;
+                
+                if (input.type === 'file') {
+                    hasValue = input.files && input.files.length > 0;
+                } else {
+                    hasValue = input.value.trim() !== '';
+                }
+                
+                if (hasValue) {
+                    requiredIndicator.style.display = 'none';
+                } else {
+                    requiredIndicator.style.display = 'inline';
+                }
             }
             
-            if (hasValue) {
-                requiredIndicator.style.display = 'none';
-                // Clear any field errors when user types
+            // Clear any field errors when user types
+            if (input.value.trim() !== '') {
                 clearFieldError(input);
-            } else {
-                requiredIndicator.style.display = 'inline';
             }
         }
         
@@ -4558,25 +5839,40 @@ function initializeRequiredIndicatorToggle() {
             input.addEventListener('change', function() {
                 const radioGroup = document.querySelectorAll(`input[name="${input.name}"]`);
                 const hasSelection = Array.from(radioGroup).some(radio => radio.checked);
+                const isRequired = input.hasAttribute('required') || input.required;
                 
-                if (hasSelection) {
-                    requiredIndicator.style.display = 'none';
-                    // Clear any field errors when user selects an option
-                    clearFieldError(input);
-                } else {
+                if (isRequired) {
+                    // For required fields, always show the indicator
                     requiredIndicator.style.display = 'inline';
+                } else {
+                    // For optional fields, hide if selection is made
+                    if (hasSelection) {
+                        requiredIndicator.style.display = 'none';
+                    } else {
+                        requiredIndicator.style.display = 'inline';
+                    }
                 }
+                // Clear any field errors when user selects an option
+                clearFieldError(input);
             });
         } else if (input.type === 'file') {
             // For file inputs, check if a file is selected
             input.addEventListener('change', function() {
-                if (input.files && input.files.length > 0) {
-                    requiredIndicator.style.display = 'none';
-                    // Clear any field errors when user selects a file
-                    clearFieldError(input);
-                } else {
+                const isRequired = input.hasAttribute('required') || input.required;
+                
+                if (isRequired) {
+                    // For required fields, always show the indicator
                     requiredIndicator.style.display = 'inline';
+                } else {
+                    // For optional fields, hide if file is selected
+                    if (input.files && input.files.length > 0) {
+                        requiredIndicator.style.display = 'none';
+                    } else {
+                        requiredIndicator.style.display = 'inline';
+                    }
                 }
+                // Clear any field errors when user selects a file
+                clearFieldError(input);
             });
         } else {
             // For text inputs, selects, and textareas

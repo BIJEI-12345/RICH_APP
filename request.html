@@ -70,7 +70,7 @@
             <div class="form-container" id="barangayIdForm" style="display: none;">
                 <div class="form-wrapper">
                     <div class="form-header-with-back">
-                        <button type="button" class="back-to-selection-btn" onclick="hideAllForms()" title="Back to Document Selection">
+                        <button type="button" class="back-to-selection-btn" onclick="goBackToCertificationStep3()" title="Back to Documents (Step 3)">
                             <i class="fas fa-arrow-left"></i>
                         </button>
                         <h1 class="form-title">BARANGAY ID FORM</h1>
@@ -173,7 +173,7 @@
                                     </label>
                                     <label class="radio-label">
                                         <input type="radio" name="civilStatus" value="widow" required>
-                                        <span class="radio-text">Widow</span>
+                                        <span class="radio-text">Widowed</span>
                                     </label>
                                 </div>
                             </div>
@@ -231,8 +231,8 @@
                                 <label>Months/Years lived in Barangay:</label>
                             </div>
                             <div class="form-group">
-                                <label for="residencyDuration">please specify: <span class="required-indicator">*</span></label>
-                                <input type="text" id="residencyDuration" name="residencyDuration" placeholder="Please specify: 3 years 8 months" required>
+                                <label for="residencyDuration">Please specify: <span class="required-indicator">*</span></label>
+                                <input type="text" id="residencyDuration" name="residencyDuration" placeholder="ex, 3 years 8 months" required>
                             </div>
                             <div class="form-group">
                                 <label for="idType">Type of ID: <span class="required-indicator">*</span></label>
@@ -595,6 +595,7 @@
                                 <option value="">Select Purpose</option>
                                 <option value="proof-of-residency">Proof of Residency</option>
                                 <option value="pag-ibig-loan">Pag-Ibig Loan</option>
+                                <option value="jobseeker">JobSeeker</option>
                                 <option value="certification-for-dead">Certification for Dead</option>
                                 <option value="other">Others</option>
                             </select>
@@ -616,6 +617,11 @@
                             <div class="form-group">
                                 <label for="certAddress">Address: <span class="required-indicator">*</span></label>
                                 <input type="text" id="certAddress" placeholder="(Block No., House No., Street, Municipality, Province)" name="certAddress" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="certDateIssued">Date Issued: <span class="required-indicator">*</span></label>
+                                <input type="date" id="certDateIssued" name="certDateIssued" required>
                             </div>
                             
                             <!-- Conditional field for Citizenship when Proof of Residency is selected -->
@@ -663,6 +669,93 @@
                                 <label for="certMonthYearPassing">Month and Year of Passing: <span class="required-indicator">*</span></label>
                                 <input type="text" id="certMonthYearPassing" name="certMonthYearPassing" placeholder="e.g. January 2020">
                             </div>
+                            
+                            <!-- Conditional field for Educational Level and Course when JobSeeker is selected -->
+                            <div class="form-group" id="certEducationalLevelGroup" style="display: none;">
+                                <label for="certEducationalAttainment">Educational Level: <span class="required-indicator" id="educationalLevelRequiredIndicator">*</span></label>
+                                <select id="certEducationalAttainment" name="certEducationalAttainment">
+                                    <option value="">Select Educational Level</option>
+                                    <option value="elementary">Elementary</option>
+                                    <option value="high-school">High School</option>
+                                    <option value="college">College</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="certCourseGroup" style="display: none;">
+                                <label for="certEducationalLevel">Course: <span class="required-indicator" id="courseRequiredIndicator">*</span></label>
+                                <select id="certEducationalLevel" name="certEducationalLevel">
+                                    <option value="">Select Course</option>
+                                    <option value="bscs">Bachelor of Science in Computer Science (BSCS)</option>
+                                    <option value="bsit">Bachelor of Science in Information Technology (BSIT)</option>
+                                    <option value="bsis">Bachelor of Science in Information Systems (BSIS)</option>
+                                    <option value="bscpe">Bachelor of Science in Computer Engineering (BSCpE)</option>
+                                    <option value="bsse">Bachelor of Science in Software Engineering (BSSE)</option>
+                                    <option value="bsce">Bachelor of Science in Civil Engineering (BSCE)</option>
+                                    <option value="bsme">Bachelor of Science in Mechanical Engineering (BSME)</option>
+                                    <option value="bsee">Bachelor of Science in Electrical Engineering (BSEE)</option>
+                                    <option value="bsece">Bachelor of Science in Electronics Engineering (BSECE)</option>
+                                    <option value="bsie">Bachelor of Science in Industrial Engineering (BSIE)</option>
+                                    <option value="bsche">Bachelor of Science in Chemical Engineering (BSChE)</option>
+                                    <option value="bsarch">Bachelor of Science in Architecture (BSArch)</option>
+                                    <option value="bsa">Bachelor of Science in Accountancy (BSA)</option>
+                                    <option value="bsba">Bachelor of Science in Business Administration (BSBA)</option>
+                                    <option value="bsmm">Bachelor of Science in Marketing Management (BSMM)</option>
+                                    <option value="bsfm">Bachelor of Science in Financial Management (BSFM)</option>
+                                    <option value="bsentrep">Bachelor of Science in Entrepreneurship (BSEntrep)</option>
+                                    <option value="bsec">Bachelor of Science in Economics (BSEc)</option>
+                                    <option value="bshm">Bachelor of Science in Hospitality Management (BSHM)</option>
+                                    <option value="bstm">Bachelor of Science in Tourism Management (BSTM)</option>
+                                    <option value="bsn">Bachelor of Science in Nursing (BSN)</option>
+                                    <option value="bspharm">Bachelor of Science in Pharmacy (BS Pharm)</option>
+                                    <option value="bsmt">Bachelor of Science in Medical Technology (BSMT)</option>
+                                    <option value="bsrt">Bachelor of Science in Radiologic Technology (BSRT)</option>
+                                    <option value="bspt">Bachelor of Science in Physical Therapy (BSPT)</option>
+                                    <option value="bsot">Bachelor of Science in Occupational Therapy (BSOT)</option>
+                                    <option value="bspsych">Bachelor of Science in Psychology (BS Psych)</option>
+                                    <option value="abpsych">Bachelor of Arts in Psychology (AB Psych)</option>
+                                    <option value="abcomm">Bachelor of Arts in Communication (AB Comm)</option>
+                                    <option value="abpolisci">Bachelor of Arts in Political Science (AB PoliSci)</option>
+                                    <option value="abenglish">Bachelor of Arts in English (AB English)</option>
+                                    <option value="absocio">Bachelor of Arts in Sociology (AB Socio)</option>
+                                    <option value="bscrim">Bachelor of Science in Criminology (BS Crim)</option>
+                                    <option value="bsa-agri">Bachelor of Science in Agriculture (BSA)</option>
+                                    <option value="bses">Bachelor of Science in Environmental Science (BSES)</option>
+                                    <option value="bsforestry">Bachelor of Science in Forestry (BSForestry)</option>
+                                    <option value="bfa">Bachelor of Fine Arts (BFA)</option>
+                                    <option value="abmma">Bachelor of Arts in Multimedia Arts (AB MMA)</option>
+                                    <option value="bsid">Bachelor of Science in Interior Design (BSID)</option>
+                                    <option value="bsides">Bachelor of Science in Industrial Design (BSIDes)</option>
+                                    <option value="beed">Bachelor of Elementary Education (BEEd)</option>
+                                    <option value="bsed">Bachelor of Secondary Education (BSEd)</option>
+                                    <option value="bped">Bachelor of Physical Education (BPEd)</option>
+                                    <option value="diploma-it">Diploma in Information Technology</option>
+                                    <option value="diploma-ct">Diploma in Computer Technology</option>
+                                    <option value="diploma-hm">Diploma in Hospitality Management</option>
+                                    <option value="diploma-tm">Diploma in Tourism Management</option>
+                                    <option value="diploma-oa">Diploma in Office Administration</option>
+                                    <option value="diploma-at">Diploma in Accounting Technology</option>
+                                    <option value="diploma-et">Diploma in Electrical Technology</option>
+                                    <option value="diploma-aut">Diploma in Automotive Technology</option>
+                                    <option value="diploma-gd">Diploma in Graphic Design</option>
+                                    <option value="diploma-fd">Diploma in Fashion Design</option>
+                                    <option value="diploma-cg">Diploma in Caregiving</option>
+                                    <option value="diploma-ece">Diploma in Early Childhood Education</option>
+                                    <option value="assoc-ct">Associate in Computer Technology</option>
+                                    <option value="assoc-it">Associate in Information Technology</option>
+                                    <option value="assoc-ba">Associate in Business Administration</option>
+                                    <option value="assoc-hm">Associate in Hospitality Management</option>
+                                    <option value="assoc-ts">Associate in Tourism Services</option>
+                                    <option value="assoc-ca">Associate in Culinary Arts</option>
+                                    <option value="assoc-mma">Associate in Multimedia Arts</option>
+                                    <option value="assoc-et">Associate in Engineering Technology</option>
+                                </select>
+                            </div>
+                        <div class="form-group" id="certOutOfSchoolYouthGroup" style="display: none;">
+                            <label>Check if not currently enrolled <span class="required-indicator" id="outOfSchoolYouthRequiredIndicator" style="display: none;">*</span></label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="certOutOfSchoolYouth" value="yes" id="certOutOfSchoolYouthCheckbox">
+                                <span>Out of School Youth</span>
+                            </label>
+                        </div>
                         <div class="form-group">
                             <label>Gender: <span class="required-indicator">*</span></label>
                             <div class="radio-group">
@@ -758,18 +851,28 @@
                                 <i class="fas fa-user"></i>
                             </div>
                             <div class="detail-content">
-                                <div class="detail-label">Full Name</div>
-                                <div class="detail-value" id="previewCertificationName">-</div>
+                                <div class="detail-label">First Name</div>
+                                <div class="detail-value" id="previewCertificationFirstName">-</div>
                             </div>
                         </div>
 
                         <div class="detail-item">
                             <div class="detail-icon">
-                                <i class="fas fa-map-marker-alt"></i>
+                                <i class="fas fa-user"></i>
                             </div>
                             <div class="detail-content">
-                                <div class="detail-label">Address</div>
-                                <div class="detail-value" id="previewCertificationAddress">-</div>
+                                <div class="detail-label">Middle Name</div>
+                                <div class="detail-value" id="previewCertificationMiddleName">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Last Name</div>
+                                <div class="detail-value" id="previewCertificationLastName">-</div>
                             </div>
                         </div>
 
@@ -785,6 +888,16 @@
 
                         <div class="detail-item">
                             <div class="detail-icon">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Birth Place</div>
+                                <div class="detail-value" id="previewCertificationBirthPlace">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
                                 <i class="fas fa-bullseye"></i>
                             </div>
                             <div class="detail-content">
@@ -795,17 +908,87 @@
 
                         <div class="detail-item">
                             <div class="detail-icon">
+                                <i class="fas fa-home"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Address</div>
+                                <div class="detail-value" id="previewCertificationAddress">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-calendar-check"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Date Issued</div>
+                                <div class="detail-value" id="previewCertificationDateIssued">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item" id="previewEducationalAttainmentItem">
+                            <div class="detail-icon">
+                                <i class="fas fa-graduation-cap"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Educational Level</div>
+                                <div class="detail-value" id="previewCertificationEducationalAttainment">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item" id="previewCourseItem">
+                            <div class="detail-icon">
+                                <i class="fas fa-book"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Course</div>
+                                <div class="detail-value" id="previewCertificationEducationalLevel">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item" id="previewOutOfSchoolYouthItem" style="display: none;">
+                            <div class="detail-icon">
+                                <i class="fas fa-user-graduate"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Out of School Youth</div>
+                                <div class="detail-value" id="previewCertificationOutOfSchoolYouth">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-venus-mars"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Gender</div>
+                                <div class="detail-value" id="previewCertificationGender">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-heart"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Civil Status</div>
+                                <div class="detail-value" id="previewCertificationCivilStatus">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
                                 <i class="fas fa-id-card"></i>
                             </div>
                             <div class="detail-content">
-                                <div class="detail-label">Valid ID</div>
+                                <div class="detail-label">Type of ID</div>
                                 <div class="detail-value" id="previewCertificationValidId">-</div>
                             </div>
                         </div>
                     </div>
 
                     <div class="report-actions">
-                        <button class="action-btn secondary" onclick="goBackToCertificationForm()">Back to Form</button>
+                        <button class="action-btn secondary" onclick="goBackToCertificationStep3()">Back to Form</button>
                         <button class="action-btn primary" onclick="finalSubmitCertification()">Submit Application</button>
                     </div>
                 </div>
@@ -937,6 +1120,16 @@
                             <div class="detail-content">
                                 <div class="detail-label">Monthly Income</div>
                                 <div class="detail-value" id="displayCertificationMonthlyIncome">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item" id="certEducationalLevelContainer" style="display: none;">
+                            <div class="detail-icon">
+                                <i class="fas fa-graduation-cap"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Course</div>
+                                <div class="detail-value" id="displayCertificationEducationalLevel">-</div>
                             </div>
                         </div>
 

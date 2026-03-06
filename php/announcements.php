@@ -49,30 +49,18 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     exit;
 }
 
-// Database connection function
-function getDBConnection() {
-    $host = "rich.cmxcoo6yc8nh.us-east-1.rds.amazonaws.com"; 
-    $user = "admin";
-    $pass = "4mazonb33j4y!";
-    $db   = "rich_db";   
-      
-     // $host = "rich.c4lc2owy0af4.us-east-1.rds.amazonaws.com";
-     // $username = "admin";
-     // $password = "4mazonb33j4y!"; 
-     // $dbname = "rich_db"; 
-       
-    
-    try {
-        $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8", $user, $pass);
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+// Database connection - Load from centralized config
+require_once __DIR__ . '/env_loader.php';
+
+// Helper function to get database connection with special attributes for binary data
+function getAnnouncementDBConnection() {
+    $pdo = getAnnouncementDBConnection();
+    if ($pdo) {
         // Ensure binary data (LONGBLOB) is returned correctly - don't stringify
         $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
         $pdo->setAttribute(PDO::ATTR_STRINGIFY_FETCHES, false);
-        return $pdo;
-    } catch (PDOException $e) {
-        error_log("Database connection failed: " . $e->getMessage());
-        return null;
     }
+    return $pdo;
 }
 
 // Function to serve default image when announcement image is missing
@@ -139,7 +127,7 @@ function serveAnnouncementImage($imageId) {
     header('Pragma: no-cache');
     header('Expires: 0');
     
-    $pdo = getDBConnection();
+    $pdo = getAnnouncementDBConnection();
     if (!$pdo) {
         error_log("Database connection failed for image ID {$imageId}, serving default image");
         serveDefaultImage();
@@ -306,7 +294,7 @@ function serveAnnouncementImage($imageId) {
 
 // Function to fetch announcements
 function fetchAnnouncements() {
-    $pdo = getDBConnection();
+    $pdo = getAnnouncementDBConnection();
     if (!$pdo) {
         return ['success' => false, 'message' => 'Database connection failed'];
     }

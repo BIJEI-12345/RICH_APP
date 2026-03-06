@@ -69,7 +69,7 @@ function initializeApp() {
             
             if (!isLocalhost) {
                 // Only redirect to login if not on localhost
-                window.location.href = 'index.html';
+                window.location.href = 'index.php';
                 return;
             }
         }
@@ -910,21 +910,47 @@ function logout() {
                 icon: 'info',
                 allowOutsideClick: false,
                 showConfirmButton: false,
-                timer: 1000
+                timer: 2000
             });
             
-            // Clear user session data
-            sessionStorage.removeItem('user_email');
-            localStorage.removeItem('user_email');
-            sessionStorage.removeItem('user_data');
-            localStorage.removeItem('user_data');
-            sessionStorage.removeItem('reporter_name');
-            localStorage.removeItem('reporter_name');
-            
-            // Redirect to login page after a short delay
-            setTimeout(() => {
-                window.location.href = 'index.html';
-            }, 1000);
+            // Call PHP logout endpoint to clear server-side session
+            fetch('php/logout.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'same-origin' // Include cookies for session
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Clear user session data (client-side)
+                sessionStorage.removeItem('user_email');
+                localStorage.removeItem('user_email');
+                sessionStorage.removeItem('user_data');
+                localStorage.removeItem('user_data');
+                sessionStorage.removeItem('reporter_name');
+                localStorage.removeItem('reporter_name');
+                sessionStorage.removeItem('loginEmail');
+                sessionStorage.removeItem('resident_data');
+                
+                // Redirect to login page
+                window.location.href = 'index.php';
+            })
+            .catch(error => {
+                console.error('Logout error:', error);
+                // Even if logout endpoint fails, clear client-side data and redirect
+                sessionStorage.removeItem('user_email');
+                localStorage.removeItem('user_email');
+                sessionStorage.removeItem('user_data');
+                localStorage.removeItem('user_data');
+                sessionStorage.removeItem('reporter_name');
+                localStorage.removeItem('reporter_name');
+                sessionStorage.removeItem('loginEmail');
+                sessionStorage.removeItem('resident_data');
+                
+                // Redirect to login page
+                window.location.href = 'index.php';
+            });
         }
     });
 }
@@ -1801,10 +1827,14 @@ function addHouseholdMember() {
                     </select>
                 </div>
             </div>
+            <div class="form-group">
+                <label for="memberDisability_${householdMemberCounter}">Disability <span class="required-indicator">*</span></label>
+                <input type="text" id="memberDisability_${householdMemberCounter}" name="memberDisability_${householdMemberCounter}" placeholder="e.g., None, Visual Impairment, Physical Disability" required>
+            </div>
             <div class="form-row">
                 <div class="form-group">
-                    <label for="memberWork_${householdMemberCounter}">Occupation/Work</label>
-                    <input type="text" id="memberWork_${householdMemberCounter}" name="memberWork_${householdMemberCounter}" placeholder="e.g., Student, Teacher, None">
+                    <label for="memberWork_${householdMemberCounter}">Occupation/Work <span class="required-indicator">*</span></label>
+                    <input type="text" id="memberWork_${householdMemberCounter}" name="memberWork_${householdMemberCounter}" placeholder="e.g., Student, Teacher, None" required>
                 </div>
                 <div class="form-group">
                     <label for="memberPlaceOfWork_${householdMemberCounter}">Place of Work</label>
@@ -1812,8 +1842,8 @@ function addHouseholdMember() {
                 </div>
             </div>
             <div class="form-group">
-                <label for="memberBenefits_${householdMemberCounter}">Supported Benefits from Barangay</label>
-                <input type="text" id="memberBenefits_${householdMemberCounter}" name="memberBenefits_${householdMemberCounter}" placeholder="List any benefits received (optional)">
+                <label for="memberBenefits_${householdMemberCounter}">Supported Benefits from Barangay <span class="required-indicator">*</span></label>
+                <input type="text" id="memberBenefits_${householdMemberCounter}" name="memberBenefits_${householdMemberCounter}" placeholder="List any benefits received" required>
             </div>
         </div>
     `;
@@ -1896,6 +1926,7 @@ async function handleCensusSubmission(e) {
             sex: formData.get(`memberSex_${memberIndex}`),
             birthday: formData.get(`memberBirthday_${memberIndex}`),
             civilStatus: formData.get(`memberCivilStatus_${memberIndex}`),
+            disability: formData.get(`memberDisability_${memberIndex}`),
             work: formData.get(`memberWork_${memberIndex}`) || '',
             placeOfWork: formData.get(`memberPlaceOfWork_${memberIndex}`) || '',
             benefits: formData.get(`memberBenefits_${memberIndex}`) || ''

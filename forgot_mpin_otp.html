@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <link rel="icon" type="image/jpg" href="Images/logo app 2.jpg">
+    <title>RICH - Forgot MPIN</title>
+    <link rel="stylesheet" href="styles/forgot_mpin_otp.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <div class="forgot-mpin-card">
+            <!-- Header -->
+            <div class="header">
+                <div class="nav-section">
+                    <button class="back-btn" onclick="goBack()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="title-section">
+                    <h1 class="page-title">Forgot MPIN</h1>
+                    <p class="subtitle">We'll send an OTP to your email</p>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="main-content">
+                <!-- Email Display -->
+                <div class="email-section">
+                    <label class="email-label">Email Address</label>
+                    <div class="email-display" id="emailDisplay"></div>
+                    <p class="email-hint">We'll send a verification code to this email address</p>
+                </div>
+
+                <!-- Error Message -->
+                <div class="error-message" id="errorMessage" style="display: none;"></div>
+
+                <!-- Success Message -->
+                <div class="success-message" id="successMessage" style="display: none;"></div>
+
+                <!-- Submit Button -->
+                <button type="button" class="submit-btn" id="submitBtn" onclick="sendOTP()">Send OTP</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/forgot_mpin_otp.js"></script>
+</body>
+</html>
+

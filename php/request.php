@@ -12,27 +12,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// Database connection function
-function getDBConnection() {
-    $host = "rich.cmxcoo6yc8nh.us-east-1.rds.amazonaws.com"; 
-    $user = "admin";
-    $pass = "4mazonb33j4y!";
-    $db   = "rich_db";       // Siguraduhin na nagawa mo na ang database na ito sa phpMyAdmin
-      
-     // $host = "rich.c4lc2owy0af4.us-east-1.rds.amazonaws.com";
-     // $username = "admin";
-     // $password = "4mazonb33j4y!"; 
-     // $dbname = "rich_db"; 
-      
-    try {
-        $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8", $user, $pass);
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        return $pdo;
-    } catch (PDOException $e) {
-        error_log("Database connection failed: " . $e->getMessage());
-        return null;
-    }
-}
+// Database connection - Load from centralized config
+require_once __DIR__ . '/env_loader.php';
 
 // Function to insert indigency form data
 function insertIndigencyForm($data) {
@@ -332,6 +313,12 @@ function insertCertificationForm($data) {
             $validId = $data['other_valid_id'];
         }
         
+        // Handle out_of_school_youth - convert to "1" if checked, "0" if unchecked
+        $outOfSchoolYouth = "0"; // Default to "0" (unchecked)
+        if (!empty($data['out_of_school_youth']) && ($data['out_of_school_youth'] === 'yes' || $data['out_of_school_youth'] === 'Yes' || $data['out_of_school_youth'] === '1')) {
+            $outOfSchoolYouth = "1";
+        }
+        
         // Handle image upload (optional)
         $idImage = null;
         if (!empty($data['id_image'])) {
@@ -346,19 +333,121 @@ function insertCertificationForm($data) {
         // Get email from data
         $email = $data['email'] ?? null;
         
-        // Check if email column exists
-        $checkColumn = $pdo->query("SHOW COLUMNS FROM certification_forms LIKE 'email'");
-        $emailColumnExists = $checkColumn->rowCount() > 0;
+        // Check if optional columns exist
+        $checkEmailColumn = $pdo->query("SHOW COLUMNS FROM certification_forms LIKE 'email'");
+        $emailColumnExists = $checkEmailColumn->rowCount() > 0;
         
-        if ($emailColumnExists && $email) {
-            // Prepare the insert statement with email
+        $checkEducationalLevelColumn = $pdo->query("SHOW COLUMNS FROM certification_forms LIKE 'educational_level'");
+        $educationalLevelColumnExists = $checkEducationalLevelColumn->rowCount() > 0;
+        
+        $checkCourseColumn = $pdo->query("SHOW COLUMNS FROM certification_forms LIKE 'course'");
+        $courseColumnExists = $checkCourseColumn->rowCount() > 0;
+        
+        $checkOutOfSchoolYouthColumn = $pdo->query("SHOW COLUMNS FROM certification_forms LIKE 'out_of_school_youth'");
+        $outOfSchoolYouthColumnExists = $checkOutOfSchoolYouthColumn->rowCount() > 0;
+        
+        // Prepare INSERT statements depending on available columns
+        if ($emailColumnExists && $email && $educationalLevelColumnExists && $courseColumnExists && $outOfSchoolYouthColumnExists) {
+            // With email, educational_level, course, and out_of_school_youth
+            $stmt = $pdo->prepare("
+                INSERT INTO certification_forms 
+                (email, first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, gender, purpose, citizenship, job_position, start_of_work, monthly_income, start_year, month_year, educational_level, course, out_of_school_youth, valid_id, id_image, submitted_at) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+            
+            $result = $stmt->execute([
+                $email,
+                $data['first_name'],
+                $data['middle_name'] ?? null,
+                $data['last_name'],
+                $data['address'],
+                $data['birth_date'],
+                $data['birth_place'],
+                $data['civil_status'],
+                $data['gender'],
+                $purpose,
+                $data['citizenship'] ?? null,
+                $data['job'] ?? null,
+                $data['date_hire'] ?? null,
+                $data['monthly_income'] ?? null,
+                $data['year_residing'] ?? null,
+                $data['month_year_passing'] ?? null,
+                $data['educational_level'] ?? null,
+                $data['course'] ?? null,
+                $outOfSchoolYouth,
+                $validId,
+                $idImage,
+                $philippineTime
+            ]);
+        } elseif ($emailColumnExists && $email && $educationalLevelColumnExists && $courseColumnExists) {
+            // With email, educational_level, and course (no out_of_school_youth column)
+            $stmt = $pdo->prepare("
+                INSERT INTO certification_forms 
+                (email, first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, gender, purpose, citizenship, job_position, start_of_work, monthly_income, start_year, month_year, educational_level, course, valid_id, id_image, submitted_at) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+            
+            $result = $stmt->execute([
+                $email,
+                $data['first_name'],
+                $data['middle_name'] ?? null,
+                $data['last_name'],
+                $data['address'],
+                $data['birth_date'],
+                $data['birth_place'],
+                $data['civil_status'],
+                $data['gender'],
+                $purpose,
+                $data['citizenship'] ?? null,
+                $data['job'] ?? null,
+                $data['date_hire'] ?? null,
+                $data['monthly_income'] ?? null,
+                $data['year_residing'] ?? null,
+                $data['month_year_passing'] ?? null,
+                $data['educational_level'] ?? null,
+                $data['course'] ?? null,
+                $validId,
+                $idImage,
+                $philippineTime
+            ]);
+        } elseif ($emailColumnExists && $email && $outOfSchoolYouthColumnExists) {
+            // With email and out_of_school_youth only
+            $stmt = $pdo->prepare("
+                INSERT INTO certification_forms 
+                (email, first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, gender, purpose, citizenship, job_position, start_of_work, monthly_income, start_year, month_year, out_of_school_youth, valid_id, id_image, submitted_at) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+            
+            $result = $stmt->execute([
+                $email,
+                $data['first_name'],
+                $data['middle_name'] ?? null,
+                $data['last_name'],
+                $data['address'],
+                $data['birth_date'],
+                $data['birth_place'],
+                $data['civil_status'],
+                $data['gender'],
+                $purpose,
+                $data['citizenship'] ?? null,
+                $data['job'] ?? null,
+                $data['date_hire'] ?? null,
+                $data['monthly_income'] ?? null,
+                $data['year_residing'] ?? null,
+                $data['month_year_passing'] ?? null,
+                $outOfSchoolYouth,
+                $validId,
+                $idImage,
+                $philippineTime
+            ]);
+        } elseif ($emailColumnExists && $email) {
+            // With email only (no educational_level / course / out_of_school_youth columns)
             $stmt = $pdo->prepare("
                 INSERT INTO certification_forms 
                 (email, first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, gender, purpose, citizenship, job_position, start_of_work, monthly_income, start_year, month_year, valid_id, id_image, submitted_at) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             
-            // Execute the insert
             $result = $stmt->execute([
                 $email,
                 $data['first_name'],
@@ -380,15 +469,104 @@ function insertCertificationForm($data) {
                 $idImage,
                 $philippineTime
             ]);
+        } elseif ($educationalLevelColumnExists && $courseColumnExists && $outOfSchoolYouthColumnExists) {
+            // Without email, but with educational_level, course, and out_of_school_youth
+            $stmt = $pdo->prepare("
+                INSERT INTO certification_forms 
+                (first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, gender, purpose, citizenship, job_position, start_of_work, monthly_income, start_year, month_year, educational_level, course, out_of_school_youth, valid_id, id_image, submitted_at) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+            
+            $result = $stmt->execute([
+                $data['first_name'],
+                $data['middle_name'] ?? null,
+                $data['last_name'],
+                $data['address'],
+                $data['birth_date'],
+                $data['birth_place'],
+                $data['civil_status'],
+                $data['gender'],
+                $purpose,
+                $data['citizenship'] ?? null,
+                $data['job'] ?? null,
+                $data['date_hire'] ?? null,
+                $data['monthly_income'] ?? null,
+                $data['year_residing'] ?? null,
+                $data['month_year_passing'] ?? null,
+                $data['educational_level'] ?? null,
+                $data['course'] ?? null,
+                $outOfSchoolYouth,
+                $validId,
+                $idImage,
+                $philippineTime
+            ]);
+        } elseif ($educationalLevelColumnExists && $courseColumnExists) {
+            // Without email, but with educational_level and course (no out_of_school_youth column)
+            $stmt = $pdo->prepare("
+                INSERT INTO certification_forms 
+                (first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, gender, purpose, citizenship, job_position, start_of_work, monthly_income, start_year, month_year, educational_level, course, valid_id, id_image, submitted_at) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+            
+            $result = $stmt->execute([
+                $data['first_name'],
+                $data['middle_name'] ?? null,
+                $data['last_name'],
+                $data['address'],
+                $data['birth_date'],
+                $data['birth_place'],
+                $data['civil_status'],
+                $data['gender'],
+                $purpose,
+                $data['citizenship'] ?? null,
+                $data['job'] ?? null,
+                $data['date_hire'] ?? null,
+                $data['monthly_income'] ?? null,
+                $data['year_residing'] ?? null,
+                $data['month_year_passing'] ?? null,
+                $data['educational_level'] ?? null,
+                $data['course'] ?? null,
+                $validId,
+                $idImage,
+                $philippineTime
+            ]);
+        } elseif ($outOfSchoolYouthColumnExists) {
+            // Without email/educational_level/course, but with out_of_school_youth
+            $stmt = $pdo->prepare("
+                INSERT INTO certification_forms 
+                (first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, gender, purpose, citizenship, job_position, start_of_work, monthly_income, start_year, month_year, out_of_school_youth, valid_id, id_image, submitted_at) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+            
+            $result = $stmt->execute([
+                $data['first_name'],
+                $data['middle_name'] ?? null,
+                $data['last_name'],
+                $data['address'],
+                $data['birth_date'],
+                $data['birth_place'],
+                $data['civil_status'],
+                $data['gender'],
+                $purpose,
+                $data['citizenship'] ?? null,
+                $data['job'] ?? null,
+                $data['date_hire'] ?? null,
+                $data['monthly_income'] ?? null,
+                $data['year_residing'] ?? null,
+                $data['month_year_passing'] ?? null,
+                $outOfSchoolYouth,
+                $validId,
+                $idImage,
+                $philippineTime
+            ]);
         } else {
-            // Prepare the insert statement without email (backward compatibility)
+            // Original structure: no email, educational_level, course, or out_of_school_youth columns
             $stmt = $pdo->prepare("
                 INSERT INTO certification_forms 
                 (first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, gender, purpose, citizenship, job_position, start_of_work, monthly_income, start_year, month_year, valid_id, id_image, submitted_at) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             
-            // Execute the insert
             $result = $stmt->execute([
                 $data['first_name'],
                 $data['middle_name'] ?? null,

@@ -1,48 +1,19 @@
-# XAMPP / Server files
-*.log
-error_log
-access_log
+# Environment variables
+.env
 
-# IDE files
+# Composer dependencies
+vendor/
+
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
-*.sublime-project
-*.sublime-workspace
 
-# OS files
+# Logs
+*.log
+debug.log
+
+# OS
 .DS_Store
 Thumbs.db
-desktop.ini
-
-# Environment and config files
-.env
-config.php
-*.env
-
-# Temporary files
-*.tmp
-*.bak
-*.cache
-*.temp
-
-# Composer
-/vendor/
-composer.phar
-
-# Node modules (if any)
-node_modules/
-npm-debug.log
-
-# Database dumps (if any)
-*.sql.gz
-*.sql.bak
-
-# Uploaded files (if stored locally)
-uploads/
-temp/
-
-# PHP specific
-*.php~
-*.php.bak

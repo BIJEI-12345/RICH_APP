@@ -17,8 +17,7 @@
         <div class="header-top">
             <div class="header-left">
                 <div class="logo">
-                    <img src="Images/reserve.jpg" alt="Logo" class="logo-image">
-                    <span class="logo-text">RICH</span>
+                    <img src="Images/no_bg_logo.png" alt="Logo" class="logo-image">
                 </div>
             </div>
             <div class="header-right">
@@ -232,7 +231,9 @@
                         <div class="announcements-track" id="announcements-track">
                             <!-- Loading indicator -->
                             <div class="loading-indicator" id="loading-indicator">
-                                <div class="spinner"></div>
+                                <div class="rotating-circle">
+                                    <img src="Images/cricle-removebg.png" alt="Loading Circle" class="circle-image">
+                                </div>
                                 <p>Loading announcements...</p>
                             </div>
                             
@@ -464,23 +465,26 @@
                             
                             <div class="form-row">
                                 <div class="form-group">
-                                    <label for="censusContactNumber">Contact Number</label>
-                                    <input type="tel" id="censusContactNumber" name="contactNumber" placeholder="09XXXXXXXXX" maxlength="11" pattern="[0-9]{11}">
+                                    <label for="censusContactNumber">Contact Number <span class="required-indicator">*</span></label>
+                                    <input type="tel" id="censusContactNumber" name="contactNumber" placeholder="09XXXXXXXXX" maxlength="11" pattern="[0-9]{11}" required>
+                                    
+                                    <label for="censusDisability" style="margin-top: 0.75rem;">Disability <span class="required-indicator">*</span></label>
+                                    <input type="text" id="censusDisability" name="disability" placeholder="e.g., None, Visual Impairment, Physical Disability" required>
                                 </div>
                                 <div class="form-group">
-                                    <label for="censusOccupation">Your Occupation</label>
-                                    <input type="text" id="censusOccupation" name="occupation" placeholder="e.g., Teacher, Engineer, Student">
+                                    <label for="censusOccupation">Your Occupation <span class="required-indicator">*</span></label>
+                                    <input type="text" id="censusOccupation" name="occupation" placeholder="e.g., Teacher, Engineer, Student" required>
                                 </div>
                             </div>
                             
                             <div class="form-row">
                                 <div class="form-group">
-                                    <label for="censusPlaceOfWork">Place of Work</label>
-                                    <input type="text" id="censusPlaceOfWork" name="placeOfWork" placeholder="Company name or work address">
+                                    <label for="censusPlaceOfWork">Place of Work <span class="required-indicator">*</span></label>
+                                    <input type="text" id="censusPlaceOfWork" name="placeOfWork" placeholder="Company name or work address" required>
                                 </div>
                                 <div class="form-group">
-                                    <label for="censusClaimedBenefits">Supported Benefits from Barangay</label>
-                                    <input type="text" id="censusClaimedBenefits" name="claimedBenefits" placeholder="List any benefits you receive">
+                                    <label for="censusClaimedBenefits">Supported Benefits from Barangay <span class="required-indicator">*</span></label>
+                                    <input type="text" id="censusClaimedBenefits" name="claimedBenefits" placeholder="List any benefits you receive" required>
                                 </div>
                             </div>
                             
@@ -490,8 +494,8 @@
                             </div>
                             
                             <div class="form-group">
-                                <label for="censusUnitHouseNumber">Unit/House Number:</label>
-                                <input type="text" id="censusUnitHouseNumber" name="unitHouseNumber" placeholder="Enter unit or house number (optional)">
+                                <label for="censusUnitHouseNumber">Unit/House Number <span class="required-indicator">*</span></label>
+                                <input type="text" id="censusUnitHouseNumber" name="unitHouseNumber" placeholder="Enter unit or house number" required>
                             </div>
                         </div>
                     </div>
