@@ -1,8 +1,10 @@
 # Environment variables
 .env
+*.env
 
 # Composer dependencies
 vendor/
+composer.phar
 
 # IDE
 .vscode/
@@ -17,24 +19,16 @@ debug.log
 # OS
 .DS_Store
 Thumbs.db
-<<<<<<< HEAD
-=======
 desktop.ini
 
 # Environment and config files
-.env
 config.php
-*.env
 
 # Temporary files
 *.tmp
 *.bak
 *.cache
 *.temp
-
-# Composer
-/vendor/
-composer.phar
 
 # Node modules (if any)
 node_modules/
@@ -54,4 +48,3 @@ php/sent_emails/
 # PHP specific
 *.php~
 *.php.bak
->>>>>>> 9fd9298ac44fc52b0333a0f2578e90264f9eb0ea
