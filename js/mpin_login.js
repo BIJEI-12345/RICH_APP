@@ -7,9 +7,8 @@ window.goBack = function() {
     sessionStorage.removeItem('loginMobile');
     sessionStorage.removeItem('user_email');
     sessionStorage.removeItem('user');
-    // Use force_login parameter to bypass redirect to main_UI
-    // Also add timestamp to prevent caching issues
-    window.location.href = 'index.php?force_login=true&t=' + Date.now();
+    // Redirect to login page (index.php)
+    window.location.href = 'index.php';
 };
 
 document.addEventListener('DOMContentLoaded', function() {

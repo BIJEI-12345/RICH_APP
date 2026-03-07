@@ -305,12 +305,10 @@ if ($logoutRequest) {
 }
 
 // Check if user is already logged in via PHP session
-// Allow bypass with ?force_login=true query parameter for testing
-$forceLogin = isset($_GET['force_login']) && $_GET['force_login'] === 'true';
-
-if (isset($_SESSION['user_email']) && !empty($_SESSION['user_email']) && !$forceLogin && !$logoutRequest) {
-    // Only redirect if sessionStorage exists (user is actually logged in)
-    // If no sessionStorage, treat as new session and show login page
+// Only redirect if sessionStorage exists (user is actually logged in)
+// If no sessionStorage, always show login page
+if (isset($_SESSION['user_email']) && !empty($_SESSION['user_email']) && !$logoutRequest) {
+    // Check if sessionStorage exists - if not, clear PHP session and show login
     echo '<!DOCTYPE html><html><head><script>';
     echo 'const hasSession = sessionStorage.getItem("user_email") || localStorage.getItem("user_email");';
     echo 'if (hasSession) {';
@@ -318,7 +316,7 @@ if (isset($_SESSION['user_email']) && !empty($_SESSION['user_email']) && !$force
     echo '    sessionStorage.setItem("user_email", "' . htmlspecialchars($_SESSION['user_email'], ENT_QUOTES) . '");';
     echo '    window.location.href = "main_UI.html";';
     echo '} else {';
-    echo '    // No sessionStorage - clear PHP session and show login';
+    echo '    // No sessionStorage - clear PHP session and show login page';
     echo '    window.location.href = "index.php?logout=true";';
     echo '}';
     echo '</script></head><body></body></html>';

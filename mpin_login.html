@@ -68,7 +68,8 @@
             sessionStorage.removeItem('loginMobile');
             sessionStorage.removeItem('user_email');
             sessionStorage.removeItem('user');
-            window.location.href = 'index.php?force_login=true&t=' + Date.now();
+            // Redirect to login page (index.php)
+            window.location.href = 'index.php';
         };
         
         // Force reload to bypass cache - ensures latest version is loaded
