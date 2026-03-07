@@ -1318,7 +1318,7 @@ body {
     min-height: calc(100vh - 60px);
     max-height: none; /* Remove any max-height restrictions */
     padding: 2rem;
-    padding-bottom: 300px; /* Increased padding to show full form-step content including navigation buttons */
+    padding-bottom: 2rem; /* Reduced padding - scroll ends after step-navigation */
     padding-right: calc(2rem + 8px); /* Add space for scrollbar on the right */
     overflow-y: auto; /* Enable scrolling */
     overflow-x: hidden;
@@ -1481,9 +1481,9 @@ body {
     justify-content: space-between;
     align-items: flex-start;
     margin-top: 3rem;
-    margin-bottom: 4rem; /* Increased bottom margin for scrolling */
+    margin-bottom: 2rem; /* Reduced bottom margin - scroll ends here */
     padding-top: 2rem;
-    padding-bottom: 4rem; /* Increased bottom padding to ensure full visibility */
+    padding-bottom: 2rem; /* Reduced bottom padding - scroll ends here */
     border-top: 1px solid #323131;
     gap: 1rem;
 }
@@ -2183,7 +2183,7 @@ body {
 @media (max-width: 768px) {
     .form-container {
         padding: 1rem;
-        padding-bottom: 350px; /* Increased bottom padding for mobile to ensure buttons are fully visible */
+        padding-bottom: 1rem; /* Reduced padding - scroll ends after step-navigation */
         width: 100% !important;
         max-width: 100% !important;
         box-sizing: border-box !important;
@@ -2321,7 +2321,7 @@ body {
 @media (max-width: 480px) {
     .form-container {
         padding: 0.5rem;
-        padding-bottom: 400px; /* Increased bottom padding for small mobile to ensure buttons are fully visible */
+        padding-bottom: 0.5rem; /* Reduced padding - scroll ends after step-navigation */
         width: 100% !important;
         max-width: 100% !important;
         box-sizing: border-box !important;
@@ -2653,9 +2653,9 @@ body {
     
     .step-navigation {
         margin-top: 2rem;
-        margin-bottom: 5rem; /* Increased bottom margin for mobile to ensure buttons are visible */
+        margin-bottom: 1.5rem; /* Reduced bottom margin - scroll ends here */
         padding-top: 1.5rem;
-        padding-bottom: 5rem; /* Increased bottom padding for mobile to ensure buttons are visible */
+        padding-bottom: 1.5rem; /* Reduced bottom padding - scroll ends here */
         flex-wrap: wrap;
         gap: 0.75rem;
     }
