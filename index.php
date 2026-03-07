@@ -309,8 +309,12 @@ if ($logoutRequest) {
 $forceLogin = isset($_GET['force_login']) && $_GET['force_login'] === 'true';
 
 if (isset($_SESSION['user_email']) && !empty($_SESSION['user_email']) && !$forceLogin && !$logoutRequest) {
-    // User is logged in, redirect to main UI
-    header('Location: main_UI.html');
+    // User is logged in, but sync sessionStorage first to prevent bootloop on mobile
+    // Add a script to sync sessionStorage before redirect
+    echo '<!DOCTYPE html><html><head><script>';
+    echo 'sessionStorage.setItem("user_email", "' . htmlspecialchars($_SESSION['user_email'], ENT_QUOTES) . '");';
+    echo 'window.location.href = "main_UI.html";';
+    echo '</script></head><body></body></html>';
     exit;
 }
 

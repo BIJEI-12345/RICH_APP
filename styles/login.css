@@ -637,21 +637,21 @@ body {
     }
     
     .rotating-circle {
-        width: min(20vw, 120px) !important;
-        height: min(20vw, 120px) !important;
-        min-width: 60px !important;
-        min-height: 60px !important;
-        max-width: 120px !important;
-        max-height: 120px !important;
+        width: min(15vw, 100px) !important;
+        height: min(15vw, 100px) !important;
+        min-width: 50px !important;
+        min-height: 50px !important;
+        max-width: 100px !important;
+        max-height: 100px !important;
     }
     
     .fixed-text {
-        width: min(25vw, 150px) !important;
-        height: min(20vw, 120px) !important;
-        min-width: 80px !important;
-        min-height: 60px !important;
-        max-width: 150px !important;
-        max-height: 120px !important;
+        width: min(20vw, 120px) !important;
+        height: min(16vw, 100px) !important;
+        min-width: 60px !important;
+        min-height: 50px !important;
+        max-width: 120px !important;
+        max-height: 100px !important;
     }
     
     .logo-container {
@@ -678,6 +678,16 @@ body {
         max-width: 100% !important;
         max-height: 100% !important;
         object-fit: contain !important;
+    }
+    
+    /* Reduce login button size on mobile */
+    .login-btn {
+        font-size: 14px !important;
+        padding: 14px !important;
+    }
+    
+    .login-btn.loading {
+        font-size: 13px !important;
     }
 }
 
