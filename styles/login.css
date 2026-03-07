@@ -646,12 +646,12 @@ body {
     }
     
     .fixed-text {
-        width: min(20vw, 120px) !important;
-        height: min(16vw, 100px) !important;
-        min-width: 60px !important;
-        min-height: 50px !important;
-        max-width: 120px !important;
-        max-height: 100px !important;
+        width: min(16vw, 90px) !important;
+        height: min(13vw, 75px) !important;
+        min-width: 50px !important;
+        min-height: 40px !important;
+        max-width: 90px !important;
+        max-height: 75px !important;
     }
     
     .logo-container {
@@ -703,12 +703,12 @@ body {
     }
     
     .fixed-text {
-        width: min(16vh, 130px) !important;
-        height: min(12vh, 100px) !important;
-        min-width: 80px !important;
-        min-height: 60px !important;
-        max-width: 130px !important;
-        max-height: 100px !important;
+        width: min(13vh, 100px) !important;
+        height: min(10vh, 80px) !important;
+        min-width: 60px !important;
+        min-height: 45px !important;
+        max-width: 100px !important;
+        max-height: 80px !important;
     }
     
     .logo-container {
@@ -818,12 +818,12 @@ body {
     }
     
     .fixed-text {
-        width: min(22vw, 110px) !important;
-        height: min(18vw, 85px) !important;
-        min-width: 60px !important;
-        min-height: 50px !important;
-        max-width: 110px !important;
-        max-height: 85px !important;
+        width: min(18vw, 85px) !important;
+        height: min(15vw, 70px) !important;
+        min-width: 45px !important;
+        min-height: 35px !important;
+        max-width: 85px !important;
+        max-height: 70px !important;
     }
     
     .logo-container {
