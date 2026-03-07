@@ -120,7 +120,7 @@ document.addEventListener('DOMContentLoaded', function() {
             Swal.fire({
                 icon: 'error',
                 title: 'Network Error',
-                text: 'Network error. Please try again.',
+                text: 'Check your internet connection and try again.',
                 confirmButtonText: 'OK',
                 confirmButtonColor: '#2677e1',
                 customClass: {
@@ -194,7 +194,7 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             console.error('Verification error:', error);
-            showError('Network error. Please try again.');
+            showError('Check your internet connection and try again.');
         })
         .finally(() => {
             // Reset button

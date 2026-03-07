@@ -135,7 +135,7 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             console.error('Login error:', error);
-            let errorMessage = 'Network error. Please try again.';
+            let errorMessage = 'Check your internet connection and try again.';
             
             if (error.message) {
                 errorMessage = error.message;

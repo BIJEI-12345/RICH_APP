@@ -80,7 +80,7 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             console.error('Send OTP error:', error);
-            showError('Network error. Please check your connection and try again.');
+            showError('Check your internet connection and try again.');
             submitBtn.disabled = false;
             submitBtn.textContent = 'Send OTP';
             submitBtn.classList.remove('loading');

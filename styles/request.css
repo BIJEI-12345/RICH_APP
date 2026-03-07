@@ -133,7 +133,7 @@ body {
     position: relative;
     overflow-y: auto;
     overflow-x: hidden;
-    z-index: 999;
+    z-index: 100; /* Lower z-index so content doesn't go under it */
     transition: all 0.3s ease;
     /* Hide scrollbar */
     scrollbar-width: none; /* Firefox */
@@ -330,6 +330,7 @@ body {
     display: flex;
     flex-direction: column;
     position: relative; /* Make it a positioning context for absolute children */
+    z-index: 1; /* Ensure content stays above sidebar */
 }
 
 /* Sidebar collapsed display handled in main styles above */
@@ -1884,9 +1885,10 @@ body {
     background: white;
     border-radius: 15px;
     box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
+    overflow: visible; /* Allow buttons to be visible */
     max-height: 80vh;
     overflow-y: auto;
+    padding-bottom: 100px; /* Add padding to ensure buttons are visible */
 }
 
 /* Custom scrollbar for report-display */
@@ -2039,9 +2041,13 @@ body {
     gap: 1rem;
     justify-content: center;
     margin-top: 2rem;
-    padding-top: 1rem;
+    padding: 1.5rem 1rem; /* Add padding to ensure visibility */
     border-top: 1px solid #e8e8e8;
     flex-wrap: wrap;
+    position: sticky; /* Make buttons sticky at bottom */
+    bottom: 0;
+    background: white; /* Ensure background is white */
+    z-index: 10; /* Ensure buttons are above content */
 }
 
 .action-btn {

@@ -95,7 +95,7 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             console.error('Resend error:', error);
-            showError('Network error. Please check your connection and try again.');
+            showError('Check your internet connection and try again.');
             if (resendBtn) {
                 resendBtn.disabled = false;
                 resendBtn.textContent = 'Resend code';
@@ -279,7 +279,7 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             console.error('OTP verification error:', error);
-            showError('Network error. Please check your connection and try again.');
+            showError('Check your internet connection and try again.');
             // Clear inputs
             otpInputs.forEach(input => {
                 input.value = '';

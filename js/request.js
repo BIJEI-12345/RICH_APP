@@ -1008,7 +1008,7 @@ function submitRequest(data) {
     })
     .catch(error => {
         setFormLoading(false);
-        showMessage('Network error. Please check your connection and try again.', 'error');
+        showMessage('Check your internet connection and try again.', 'error');
     });
     */
 }
@@ -2261,6 +2261,12 @@ function displayBarangayIdPreview(formData) {
     document.getElementById('previewBarangayIdGender').textContent = formData.get('gender') ? formData.get('gender').charAt(0).toUpperCase() + formData.get('gender').slice(1) : '-';
     document.getElementById('previewBarangayIdCivilStatus').textContent = formData.get('civilStatus') ? formData.get('civilStatus').charAt(0).toUpperCase() + formData.get('civilStatus').slice(1) : '-';
     document.getElementById('previewBarangayIdValidId').textContent = validId ? validId.charAt(0).toUpperCase() + validId.slice(1).replace('-', ' ') : '-';
+    
+    // Update submit button text with step count
+    const submitBtn = document.querySelector('#barangayIdPreviewDisplay .action-btn.primary');
+    if (submitBtn) {
+        submitBtn.textContent = `Submit Application (Step ${totalSteps} of ${totalSteps})`;
+    }
 }
 
 // Go back to Barangay ID form at Step 3 (Contact and Documents)
@@ -2424,7 +2430,7 @@ async function finalSubmitBarangayId() {
         // Hide full-screen loading
         hideFullScreenLoading();
         
-        showMessage('Network error. Please try again.', 'error', 'barangayIdFormElement');
+        showMessage('Check your internet connection and try again.', 'error', 'barangayIdFormElement');
     }
 }
 
@@ -2848,6 +2854,12 @@ function displayCertificationPreview(formData) {
     document.getElementById('previewCertificationGender').textContent = genderText;
     document.getElementById('previewCertificationCivilStatus').textContent = civilStatusText;
     document.getElementById('previewCertificationValidId').textContent = validIdText;
+    
+    // Update submit button text with step count
+    const submitBtn = document.querySelector('#certificationPreviewDisplay .action-btn.primary');
+    if (submitBtn) {
+        submitBtn.textContent = `Submit Application (Step ${totalCertSteps} of ${totalCertSteps})`;
+    }
 }
 
 // Go back to Certification form at Step 3 (Documents)
@@ -2966,7 +2978,7 @@ async function finalSubmitCertification() {
     } catch (error) {
         console.error('Error submitting certification form:', error);
         hideFullScreenLoading();
-        showMessage('Network error. Please try again.', 'error', 'certificationFormElement');
+        showMessage('Check your internet connection and try again.', 'error', 'certificationFormElement');
     }
 }
 
@@ -3168,6 +3180,12 @@ function displayCoePreview(formData) {
     document.getElementById('previewCoeDateStarted').textContent = formData.get('coeDateStarted') || '-';
     document.getElementById('previewCoeMonthlySalary').textContent = formattedSalary;
     document.getElementById('previewCoeValidId').textContent = validId ? validId.charAt(0).toUpperCase() + validId.slice(1).replace('-', ' ') : '-';
+    
+    // Update submit button text with step count
+    const submitBtn = document.querySelector('#coePreviewDisplay .action-btn.primary');
+    if (submitBtn) {
+        submitBtn.textContent = `Submit Application (Step ${totalCoeSteps} of ${totalCoeSteps})`;
+    }
 }
 
 // Go back to COE form
@@ -3253,7 +3271,7 @@ async function finalSubmitCoe() {
     } catch (error) {
         console.error('Error submitting COE form:', error);
         hideFullScreenLoading();
-        showMessage('Network error. Please try again.', 'error', 'coeFormElement');
+        showMessage('Check your internet connection and try again.', 'error', 'coeFormElement');
     }
 }
 
@@ -3378,6 +3396,12 @@ function displayIndigencyPreview(formData) {
     document.getElementById('previewIndigencyCivilStatus').textContent = formData.get('indCivilStatus') ? formData.get('indCivilStatus').charAt(0).toUpperCase() + formData.get('indCivilStatus').slice(1) : '-';
     document.getElementById('previewIndigencyPurpose').textContent = purpose ? purpose.charAt(0).toUpperCase() + purpose.slice(1).replace('-', ' ') : '-';
     document.getElementById('previewIndigencyValidId').textContent = validId ? validId.charAt(0).toUpperCase() + validId.slice(1).replace('-', ' ') : '-';
+    
+    // Update submit button text with step count
+    const submitBtn = document.querySelector('#indigencyPreviewDisplay .action-btn.primary');
+    if (submitBtn) {
+        submitBtn.textContent = `Submit Application (Step ${totalIndSteps} of ${totalIndSteps})`;
+    }
 }
 
 // Go back to Indigency form
@@ -3485,7 +3509,7 @@ async function finalSubmitIndigency() {
         // Hide full-screen loading
         hideFullScreenLoading();
         
-        showMessage('Network error. Please try again.', 'error', 'indigencyFormElement');
+        showMessage('Check your internet connection and try again.', 'error', 'indigencyFormElement');
     }
 }
 
@@ -3588,6 +3612,12 @@ function showClearancePreview(formData) {
             el.textContent = value;
         }
     });
+
+    // Update submit button text with step count
+    const submitBtn = document.querySelector('#clearancePreviewDisplay .action-btn.primary');
+    if (submitBtn) {
+        submitBtn.textContent = `Submit Application (Step ${totalClearSteps} of ${totalClearSteps})`;
+    }
 
     // Toggle visibility: hide form, show preview
     const formContainer = document.getElementById('clearanceForm');
@@ -3757,7 +3787,7 @@ async function confirmClearanceSubmission() {
             submitBtn.textContent = originalText;
             submitBtn.disabled = false;
         }
-        showMessage('Network error. Please try again.', 'error', 'clearanceFormElement');
+        showMessage('Check your internet connection and try again.', 'error', 'clearanceFormElement');
     }
 }
 

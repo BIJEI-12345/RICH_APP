@@ -463,7 +463,7 @@ async function handleEmergencySubmission(e) {
         submitBtn.textContent = originalText;
         submitBtn.disabled = false;
         
-        showMessage('Network error. Please try again.', 'error');
+        showMessage('Check your internet connection and try again.', 'error');
     }
 }
 

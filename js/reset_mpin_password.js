@@ -282,7 +282,7 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             console.error('Reset MPIN error:', error);
-            showError('Network error. Please check your connection and try again.');
+            showError('Check your internet connection and try again.');
             // Clear inputs
             newMpinInputs.forEach(input => {
                 input.value = '';
