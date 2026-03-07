@@ -334,6 +334,20 @@ $userEmail = $_SESSION['user_email'] ?? '';
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
+    <!-- Loading Screen -->
+    <div class="loading-screen">
+        <div class="loading-content">
+            <div class="logo-container">
+                <div class="rotating-circle">
+                    <img src="Images/cricle-removebg.png" alt="Loading Circle" class="circle-image">
+                </div>
+                <div class="fixed-text">
+                    <img src="Images/no_bg_logo.png" alt="RICH Logo" class="text-image">
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Main Content -->
     <div id="mainContent" class="main-content">
         <div class="container">
