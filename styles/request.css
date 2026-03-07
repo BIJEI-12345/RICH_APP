@@ -1318,7 +1318,7 @@ body {
     min-height: calc(100vh - 60px);
     max-height: none; /* Remove any max-height restrictions */
     padding: 2rem;
-    padding-bottom: 150px; /* Increased padding to allow full form scrolling */
+    padding-bottom: 75px; /* Reduced padding - half of previous increase */
     padding-right: calc(2rem + 8px); /* Add space for scrollbar on the right */
     overflow-y: auto; /* Enable scrolling */
     overflow-x: hidden;
@@ -2183,7 +2183,7 @@ body {
 @media (max-width: 768px) {
     .form-container {
         padding: 1rem;
-        padding-bottom: 200px; /* Increased padding to allow full form scrolling on mobile */
+        padding-bottom: 100px; /* Reduced padding - half of previous increase */
         width: 100% !important;
         max-width: 100% !important;
         box-sizing: border-box !important;
@@ -2321,7 +2321,7 @@ body {
 @media (max-width: 480px) {
     .form-container {
         padding: 0.5rem;
-        padding-bottom: 250px; /* Increased padding to allow full form scrolling on small mobile */
+        padding-bottom: 125px; /* Reduced padding - half of previous increase */
         width: 100% !important;
         max-width: 100% !important;
         box-sizing: border-box !important;
