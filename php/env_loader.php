@@ -5,13 +5,14 @@
  * Includes database connection and API URL helpers
  */
 
-// Define project root path explicitly
-// This file is in php/env_loader.php, so parent directory is project root
+// Define project root
 $projectRoot = dirname(__DIR__);
 $envFile = $projectRoot . DIRECTORY_SEPARATOR . '.env';
 
-// Load Composer autoloader
+// Composer autoload path
 $autoloadPath = $projectRoot . '/vendor/autoload.php';
+
+// default value
 $autoloaderLoaded = false;
 
 if (file_exists($autoloadPath)) {
