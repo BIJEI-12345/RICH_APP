@@ -354,7 +354,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // Clear session storage
         sessionStorage.removeItem('loginEmail');
         sessionStorage.removeItem('loginMobile');
-        window.location.href = 'index.php';
+        // Use force_login parameter to bypass redirect to main_UI
+        window.location.href = 'index.php?force_login=true';
     };
     
     // Forgot MPIN
