@@ -351,11 +351,14 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Go back to login
     window.goBack = function() {
-        // Clear session storage
+        // Clear all session storage related to login
         sessionStorage.removeItem('loginEmail');
         sessionStorage.removeItem('loginMobile');
+        sessionStorage.removeItem('user_email');
+        sessionStorage.removeItem('user');
         // Use force_login parameter to bypass redirect to main_UI
-        window.location.href = 'index.php?force_login=true';
+        // Also add timestamp to prevent caching issues
+        window.location.href = 'index.php?force_login=true&t=' + Date.now();
     };
     
     // Forgot MPIN
