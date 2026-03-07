@@ -24,7 +24,14 @@ document.addEventListener('DOMContentLoaded', function() {
         input.addEventListener('input', function(e) {
             const value = e.target.value;
             
-            // Only allow numbers
+            // Only allow numbers - remove any non-numeric characters
+            const numericValue = value.replace(/[^0-9]/g, '');
+            if (numericValue !== value) {
+                e.target.value = numericValue;
+                return;
+            }
+            
+            // Only allow single digit
             if (!/^\d$/.test(value)) {
                 e.target.value = '';
                 return;
@@ -41,6 +48,19 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         input.addEventListener('keydown', function(e) {
+            // Block all non-numeric keys except navigation and control keys
+            const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab', 'Enter', 'Home', 'End'];
+            const isNumber = /^[0-9]$/.test(e.key);
+            const isAllowed = allowedKeys.includes(e.key) || 
+                             (e.ctrlKey && ['a', 'c', 'v', 'x'].includes(e.key.toLowerCase())) ||
+                             (e.metaKey && ['a', 'c', 'v', 'x'].includes(e.key.toLowerCase()));
+            
+            // Block if not a number and not an allowed key
+            if (!isNumber && !isAllowed) {
+                e.preventDefault();
+                return false;
+            }
+            
             // Handle backspace
             if (e.key === 'Backspace' && !e.target.value && index > 0) {
                 newMpinInputs[index - 1].focus();
@@ -54,6 +74,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 newMpinInputs[index + 1].focus();
             }
         });
+        
+        // Additional keypress listener to block non-numeric characters
+        input.addEventListener('keypress', function(e) {
+            // Only allow numeric keys (0-9)
+            if (!/^[0-9]$/.test(e.key)) {
+                e.preventDefault();
+                return false;
+            }
+        });
     });
     
     // MPIN input handling for re-type MPIN
@@ -61,7 +90,14 @@ document.addEventListener('DOMContentLoaded', function() {
         input.addEventListener('input', function(e) {
             const value = e.target.value;
             
-            // Only allow numbers
+            // Only allow numbers - remove any non-numeric characters
+            const numericValue = value.replace(/[^0-9]/g, '');
+            if (numericValue !== value) {
+                e.target.value = numericValue;
+                return;
+            }
+            
+            // Only allow single digit
             if (!/^\d$/.test(value)) {
                 e.target.value = '';
                 return;
@@ -78,6 +114,19 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         input.addEventListener('keydown', function(e) {
+            // Block all non-numeric keys except navigation and control keys
+            const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab', 'Enter', 'Home', 'End'];
+            const isNumber = /^[0-9]$/.test(e.key);
+            const isAllowed = allowedKeys.includes(e.key) || 
+                             (e.ctrlKey && ['a', 'c', 'v', 'x'].includes(e.key.toLowerCase())) ||
+                             (e.metaKey && ['a', 'c', 'v', 'x'].includes(e.key.toLowerCase()));
+            
+            // Block if not a number and not an allowed key
+            if (!isNumber && !isAllowed) {
+                e.preventDefault();
+                return false;
+            }
+            
             // Handle backspace
             if (e.key === 'Backspace' && !e.target.value && index > 0) {
                 retypeMpinInputs[index - 1].focus();
@@ -89,6 +138,15 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             if (e.key === 'ArrowRight' && index < retypeMpinInputs.length - 1) {
                 retypeMpinInputs[index + 1].focus();
+            }
+        });
+        
+        // Additional keypress listener to block non-numeric characters
+        input.addEventListener('keypress', function(e) {
+            // Only allow numeric keys (0-9)
+            if (!/^[0-9]$/.test(e.key)) {
+                e.preventDefault();
+                return false;
             }
         });
     });

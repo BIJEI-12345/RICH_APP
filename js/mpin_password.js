@@ -45,7 +45,29 @@ function initializeMPINInputs() {
 
         // Add keydown event listener for navigation
         input.addEventListener('keydown', function(e) {
+            // Block all non-numeric keys except navigation and control keys
+            const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab', 'Enter', 'Home', 'End'];
+            const isNumber = /^[0-9]$/.test(e.key);
+            const isAllowed = allowedKeys.includes(e.key) || 
+                             (e.ctrlKey && ['a', 'c', 'v', 'x'].includes(e.key.toLowerCase())) ||
+                             (e.metaKey && ['a', 'c', 'v', 'x'].includes(e.key.toLowerCase()));
+            
+            // Block if not a number and not an allowed key
+            if (!isNumber && !isAllowed) {
+                e.preventDefault();
+                return false;
+            }
+            
             handleKeyNavigation(e, index);
+        });
+        
+        // Additional keypress listener to block non-numeric characters
+        input.addEventListener('keypress', function(e) {
+            // Only allow numeric keys (0-9)
+            if (!/^[0-9]$/.test(e.key)) {
+                e.preventDefault();
+                return false;
+            }
         });
 
         // Add paste event listener
@@ -64,7 +86,14 @@ function initializeMPINInputs() {
 function handleMPINInput(e, index) {
     const value = e.target.value;
     
-    // Only allow numbers
+    // Only allow numbers - remove any non-numeric characters
+    const numericValue = value.replace(/[^0-9]/g, '');
+    if (numericValue !== value) {
+        e.target.value = numericValue;
+        return;
+    }
+    
+    // Only allow single digit
     if (!/^\d$/.test(value)) {
         e.target.value = '';
         return;
