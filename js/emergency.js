@@ -142,6 +142,59 @@ function setupEmergencyTypeHandler() {
     }
 }
 
+// Open camera for emergency photo
+window.openEmergencyCamera = function() {
+    console.log('Opening camera for emergency photo...');
+    
+    const emergencyImageUpload = document.getElementById('emergencyImageUpload');
+    if (!emergencyImageUpload) {
+        console.error('Emergency image upload input not found');
+        return;
+    }
+    
+    // Clear any previous file selection
+    emergencyImageUpload.value = '';
+    
+    // Detect mobile device
+    const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    console.log('Mobile device detected:', isMobile);
+    
+    // Set attributes for camera capture
+    emergencyImageUpload.setAttribute('capture', 'environment');
+    emergencyImageUpload.setAttribute('accept', 'image/*');
+    
+    // Remove existing change listener and add new one
+    const newInput = emergencyImageUpload.cloneNode(true);
+    emergencyImageUpload.parentNode.replaceChild(newInput, emergencyImageUpload);
+    
+    // Add event listener for camera capture
+    newInput.addEventListener('change', function(e) {
+        console.log('Camera capture triggered');
+        const file = e.target.files[0];
+        if (file) {
+            console.log('File captured from camera:', file.name, file.type, file.size);
+            previewImage(e.target, 'emergencyImagePreview');
+            // Clear any validation errors when image is uploaded
+            const formGroup = e.target.closest('.form-group');
+            if (formGroup) {
+                const labelInGroup = formGroup.querySelector('label');
+                if (labelInGroup) {
+                    const requiredIndicator = labelInGroup.querySelector('.required-indicator');
+                    if (requiredIndicator && e.target.files && e.target.files.length > 0) {
+                        requiredIndicator.style.display = 'none';
+                    }
+                }
+            }
+        }
+    }, { once: true });
+    
+    // Trigger camera
+    setTimeout(() => {
+        console.log('Triggering camera...');
+        newInput.click();
+    }, 100);
+};
+
 // Preview image function (same as concerns.js)
 function previewImage(input, previewId) {
     const img = document.getElementById(previewId);

@@ -959,14 +959,26 @@ document.addEventListener('DOMContentLoaded', function() {
         .catch(async error => {
             console.error('Registration error:', error);
             let errorMessage = 'An error occurred during registration. Please try again.';
+            let errorTitle = 'Registration Error';
             
-            if (error.message) {
+            // Detect fetch/network errors
+            if (error.message && (
+                error.message.includes('Failed to fetch') || 
+                error.message.includes('NetworkError') ||
+                error.message.includes('Network request failed') ||
+                error.name === 'TypeError' ||
+                error.name === 'AbortError'
+            )) {
+                errorMessage = 'Check your internet connection and Try again';
+                errorTitle = 'Connection Error';
+            } else if (error.message) {
+                // For other errors, show the original message
                 errorMessage = error.message;
             }
             
             await Swal.fire({
                 icon: 'error',
-                title: 'Registration Error',
+                title: errorTitle,
                 text: errorMessage,
                 confirmButtonText: 'OK',
                 confirmButtonColor: '#dc3545',

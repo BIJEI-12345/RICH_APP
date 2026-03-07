@@ -237,6 +237,48 @@ function displayConcern(formData, concernId) {
         });
 }
 
+// Open camera for concern photo
+window.openConcernCamera = function() {
+    console.log('Opening camera for concern photo...');
+    
+    const cfImageUpload = document.getElementById('cfImageUpload');
+    if (!cfImageUpload) {
+        console.error('Concern image upload input not found');
+        return;
+    }
+    
+    // Clear any previous file selection
+    cfImageUpload.value = '';
+    
+    // Detect mobile device
+    const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    console.log('Mobile device detected:', isMobile);
+    
+    // Set attributes for camera capture
+    cfImageUpload.setAttribute('capture', 'environment');
+    cfImageUpload.setAttribute('accept', 'image/*');
+    
+    // Remove existing change listener and add new one
+    const newInput = cfImageUpload.cloneNode(true);
+    cfImageUpload.parentNode.replaceChild(newInput, cfImageUpload);
+    
+    // Add event listener for camera capture
+    newInput.addEventListener('change', function(e) {
+        console.log('Camera capture triggered');
+        const file = e.target.files[0];
+        if (file) {
+            console.log('File captured from camera:', file.name, file.type, file.size);
+            previewImage(e.target, 'cfImagePreview');
+        }
+    }, { once: true });
+    
+    // Trigger camera
+    setTimeout(() => {
+        console.log('Triggering camera...');
+        newInput.click();
+    }, 100);
+};
+
 function previewImage(input, previewId) {
     const img = document.getElementById(previewId);
     const file = input.files[0];
