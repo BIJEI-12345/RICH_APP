@@ -2738,6 +2738,268 @@ body {
     display: none; /* Hide spinner, use circle-image instead */
 }
 
+/* Responsive Design for Fullscreen Loading - Mobile Devices */
+/* Tablet and smaller desktop */
+@media (max-width: 1024px) {
+    .fullscreen-loading .rotating-circle {
+        width: 5rem;
+        height: 5rem;
+    }
+    
+    .fullscreen-loading .loading-label {
+        font-size: 1rem;
+    }
+}
+
+/* Tablet portrait */
+@media (max-width: 768px) {
+    .fullscreen-loading {
+        width: 100vw;
+        height: 100vh;
+        min-width: 100vw;
+        min-height: 100vh;
+    }
+    
+    .fullscreen-loading .loading-content {
+        padding: 15px;
+        gap: 0.75rem;
+    }
+    
+    .fullscreen-loading .rotating-circle {
+        width: 4.5rem;
+        height: 4.5rem;
+    }
+    
+    .fullscreen-loading .loading-label {
+        font-size: 0.95rem;
+        margin-top: 0.4rem;
+    }
+}
+
+/* Mobile landscape and large phones */
+@media (max-width: 768px) and (orientation: landscape) {
+    .fullscreen-loading .rotating-circle {
+        width: 4rem;
+        height: 4rem;
+    }
+    
+    .fullscreen-loading .loading-label {
+        font-size: 0.9rem;
+        margin-top: 0.3rem;
+    }
+    
+    .fullscreen-loading .loading-content {
+        padding: 10px;
+        gap: 0.5rem;
+    }
+}
+
+/* Medium phones */
+@media (max-width: 480px) {
+    .fullscreen-loading {
+        width: 100vw !important;
+        height: 100vh !important;
+        min-width: 100vw !important;
+        min-height: 100vh !important;
+    }
+    
+    .fullscreen-loading .loading-content {
+        padding: 10px;
+        gap: 0.6rem;
+    }
+    
+    .fullscreen-loading .rotating-circle {
+        width: 4rem;
+        height: 4rem;
+        min-width: 60px;
+        min-height: 60px;
+    }
+    
+    .fullscreen-loading .circle-image {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+    }
+    
+    .fullscreen-loading .loading-label {
+        font-size: 0.9rem;
+        margin-top: 0.3rem;
+        padding: 0 10px;
+    }
+}
+
+/* Medium phones landscape */
+@media (max-width: 480px) and (orientation: landscape) {
+    .fullscreen-loading .rotating-circle {
+        width: 3.5rem;
+        height: 3.5rem;
+        min-width: 50px;
+        min-height: 50px;
+    }
+    
+    .fullscreen-loading .loading-label {
+        font-size: 0.85rem;
+        margin-top: 0.25rem;
+    }
+    
+    .fullscreen-loading .loading-content {
+        padding: 8px;
+        gap: 0.4rem;
+    }
+}
+
+/* Small phones */
+@media (max-width: 360px) {
+    .fullscreen-loading {
+        width: 100vw !important;
+        height: 100vh !important;
+    }
+    
+    .fullscreen-loading .loading-content {
+        padding: 8px;
+        gap: 0.5rem;
+    }
+    
+    .fullscreen-loading .rotating-circle {
+        width: 3.5rem;
+        height: 3.5rem;
+        min-width: 50px;
+        min-height: 50px;
+    }
+    
+    .fullscreen-loading .loading-label {
+        font-size: 0.85rem;
+        margin-top: 0.25rem;
+        padding: 0 8px;
+    }
+}
+
+/* Small phones landscape */
+@media (max-width: 360px) and (orientation: landscape) {
+    .fullscreen-loading .rotating-circle {
+        width: 3rem;
+        height: 3rem;
+        min-width: 45px;
+        min-height: 45px;
+    }
+    
+    .fullscreen-loading .loading-label {
+        font-size: 0.8rem;
+        margin-top: 0.2rem;
+    }
+    
+    .fullscreen-loading .loading-content {
+        padding: 6px;
+        gap: 0.3rem;
+    }
+}
+
+/* Very small phones */
+@media (max-width: 320px) {
+    .fullscreen-loading {
+        width: 100vw !important;
+        height: 100vh !important;
+    }
+    
+    .fullscreen-loading .loading-content {
+        padding: 6px;
+        gap: 0.4rem;
+    }
+    
+    .fullscreen-loading .rotating-circle {
+        width: 3rem;
+        height: 3rem;
+        min-width: 45px;
+        min-height: 45px;
+    }
+    
+    .fullscreen-loading .loading-label {
+        font-size: 0.8rem;
+        margin-top: 0.2rem;
+        padding: 0 6px;
+    }
+}
+
+/* Very small phones landscape */
+@media (max-width: 320px) and (orientation: landscape) {
+    .fullscreen-loading .rotating-circle {
+        width: 2.5rem;
+        height: 2.5rem;
+        min-width: 40px;
+        min-height: 40px;
+    }
+    
+    .fullscreen-loading .loading-label {
+        font-size: 0.75rem;
+        margin-top: 0.15rem;
+    }
+    
+    .fullscreen-loading .loading-content {
+        padding: 5px;
+        gap: 0.25rem;
+    }
+}
+
+/* Short screens (landscape phones, etc.) */
+@media (max-height: 600px) {
+    .fullscreen-loading .rotating-circle {
+        width: 3.5rem;
+        height: 3.5rem;
+        min-width: 50px;
+        min-height: 50px;
+    }
+    
+    .fullscreen-loading .loading-label {
+        font-size: 0.85rem;
+        margin-top: 0.25rem;
+    }
+    
+    .fullscreen-loading .loading-content {
+        padding: 8px;
+        gap: 0.4rem;
+    }
+}
+
+/* Very short screens */
+@media (max-height: 500px) {
+    .fullscreen-loading .rotating-circle {
+        width: 3rem;
+        height: 3rem;
+        min-width: 45px;
+        min-height: 45px;
+    }
+    
+    .fullscreen-loading .loading-label {
+        font-size: 0.8rem;
+        margin-top: 0.2rem;
+    }
+    
+    .fullscreen-loading .loading-content {
+        padding: 6px;
+        gap: 0.3rem;
+    }
+}
+
+/* Extra short screens */
+@media (max-height: 400px) {
+    .fullscreen-loading .rotating-circle {
+        width: 2.5rem;
+        height: 2.5rem;
+        min-width: 40px;
+        min-height: 40px;
+    }
+    
+    .fullscreen-loading .loading-label {
+        font-size: 0.75rem;
+        margin-top: 0.15rem;
+    }
+    
+    .fullscreen-loading .loading-content {
+        padding: 5px;
+        gap: 0.25rem;
+    }
+}
+
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }

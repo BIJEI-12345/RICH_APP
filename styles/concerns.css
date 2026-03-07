@@ -297,11 +297,41 @@ body {
     border-top: 2px solid white;
     border-radius: 50%;
     animation: spin 1s linear infinite;
+    box-sizing: border-box;
+    flex-shrink: 0;
 }
 
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+}
+
+/* Responsive Design for Loading Spinner - Mobile Devices */
+/* Medium phones */
+@media (max-width: 480px) {
+    .loading-spinner {
+        width: 18px;
+        height: 18px;
+        border-width: 1.5px;
+    }
+}
+
+/* Small phones */
+@media (max-width: 360px) {
+    .loading-spinner {
+        width: 16px;
+        height: 16px;
+        border-width: 1.5px;
+    }
+}
+
+/* Very small phones */
+@media (max-width: 320px) {
+    .loading-spinner {
+        width: 14px;
+        height: 14px;
+        border-width: 1.5px;
+    }
 }
 .upload-btn { 
     background:#28a745; 

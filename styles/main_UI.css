@@ -1972,6 +1972,100 @@ body:has(.testing-mode-indicator) .main-container {
     margin: 0;
 }
 
+/* Responsive Design for Loading Indicator - Mobile Devices */
+/* Tablet portrait */
+@media (max-width: 768px) {
+    .loading-indicator {
+        padding: 35px 15px;
+        min-height: 180px;
+    }
+    
+    .rotating-circle {
+        width: 28px;
+        height: 28px;
+        margin-bottom: 12px;
+    }
+    
+    .loading-indicator p {
+        font-size: 13px;
+    }
+}
+
+/* Medium phones */
+@media (max-width: 480px) {
+    .loading-indicator {
+        padding: 30px 12px;
+        min-height: 150px;
+    }
+    
+    .rotating-circle {
+        width: 25px;
+        height: 25px;
+        margin-bottom: 10px;
+    }
+    
+    .loading-indicator p {
+        font-size: 12px;
+        padding: 0 10px;
+    }
+}
+
+/* Small phones */
+@media (max-width: 360px) {
+    .loading-indicator {
+        padding: 25px 10px;
+        min-height: 130px;
+    }
+    
+    .rotating-circle {
+        width: 22px;
+        height: 22px;
+        margin-bottom: 8px;
+    }
+    
+    .loading-indicator p {
+        font-size: 11px;
+        padding: 0 8px;
+    }
+}
+
+/* Very small phones */
+@media (max-width: 320px) {
+    .loading-indicator {
+        padding: 20px 8px;
+        min-height: 120px;
+    }
+    
+    .rotating-circle {
+        width: 20px;
+        height: 20px;
+        margin-bottom: 8px;
+    }
+    
+    .loading-indicator p {
+        font-size: 10px;
+        padding: 0 6px;
+    }
+}
+
+/* Short screens */
+@media (max-height: 600px) {
+    .loading-indicator {
+        padding: 20px 12px;
+        min-height: 100px;
+    }
+    
+    .rotating-circle {
+        width: 25px;
+        height: 25px;
+        margin-bottom: 8px;
+    }
+    
+    .loading-indicator p {
+        font-size: 12px;
+    }
+}
+
 /* No Announcements Styles for Main UI */
 .no-announcements {
     display: flex;
