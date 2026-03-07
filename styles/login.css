@@ -555,21 +555,21 @@ body {
 /* Tablet portrait */
 @media (max-width: 768px) {
     .rotating-circle {
-        width: min(28vw, 280px);
-        height: min(28vw, 280px);
-        min-width: 140px;
-        min-height: 140px;
-        max-width: 280px;
-        max-height: 280px;
+        width: min(22vw, 200px);
+        height: min(22vw, 200px);
+        min-width: 100px;
+        min-height: 100px;
+        max-width: 200px;
+        max-height: 200px;
     }
     
     .fixed-text {
-        width: min(32vw, 320px);
-        height: min(25vw, 250px);
-        min-width: 160px;
-        min-height: 130px;
-        max-width: 320px;
-        max-height: 250px;
+        width: min(26vw, 240px);
+        height: min(20vw, 180px);
+        min-width: 120px;
+        min-height: 90px;
+        max-width: 240px;
+        max-height: 180px;
     }
     
     .logo-container {
@@ -637,21 +637,21 @@ body {
     }
     
     .rotating-circle {
-        width: min(25vw, 180px) !important;
-        height: min(25vw, 180px) !important;
-        min-width: 80px !important;
-        min-height: 80px !important;
-        max-width: 180px !important;
-        max-height: 180px !important;
+        width: min(20vw, 120px) !important;
+        height: min(20vw, 120px) !important;
+        min-width: 60px !important;
+        min-height: 60px !important;
+        max-width: 120px !important;
+        max-height: 120px !important;
     }
     
     .fixed-text {
-        width: min(30vw, 220px) !important;
-        height: min(24vw, 160px) !important;
-        min-width: 100px !important;
-        min-height: 80px !important;
-        max-width: 220px !important;
-        max-height: 160px !important;
+        width: min(25vw, 150px) !important;
+        height: min(20vw, 120px) !important;
+        min-width: 80px !important;
+        min-height: 60px !important;
+        max-width: 150px !important;
+        max-height: 120px !important;
     }
     
     .logo-container {
@@ -684,21 +684,21 @@ body {
 /* Medium phones landscape */
 @media (max-width: 480px) and (orientation: landscape) {
     .rotating-circle {
-        width: min(15vh, 150px) !important;
-        height: min(15vh, 150px) !important;
-        min-width: 80px !important;
-        min-height: 80px !important;
-        max-width: 150px !important;
-        max-height: 150px !important;
+        width: min(12vh, 100px) !important;
+        height: min(12vh, 100px) !important;
+        min-width: 60px !important;
+        min-height: 60px !important;
+        max-width: 100px !important;
+        max-height: 100px !important;
     }
     
     .fixed-text {
-        width: min(20vh, 200px) !important;
-        height: min(15vh, 140px) !important;
-        min-width: 100px !important;
-        min-height: 70px !important;
-        max-width: 200px !important;
-        max-height: 140px !important;
+        width: min(16vh, 130px) !important;
+        height: min(12vh, 100px) !important;
+        min-width: 80px !important;
+        min-height: 60px !important;
+        max-width: 130px !important;
+        max-height: 100px !important;
     }
     
     .logo-container {
@@ -732,21 +732,21 @@ body {
     }
     
     .rotating-circle {
-        width: min(30vw, 160px) !important;
-        height: min(30vw, 160px) !important;
-        min-width: 70px !important;
-        min-height: 70px !important;
-        max-width: 160px !important;
-        max-height: 160px !important;
+        width: min(18vw, 100px) !important;
+        height: min(18vw, 100px) !important;
+        min-width: 50px !important;
+        min-height: 50px !important;
+        max-width: 100px !important;
+        max-height: 100px !important;
     }
     
     .fixed-text {
-        width: min(35vw, 200px) !important;
-        height: min(28vw, 150px) !important;
-        min-width: 90px !important;
-        min-height: 70px !important;
-        max-width: 200px !important;
-        max-height: 150px !important;
+        width: min(22vw, 130px) !important;
+        height: min(18vw, 100px) !important;
+        min-width: 70px !important;
+        min-height: 55px !important;
+        max-width: 130px !important;
+        max-height: 100px !important;
     }
     
     .logo-container {
@@ -767,17 +767,17 @@ body {
 /* Small phones landscape */
 @media (max-width: 360px) and (orientation: landscape) {
     .rotating-circle {
-        width: min(16vh, 160px);
-        height: min(16vh, 160px);
-        min-width: 110px;
-        min-height: 110px;
+        width: min(12vh, 90px);
+        height: min(12vh, 90px);
+        min-width: 50px;
+        min-height: 50px;
     }
     
     .fixed-text {
-        width: min(20vh, 200px);
-        height: min(16vh, 160px);
-        min-width: 140px;
-        min-height: 100px;
+        width: min(16vh, 110px);
+        height: min(12vh, 85px);
+        min-width: 70px;
+        min-height: 55px;
     }
     
     .logo-container {
@@ -799,21 +799,21 @@ body {
     }
     
     .rotating-circle {
-        width: min(30vw, 140px) !important;
-        height: min(30vw, 140px) !important;
-        min-width: 60px !important;
-        min-height: 60px !important;
-        max-width: 140px !important;
-        max-height: 140px !important;
+        width: min(18vw, 90px) !important;
+        height: min(18vw, 90px) !important;
+        min-width: 45px !important;
+        min-height: 45px !important;
+        max-width: 90px !important;
+        max-height: 90px !important;
     }
     
     .fixed-text {
-        width: min(35vw, 180px) !important;
-        height: min(28vw, 140px) !important;
-        min-width: 80px !important;
-        min-height: 60px !important;
-        max-width: 180px !important;
-        max-height: 140px !important;
+        width: min(22vw, 110px) !important;
+        height: min(18vw, 85px) !important;
+        min-width: 60px !important;
+        min-height: 50px !important;
+        max-width: 110px !important;
+        max-height: 85px !important;
     }
     
     .logo-container {
@@ -843,21 +843,21 @@ body {
 /* Very small phones landscape */
 @media (max-width: 320px) and (orientation: landscape) {
     .rotating-circle {
-        width: min(12vh, 120px) !important;
-        height: min(12vh, 120px) !important;
-        min-width: 60px !important;
-        min-height: 60px !important;
-        max-width: 120px !important;
-        max-height: 120px !important;
+        width: min(10vh, 80px) !important;
+        height: min(10vh, 80px) !important;
+        min-width: 45px !important;
+        min-height: 45px !important;
+        max-width: 80px !important;
+        max-height: 80px !important;
     }
     
     .fixed-text {
-        width: min(16vh, 160px) !important;
-        height: min(12vh, 110px) !important;
-        min-width: 80px !important;
-        min-height: 55px !important;
-        max-width: 160px !important;
-        max-height: 110px !important;
+        width: min(14vh, 100px) !important;
+        height: min(10vh, 75px) !important;
+        min-width: 60px !important;
+        min-height: 50px !important;
+        max-width: 100px !important;
+        max-height: 75px !important;
     }
     
     .logo-container {
