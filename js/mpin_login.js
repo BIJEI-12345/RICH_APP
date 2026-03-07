@@ -1,4 +1,17 @@
 // MPIN Login Functionality
+
+// Go back to login - defined globally for immediate access (before DOMContentLoaded)
+window.goBack = function() {
+    // Clear all session storage related to login
+    sessionStorage.removeItem('loginEmail');
+    sessionStorage.removeItem('loginMobile');
+    sessionStorage.removeItem('user_email');
+    sessionStorage.removeItem('user');
+    // Use force_login parameter to bypass redirect to main_UI
+    // Also add timestamp to prevent caching issues
+    window.location.href = 'index.php?force_login=true&t=' + Date.now();
+};
+
 document.addEventListener('DOMContentLoaded', function() {
     // Get elements
     const mpinInputs = document.querySelectorAll('.mpin-digit');
@@ -347,18 +360,6 @@ document.addEventListener('DOMContentLoaded', function() {
             loginBtn.disabled = false;
             loginBtn.textContent = 'Login';
         });
-    };
-    
-    // Go back to login
-    window.goBack = function() {
-        // Clear all session storage related to login
-        sessionStorage.removeItem('loginEmail');
-        sessionStorage.removeItem('loginMobile');
-        sessionStorage.removeItem('user_email');
-        sessionStorage.removeItem('user');
-        // Use force_login parameter to bypass redirect to main_UI
-        // Also add timestamp to prevent caching issues
-        window.location.href = 'index.php?force_login=true&t=' + Date.now();
     };
     
     // Forgot MPIN

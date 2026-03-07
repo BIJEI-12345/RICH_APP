@@ -309,11 +309,18 @@ if ($logoutRequest) {
 $forceLogin = isset($_GET['force_login']) && $_GET['force_login'] === 'true';
 
 if (isset($_SESSION['user_email']) && !empty($_SESSION['user_email']) && !$forceLogin && !$logoutRequest) {
-    // User is logged in, but sync sessionStorage first to prevent bootloop on mobile
-    // Add a script to sync sessionStorage before redirect
+    // Only redirect if sessionStorage exists (user is actually logged in)
+    // If no sessionStorage, treat as new session and show login page
     echo '<!DOCTYPE html><html><head><script>';
-    echo 'sessionStorage.setItem("user_email", "' . htmlspecialchars($_SESSION['user_email'], ENT_QUOTES) . '");';
-    echo 'window.location.href = "main_UI.html";';
+    echo 'const hasSession = sessionStorage.getItem("user_email") || localStorage.getItem("user_email");';
+    echo 'if (hasSession) {';
+    echo '    // User has valid sessionStorage, sync and redirect';
+    echo '    sessionStorage.setItem("user_email", "' . htmlspecialchars($_SESSION['user_email'], ENT_QUOTES) . '");';
+    echo '    window.location.href = "main_UI.html";';
+    echo '} else {';
+    echo '    // No sessionStorage - clear PHP session and show login';
+    echo '    window.location.href = "index.php?logout=true";';
+    echo '}';
     echo '</script></head><body></body></html>';
     exit;
 }

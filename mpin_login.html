@@ -62,6 +62,15 @@
     </div>
 
     <script>
+        // Define goBack immediately to prevent timing issues
+        window.goBack = function() {
+            sessionStorage.removeItem('loginEmail');
+            sessionStorage.removeItem('loginMobile');
+            sessionStorage.removeItem('user_email');
+            sessionStorage.removeItem('user');
+            window.location.href = 'index.php?force_login=true&t=' + Date.now();
+        };
+        
         // Force reload to bypass cache - ensures latest version is loaded
         const script = document.createElement('script');
         script.src = 'js/mpin_login.js?v=' + new Date().getTime();
