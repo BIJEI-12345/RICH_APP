@@ -304,27 +304,8 @@ if ($logoutRequest) {
     session_start();
 }
 
-// Check if user is already logged in via PHP session
-// Only redirect if sessionStorage exists (user is actually logged in)
-// If no sessionStorage, always show login page
-if (isset($_SESSION['user_email']) && !empty($_SESSION['user_email']) && !$logoutRequest) {
-    // Check if sessionStorage exists - if not, clear PHP session and show login
-    echo '<!DOCTYPE html><html><head><script>';
-    echo 'const hasSession = sessionStorage.getItem("user_email") || localStorage.getItem("user_email");';
-    echo 'if (hasSession) {';
-    echo '    // User has valid sessionStorage, sync and redirect';
-    echo '    sessionStorage.setItem("user_email", "' . htmlspecialchars($_SESSION['user_email'], ENT_QUOTES) . '");';
-    echo '    window.location.href = "main_UI.html";';
-    echo '} else {';
-    echo '    // No sessionStorage - clear PHP session and show login page';
-    echo '    window.location.href = "index.php?logout=true";';
-    echo '}';
-    echo '</script></head><body></body></html>';
-    exit;
-}
-
+// Always show login page - let JavaScript handle redirect if user is logged in
 // Check if user is logged in via sessionStorage (client-side check will be done in JS)
-// But we can set some PHP variables for use in the page if needed
 $isLoggedIn = isset($_SESSION['user_email']);
 $userEmail = $_SESSION['user_email'] ?? '';
 ?>
@@ -337,6 +318,18 @@ $userEmail = $_SESSION['user_email'] ?? '';
     <title>RICH Login</title>
     <link rel="stylesheet" href="styles/login.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        // Check if user is already logged in via sessionStorage
+        // If logged in, redirect to main_UI, otherwise show login page
+        (function() {
+            const userEmail = sessionStorage.getItem('user_email') || localStorage.getItem('user_email');
+            if (userEmail) {
+                // User is logged in, redirect to main UI
+                window.location.href = 'main_UI.html';
+            }
+            // If no sessionStorage, show login page (do nothing, let page load)
+        })();
+    </script>
 </head>
 <body>
     <!-- Main Content -->
