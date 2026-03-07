@@ -1318,7 +1318,7 @@ body {
     min-height: calc(100vh - 60px);
     max-height: none; /* Remove any max-height restrictions */
     padding: 2rem;
-    padding-bottom: 1rem; /* Minimal padding - scroll ends right after step-navigation */
+    padding-bottom: 150px; /* Increased padding to allow full form scrolling */
     padding-right: calc(2rem + 8px); /* Add space for scrollbar on the right */
     overflow-y: auto; /* Enable scrolling */
     overflow-x: hidden;
@@ -1481,9 +1481,9 @@ body {
     justify-content: space-between;
     align-items: flex-start;
     margin-top: 3rem;
-    margin-bottom: 0; /* No bottom margin - scroll ends exactly at button bottom */
+    margin-bottom: 2rem; /* Added bottom margin for spacing */
     padding-top: 2rem;
-    padding-bottom: 1rem; /* Minimal padding - just enough for button visibility */
+    padding-bottom: 2rem; /* Increased padding for better button visibility */
     border-top: 1px solid #323131;
     gap: 1rem;
 }
@@ -1570,7 +1570,7 @@ body {
     background: white;
     border-radius: 15px;
     padding: 2rem;
-    padding-bottom: 0; /* No bottom padding - let step-navigation handle spacing */
+    padding-bottom: 1rem; /* Added bottom padding for spacing */
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     width: 100%;
     max-width: 100%;
@@ -2183,7 +2183,7 @@ body {
 @media (max-width: 768px) {
     .form-container {
         padding: 1rem;
-        padding-bottom: 0.5rem; /* Minimal padding - scroll ends right after step-navigation */
+        padding-bottom: 200px; /* Increased padding to allow full form scrolling on mobile */
         width: 100% !important;
         max-width: 100% !important;
         box-sizing: border-box !important;
@@ -2191,7 +2191,7 @@ body {
     
     .form-wrapper {
         padding: 1.5rem;
-        padding-bottom: 0; /* No bottom padding - let step-navigation handle spacing */
+        padding-bottom: 1rem; /* Added bottom padding for spacing */
         width: 100% !important;
         max-width: 100% !important;
         box-sizing: border-box !important;
@@ -2321,7 +2321,7 @@ body {
 @media (max-width: 480px) {
     .form-container {
         padding: 0.5rem;
-        padding-bottom: 0.25rem; /* Minimal padding - scroll ends right after step-navigation */
+        padding-bottom: 250px; /* Increased padding to allow full form scrolling on small mobile */
         width: 100% !important;
         max-width: 100% !important;
         box-sizing: border-box !important;
@@ -2329,7 +2329,7 @@ body {
     
     .form-wrapper {
         padding: 1rem;
-        padding-bottom: 0; /* No bottom padding - let step-navigation handle spacing */
+        padding-bottom: 1rem; /* Added bottom padding for spacing */
         width: 100% !important;
         max-width: 100% !important;
         box-sizing: border-box !important;
@@ -2634,7 +2634,7 @@ body {
     
     .form-wrapper {
         padding: 1rem;
-        padding-bottom: 0; /* No bottom padding - let step-navigation handle spacing */
+        padding-bottom: 1rem; /* Added bottom padding for spacing */
     }
     
     .step-title {
@@ -2653,9 +2653,9 @@ body {
     
     .step-navigation {
         margin-top: 2rem;
-        margin-bottom: 0; /* No bottom margin - scroll ends exactly at button bottom */
+        margin-bottom: 2rem; /* Added bottom margin for spacing */
         padding-top: 1.5rem;
-        padding-bottom: 0.75rem; /* Minimal padding - just enough for button visibility */
+        padding-bottom: 2rem; /* Increased padding for better button visibility */
         flex-wrap: wrap;
         gap: 0.75rem;
     }
