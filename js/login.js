@@ -1,19 +1,3 @@
-// Loading Screen Handler
-document.addEventListener('DOMContentLoaded', function() {
-    const loadingScreen = document.getElementById('loadingScreen');
-    const mainContent = document.getElementById('mainContent');
-    
-    // Hide loading screen and show main content after 4 seconds
-    setTimeout(function() {
-        if (loadingScreen) {
-            loadingScreen.style.display = 'none';
-        }
-        if (mainContent) {
-            mainContent.style.display = 'flex';
-        }
-    }, 4000);
-});
-
 // Login Form Functionality
 document.addEventListener('DOMContentLoaded', function() {
     // Get form elements
