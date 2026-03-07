@@ -61,7 +61,12 @@
         </div>
     </div>
 
-    <script src="js/mpin_login.js"></script>
+    <script>
+        // Force reload to bypass cache - ensures latest version is loaded
+        const script = document.createElement('script');
+        script.src = 'js/mpin_login.js?v=' + new Date().getTime();
+        document.body.appendChild(script);
+    </script>
 </body>
 </html>
 
