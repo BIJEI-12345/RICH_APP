@@ -338,7 +338,25 @@ function generateVerificationToken() {
 function sendOTPToEmail($firstName, $middleName, $lastName, $suffix, $email, $age, $sex, $birthday, $status, $address, $validId, $hasNoMiddleName, $idImageData) {
     $pdo = getDBConnection();
     if (!$pdo) {
-        return ['success' => false, 'message' => 'Database connection failed'];
+        // Check which variables are missing
+        $host = $_ENV['DB_HOST'] ?? getenv('DB_HOST') ?: null;
+        $user = $_ENV['DB_USER'] ?? getenv('DB_USER') ?: null;
+        $pass = $_ENV['DB_PASS'] ?? getenv('DB_PASS');
+        $db   = $_ENV['DB_NAME'] ?? getenv('DB_NAME') ?: null;
+        
+        $missing = [];
+        if (!$host) $missing[] = 'DB_HOST';
+        if (!$user) $missing[] = 'DB_USER';
+        if ($pass === null) $missing[] = 'DB_PASS';
+        if (!$db) $missing[] = 'DB_NAME';
+        
+        $errorMsg = 'Database connection failed. ';
+        if (!empty($missing)) {
+            $errorMsg .= 'Missing environment variables: ' . implode(', ', $missing) . '. ';
+        }
+        $errorMsg .= 'Please check your .env file. Run diagnostic: /php/env_diagnostic.php';
+        
+        return ['success' => false, 'message' => $errorMsg];
     }
     
     try {

@@ -173,7 +173,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!$db) $missing[] = 'DB_NAME';
             
             if (!empty($missing)) {
-                return ['success' => false, 'message' => 'Database configuration incomplete. Missing: ' . implode(', ', $missing) . '. Please check your .env file.'];
+                $diagnosticUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['SCRIPT_NAME']) . '/php/env_diagnostic.php';
+                return [
+                    'success' => false, 
+                    'message' => 'Database configuration incomplete. Missing: ' . implode(', ', $missing) . '. Please check your .env file.',
+                    'help' => 'Run diagnostic script to check .env file: ' . $diagnosticUrl,
+                    'missing_variables' => $missing
+                ];
             }
             
             // Try to get more specific error from logs or provide general guidance
