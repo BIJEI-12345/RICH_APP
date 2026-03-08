@@ -84,7 +84,7 @@ function initializeMPINLogin() {
     
     // MPIN input handling
     mpinInputs.forEach((input, index) => {
-        // Ensure input type is password for masking
+        // Ensure input type is password for masking IMMEDIATELY
         input.type = 'password';
         
         // Force password masking style and white color, consistent background
@@ -93,7 +93,27 @@ function initializeMPINLogin() {
         input.style.color = '#ffffff';
         input.style.background = '#374151';
         
+        // Use beforeinput to mask immediately - prevents number from showing
+        input.addEventListener('beforeinput', function(e) {
+            // Ensure type is password before input happens
+            if (e.target.type !== 'password') {
+                e.target.type = 'password';
+            }
+            
+            // Ensure masking is applied before input
+            e.target.style.webkitTextSecurity = 'disc';
+            e.target.style.textSecurity = 'disc';
+            
+            // Only allow numeric input
+            if (e.data && !/^\d$/.test(e.data)) {
+                e.preventDefault();
+            }
+        });
+        
         input.addEventListener('input', function(e) {
+            // Ensure type is password FIRST to prevent number from showing
+            e.target.type = 'password';
+            
             let value = e.target.value;
             
             // Only allow numeric characters
@@ -104,53 +124,45 @@ function initializeMPINLogin() {
                 value = value.slice(-1);
             }
             
-            // Set the value
-            e.target.value = value;
+            // Clear and reset value to force immediate masking (prevents number flash)
+            const tempValue = value;
+            e.target.value = '';
             
-            // Ensure password masking is applied and white color, consistent background
-            e.target.style.webkitTextSecurity = 'disc';
-            e.target.style.textSecurity = 'disc';
-            e.target.style.color = '#ffffff';
-            e.target.style.background = '#374151';
-            
-            // Add visual feedback if we have a value
-            if (value) {
-                e.target.classList.add('filled');
-                e.target.classList.remove('error');
-                
-                // Ensure background stays consistent
-                e.target.style.background = '#374151';
-                
-                // Move to next input immediately for continuous typing
-                if (index < mpinInputs.length - 1) {
-                    // Use setTimeout with minimal delay for smoother transition
-                    setTimeout(() => {
-                        mpinInputs[index + 1].focus();
-                        mpinInputs[index + 1].select(); // Select text for easy replacement
-                    }, 0);
-                }
-            } else {
-                e.target.classList.remove('filled');
-                // Ensure background stays consistent even when empty
-                e.target.style.background = '#374151';
-            }
-            
-            // Update button state - use both immediate and delayed update
-            updateLoginButton();
-            
-            // Also update after a short delay to ensure all values are captured
+            // Use setTimeout to ensure password type is set before value
             setTimeout(() => {
+                e.target.type = 'password';
+                e.target.value = tempValue;
+                
+                // Ensure password masking is applied and white color, consistent background
+                e.target.style.webkitTextSecurity = 'disc';
+                e.target.style.textSecurity = 'disc';
+                e.target.style.color = '#ffffff';
+                e.target.style.background = '#374151';
+                
+                // Continue with visual feedback
+                if (tempValue) {
+                    e.target.classList.add('filled');
+                    e.target.classList.remove('error');
+                    e.target.style.background = '#374151';
+                    
+                    // Move to next input immediately for continuous typing
+                    if (index < mpinInputs.length - 1) {
+                        setTimeout(() => {
+                            mpinInputs[index + 1].focus();
+                            mpinInputs[index + 1].select();
+                        }, 0);
+                    }
+                } else {
+                    e.target.classList.remove('filled');
+                    e.target.style.background = '#374151';
+                }
+                
+                // Update button state
                 updateLoginButton();
-                // Don't auto-login - user must click the button
-            }, 10);
-        });
-        
-        // Also handle beforeinput for better control
-        input.addEventListener('beforeinput', function(e) {
-            // Allow only numeric input
-            if (e.data && !/^\d$/.test(e.data)) {
-                e.preventDefault();
-            }
+                setTimeout(() => {
+                    updateLoginButton();
+                }, 10);
+            }, 0);
         });
         
         input.addEventListener('keydown', function(e) {

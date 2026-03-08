@@ -38,7 +38,7 @@ function initializeButtons() {
 // Initialize MPIN input fields
 function initializeMPINInputs() {
     mpinInputs.forEach((input, index) => {
-        // Ensure input type is password for masking
+        // Ensure input type is password for masking IMMEDIATELY
         input.type = 'password';
         
         // Force password masking style and white color, consistent background
@@ -47,8 +47,28 @@ function initializeMPINInputs() {
         input.style.color = '#ffffff';
         input.style.background = '#374151';
         
+        // Use beforeinput to mask immediately - prevents number from showing
+        input.addEventListener('beforeinput', function(e) {
+            // Ensure type is password before input happens
+            if (e.target.type !== 'password') {
+                e.target.type = 'password';
+            }
+            
+            // Ensure masking is applied before input
+            e.target.style.webkitTextSecurity = 'disc';
+            e.target.style.textSecurity = 'disc';
+            
+            // Only allow numeric input
+            if (e.data && !/^\d$/.test(e.data)) {
+                e.preventDefault();
+            }
+        });
+        
         // Add input event listener
         input.addEventListener('input', function(e) {
+            // Ensure type is password to mask immediately
+            e.target.type = 'password';
+            
             // Ensure password masking is applied and styles maintained
             e.target.style.webkitTextSecurity = 'disc';
             e.target.style.textSecurity = 'disc';
@@ -77,6 +97,9 @@ function initializeMPINInputs() {
 
 // Handle MPIN input
 function handleMPINInput(e, index) {
+    // Ensure type is password FIRST to prevent number from showing
+    e.target.type = 'password';
+    
     let value = e.target.value;
     
     // Only allow numeric characters
@@ -87,14 +110,51 @@ function handleMPINInput(e, index) {
         value = value.slice(-1);
     }
     
-    // Set the value
-    e.target.value = value;
+    // Clear and reset value to force immediate masking (prevents number flash)
+    const tempValue = value;
+    e.target.value = '';
     
-    // Ensure password masking is applied and white color, consistent background
-    e.target.style.webkitTextSecurity = 'disc';
-    e.target.style.textSecurity = 'disc';
-    e.target.style.color = '#ffffff';
-    e.target.style.background = '#374151';
+    // Use setTimeout to ensure password type is set before value
+    setTimeout(() => {
+        e.target.type = 'password';
+        e.target.value = tempValue;
+        
+        // Ensure password masking is applied and white color, consistent background
+        e.target.style.webkitTextSecurity = 'disc';
+        e.target.style.textSecurity = 'disc';
+        e.target.style.color = '#ffffff';
+        e.target.style.background = '#374151';
+        
+        // Continue with existing logic
+        if (!tempValue) {
+            mpinDigits[index] = '';
+            e.target.classList.remove('filled');
+            checkMPINComplete();
+            return;
+        }
+
+        // Store the character
+        mpinDigits[index] = tempValue;
+        
+        // Add visual feedback
+        e.target.classList.add('filled');
+        e.target.classList.remove('error');
+        e.target.style.background = '#374151';
+        
+        // Auto-focus next input immediately for continuous typing
+        if (tempValue && index < mpinInputs.length - 1) {
+            setTimeout(() => {
+                mpinInputs[index + 1].focus();
+                mpinInputs[index + 1].select();
+            }, 0);
+        }
+        
+        // Check if MPIN is complete
+        checkMPINComplete();
+        setTimeout(() => {
+            checkMPINComplete();
+        }, 10);
+    }, 0);
     
     // If empty, clear it
     if (!value) {
