@@ -84,37 +84,49 @@ document.addEventListener('DOMContentLoaded', function() {
     // MPIN input handling
     mpinInputs.forEach((input, index) => {
         input.addEventListener('input', function(e) {
-            const value = e.target.value;
+            let value = e.target.value;
             
             // Only allow numbers - remove any non-numeric characters
-            const numericValue = value.replace(/[^0-9]/g, '');
+            let numericValue = value.replace(/[^0-9]/g, '');
+            
+            // If there are non-numeric characters, replace with numeric only
             if (numericValue !== value) {
-                e.target.value = numericValue;
-                return;
+                value = numericValue;
             }
             
-            // Only allow single digit
-            if (!/^\d$/.test(value)) {
-                e.target.value = '';
-                return;
+            // Only allow single digit - take only the last character if multiple
+            if (value.length > 1) {
+                value = value.slice(-1);
             }
             
-            // Move to next input
-            if (value && index < mpinInputs.length - 1) {
-                mpinInputs[index + 1].focus();
+            // Set the value (even if empty, to ensure proper state)
+            e.target.value = value;
+            
+            // Add visual feedback if we have a valid digit
+            if (value && /^\d$/.test(value)) {
+                e.target.classList.add('filled');
+                e.target.classList.remove('error');
+            } else {
+                e.target.classList.remove('filled');
             }
+            
+            // Move to next input if we have a valid digit
+            if (value && /^\d$/.test(value) && index < mpinInputs.length - 1) {
+                setTimeout(() => {
+                    mpinInputs[index + 1].focus();
+                }, 10);
+            }
+            
+            // Update button state immediately
+            updateLoginButton();
             
             // Auto-process when MPIN is complete
-            const mpinValue = getMPINValue();
-            if (mpinValue.length === 6) {
-                // Small delay to allow the last digit to be processed
-                setTimeout(() => {
+            setTimeout(() => {
+                const mpinValue = getMPINValue();
+                if (mpinValue.length === 6) {
                     autoVerifyMPIN();
-                }, 100);
-            }
-            
-            // Update button state
-            updateLoginButton();
+                }
+            }, 50);
         });
         
         input.addEventListener('keydown', function(e) {
@@ -134,6 +146,8 @@ document.addEventListener('DOMContentLoaded', function() {
             // Handle backspace
             if (e.key === 'Backspace' && !e.target.value && index > 0) {
                 mpinInputs[index - 1].focus();
+                mpinInputs[index - 1].value = '';
+                updateLoginButton();
             }
             
             // Handle arrow keys
@@ -163,22 +177,33 @@ document.addEventListener('DOMContentLoaded', function() {
             digits.split('').forEach((digit, i) => {
                 if (i < mpinInputs.length) {
                     mpinInputs[i].value = digit;
+                    mpinInputs[i].classList.add('filled');
+                    mpinInputs[i].classList.remove('error');
                 }
             });
+            
+            // Clear remaining inputs
+            for (let i = digits.length; i < mpinInputs.length; i++) {
+                mpinInputs[i].value = '';
+                mpinInputs[i].classList.remove('filled', 'error');
+            }
             
             // Focus last filled input or next empty input
             const lastFilledIndex = Math.min(digits.length - 1, mpinInputs.length - 1);
             const nextEmptyIndex = Math.min(digits.length, mpinInputs.length - 1);
             mpinInputs[nextEmptyIndex].focus();
             
-            updateLoginButton();
-            
-            // Auto-process when MPIN is complete
-            if (digits.length === 6) {
-                setTimeout(() => {
-                    autoVerifyMPIN();
-                }, 100);
-            }
+            // Trigger input event to ensure button state updates
+            setTimeout(() => {
+                updateLoginButton();
+                
+                // Auto-process when MPIN is complete
+                if (digits.length === 6) {
+                    setTimeout(() => {
+                        autoVerifyMPIN();
+                    }, 100);
+                }
+            }, 10);
         });
     });
     
@@ -203,9 +228,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Clear MPIN inputs
     function clearMPIN() {
-        mpinInputs.forEach(input => {
+        mpinInputs.forEach((input, index) => {
             input.value = '';
-            input.classList.remove('error');
+            input.classList.remove('error', 'filled');
         });
         mpinInputs[0].focus();
         updateLoginButton();

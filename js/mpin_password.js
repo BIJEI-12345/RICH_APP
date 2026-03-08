@@ -84,18 +84,34 @@ function initializeMPINInputs() {
 
 // Handle MPIN input
 function handleMPINInput(e, index) {
-    const value = e.target.value;
+    let value = e.target.value;
     
     // Only allow numbers - remove any non-numeric characters
     const numericValue = value.replace(/[^0-9]/g, '');
+    
+    // If there are non-numeric characters, replace with numeric only
     if (numericValue !== value) {
-        e.target.value = numericValue;
-        return;
+        value = numericValue;
+        e.target.value = value;
     }
     
-    // Only allow single digit
-    if (!/^\d$/.test(value)) {
+    // Only allow single digit - take only the last character if multiple
+    if (value.length > 1) {
+        value = value.slice(-1);
+        e.target.value = value;
+    }
+    
+    // If empty or not a digit, clear it
+    if (value && !/^\d$/.test(value)) {
         e.target.value = '';
+        value = '';
+    }
+    
+    // Only proceed if we have a valid digit
+    if (!value || !/^\d$/.test(value)) {
+        mpinDigits[index] = '';
+        e.target.classList.remove('filled');
+        checkMPINComplete();
         return;
     }
 
@@ -108,7 +124,9 @@ function handleMPINInput(e, index) {
     
     // Auto-focus next input
     if (value && index < mpinInputs.length - 1) {
-        mpinInputs[index + 1].focus();
+        setTimeout(() => {
+            mpinInputs[index + 1].focus();
+        }, 10);
     }
     
     // Check if MPIN is complete
@@ -198,12 +216,14 @@ function clearMPIN() {
     mpinDigits = [];
     isMPINComplete = false;
     
-    mpinInputs.forEach(input => {
+    mpinInputs.forEach((input, index) => {
         input.value = '';
         input.classList.remove('filled', 'error', 'completed');
+        mpinDigits[index] = '';
     });
     
     finishBtn.disabled = true;
+    checkMPINComplete();
     focusFirstInput();
     
     // Clear any error messages
