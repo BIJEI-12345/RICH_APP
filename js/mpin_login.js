@@ -87,9 +87,11 @@ function initializeMPINLogin() {
         // Ensure input type is password for masking
         input.type = 'password';
         
-        // Force password masking style
+        // Force password masking style and white color, consistent background
         input.style.webkitTextSecurity = 'disc';
         input.style.textSecurity = 'disc';
+        input.style.color = '#ffffff';
+        input.style.background = '#374151';
         
         input.addEventListener('input', function(e) {
             let value = e.target.value;
@@ -105,14 +107,19 @@ function initializeMPINLogin() {
             // Set the value
             e.target.value = value;
             
-            // Ensure password masking is applied
+            // Ensure password masking is applied and white color, consistent background
             e.target.style.webkitTextSecurity = 'disc';
             e.target.style.textSecurity = 'disc';
+            e.target.style.color = '#ffffff';
+            e.target.style.background = '#374151';
             
             // Add visual feedback if we have a value
             if (value) {
                 e.target.classList.add('filled');
                 e.target.classList.remove('error');
+                
+                // Ensure background stays consistent
+                e.target.style.background = '#374151';
                 
                 // Move to next input immediately for continuous typing
                 if (index < mpinInputs.length - 1) {
@@ -124,6 +131,8 @@ function initializeMPINLogin() {
                 }
             } else {
                 e.target.classList.remove('filled');
+                // Ensure background stays consistent even when empty
+                e.target.style.background = '#374151';
             }
             
             // Update button state - use both immediate and delayed update

@@ -159,7 +159,7 @@ body.keyboard-open {
     font-size: 24px;
     font-weight: 700;
     color: #ffffff !important;
-    background: #374151;
+    background: #374151 !important;
     transition: all 0.2s ease;
     outline: none;
     /* Ensure password masking shows dots */
@@ -180,7 +180,7 @@ body.keyboard-open {
 
 .mpin-digit.filled {
     border-color: #10b981;
-    background: #374151;
+    background: #374151 !important;
 }
 
 .mpin-digit.error {

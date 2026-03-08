@@ -41,15 +41,19 @@ function initializeMPINInputs() {
         // Ensure input type is password for masking
         input.type = 'password';
         
-        // Force password masking style
+        // Force password masking style and white color, consistent background
         input.style.webkitTextSecurity = 'disc';
         input.style.textSecurity = 'disc';
+        input.style.color = '#ffffff';
+        input.style.background = '#374151';
         
         // Add input event listener
         input.addEventListener('input', function(e) {
-            // Ensure password masking is applied
+            // Ensure password masking is applied and styles maintained
             e.target.style.webkitTextSecurity = 'disc';
             e.target.style.textSecurity = 'disc';
+            e.target.style.color = '#ffffff';
+            e.target.style.background = '#374151';
             handleMPINInput(e, index);
         });
 
@@ -86,6 +90,12 @@ function handleMPINInput(e, index) {
     // Set the value
     e.target.value = value;
     
+    // Ensure password masking is applied and white color, consistent background
+    e.target.style.webkitTextSecurity = 'disc';
+    e.target.style.textSecurity = 'disc';
+    e.target.style.color = '#ffffff';
+    e.target.style.background = '#374151';
+    
     // If empty, clear it
     if (!value) {
         mpinDigits[index] = '';
@@ -100,6 +110,9 @@ function handleMPINInput(e, index) {
     // Add visual feedback
     e.target.classList.add('filled');
     e.target.classList.remove('error');
+    
+    // Ensure background stays consistent
+    e.target.style.background = '#374151';
     
     // Auto-focus next input immediately for continuous typing
     if (value && index < mpinInputs.length - 1) {
