@@ -61,14 +61,6 @@ function initializeMPINInputs() {
             handleKeyNavigation(e, index);
         });
         
-        // Additional keypress listener to block non-numeric characters
-        input.addEventListener('keypress', function(e) {
-            // Only allow numeric keys (0-9) - but don't block if it's a number
-            if (e.key && !/^[0-9]$/.test(e.key) && !['Backspace', 'Delete', 'Tab', 'Enter'].includes(e.key)) {
-                e.preventDefault();
-                return false;
-            }
-        });
 
         // Add paste event listener
         input.addEventListener('paste', function(e) {
@@ -86,15 +78,7 @@ function initializeMPINInputs() {
 function handleMPINInput(e, index) {
     let value = e.target.value;
     
-    // Only allow numbers - remove any non-numeric characters
-    let numericValue = value.replace(/[^0-9]/g, '');
-    
-    // If there are non-numeric characters, replace with numeric only
-    if (numericValue !== value) {
-        value = numericValue;
-    }
-    
-    // Only allow single digit - take only the last character if multiple
+    // Only allow single character - take only the last character if multiple
     if (value.length > 1) {
         value = value.slice(-1);
     }
@@ -102,25 +86,15 @@ function handleMPINInput(e, index) {
     // Set the value
     e.target.value = value;
     
-    // If empty or not a digit, clear it
-    if (value && !/^\d$/.test(value)) {
-        e.target.value = '';
-        value = '';
-        mpinDigits[index] = '';
-        e.target.classList.remove('filled');
-        checkMPINComplete();
-        return;
-    }
-    
-    // Only proceed if we have a valid digit
-    if (!value || !/^\d$/.test(value)) {
+    // If empty, clear it
+    if (!value) {
         mpinDigits[index] = '';
         e.target.classList.remove('filled');
         checkMPINComplete();
         return;
     }
 
-    // Store the digit
+    // Store the character
     mpinDigits[index] = value;
     
     // Add visual feedback
@@ -178,13 +152,14 @@ function handleKeyNavigation(e, index) {
 // Handle paste event
 function handlePaste(e) {
     e.preventDefault();
-    const pastedData = e.clipboardData.getData('text').replace(/[^0-9]/g, '');
+    const pastedData = e.clipboardData.getData('text');
     
-    if (pastedData.length === 6) {
+    if (pastedData.length >= 6) {
+        const chars = pastedData.slice(0, 6);
         // Fill all inputs with pasted data
         for (let i = 0; i < 6; i++) {
-            mpinInputs[i].value = pastedData[i];
-            mpinDigits[i] = pastedData[i];
+            mpinInputs[i].value = chars[i];
+            mpinDigits[i] = chars[i];
             mpinInputs[i].classList.add('filled');
             mpinInputs[i].classList.remove('error');
         }
@@ -198,7 +173,7 @@ function handlePaste(e) {
 function checkMPINComplete() {
     // Check both the mpinDigits array and the actual input values
     const filledDigits = mpinDigits.filter(digit => digit !== undefined && digit !== '');
-    const inputValues = Array.from(mpinInputs).map(input => input.value).filter(val => val && /^\d$/.test(val));
+    const inputValues = Array.from(mpinInputs).map(input => input.value).filter(val => val);
     
     // Use the longer of the two to ensure we catch all filled inputs
     const totalFilled = Math.max(filledDigits.length, inputValues.length);

@@ -86,28 +86,20 @@ document.addEventListener('DOMContentLoaded', function() {
         input.addEventListener('input', function(e) {
             let value = e.target.value;
             
-            // Only allow numbers - remove any non-numeric characters
-            let numericValue = value.replace(/[^0-9]/g, '');
-            
-            // If there are non-numeric characters, replace with numeric only
-            if (numericValue !== value) {
-                value = numericValue;
-            }
-            
-            // Only allow single digit - take only the last character if multiple
+            // Only allow single character - take only the last character if multiple
             if (value.length > 1) {
                 value = value.slice(-1);
             }
             
-            // Set the value (even if empty, to ensure proper state)
+            // Set the value
             e.target.value = value;
             
-            // Add visual feedback if we have a valid digit
-            if (value && /^\d$/.test(value)) {
+            // Add visual feedback if we have a value
+            if (value) {
                 e.target.classList.add('filled');
                 e.target.classList.remove('error');
                 
-                // Move to next input if we have a valid digit
+                // Move to next input if we have a value
                 if (index < mpinInputs.length - 1) {
                     // Use requestAnimationFrame for smoother transition
                     requestAnimationFrame(() => {
@@ -126,26 +118,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Auto-process when MPIN is complete
                 const mpinValue = getMPINValue();
-                if (mpinValue.length === 6 && /^\d{6}$/.test(mpinValue)) {
+                if (mpinValue.length === 6) {
                     autoVerifyMPIN();
                 }
             }, 50);
         });
         
         input.addEventListener('keydown', function(e) {
-            // Block all non-numeric keys except navigation and control keys
-            const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab', 'Enter', 'Home', 'End'];
-            const isNumber = /^[0-9]$/.test(e.key);
-            const isAllowed = allowedKeys.includes(e.key) || 
-                             (e.ctrlKey && ['a', 'c', 'v', 'x'].includes(e.key.toLowerCase())) ||
-                             (e.metaKey && ['a', 'c', 'v', 'x'].includes(e.key.toLowerCase()));
-            
-            // Block if not a number and not an allowed key
-            if (!isNumber && !isAllowed) {
-                e.preventDefault();
-                return false;
-            }
-            
             // Handle backspace
             if (e.key === 'Backspace' && !e.target.value && index > 0) {
                 mpinInputs[index - 1].focus();
@@ -162,24 +141,15 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        // Additional keypress listener to block non-numeric characters
-        input.addEventListener('keypress', function(e) {
-            // Only allow numeric keys (0-9) - but don't block if it's a number
-            if (e.key && !/^[0-9]$/.test(e.key) && !['Backspace', 'Delete', 'Tab', 'Enter'].includes(e.key)) {
-                e.preventDefault();
-                return false;
-            }
-        });
-        
         input.addEventListener('paste', function(e) {
             e.preventDefault();
             const pastedData = e.clipboardData.getData('text');
-            const digits = pastedData.replace(/\D/g, '').slice(0, 6);
+            const chars = pastedData.slice(0, 6);
             
-            // Fill inputs with pasted digits
-            digits.split('').forEach((digit, i) => {
+            // Fill inputs with pasted characters
+            chars.split('').forEach((char, i) => {
                 if (i < mpinInputs.length) {
-                    mpinInputs[i].value = digit;
+                    mpinInputs[i].value = char;
                     mpinInputs[i].classList.add('filled');
                     mpinInputs[i].classList.remove('error');
                 }
@@ -213,7 +183,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Update login button state
     function updateLoginButton() {
         const mpinValue = getMPINValue();
-        const isComplete = mpinValue.length === 6 && /^\d{6}$/.test(mpinValue);
+        const isComplete = mpinValue.length === 6;
         
         // Always update the button state
         loginBtn.disabled = !isComplete;
@@ -223,9 +193,6 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             loginBtn.classList.remove('ready');
         }
-        
-        // Debug log (can be removed later)
-        console.log('MPIN Value:', mpinValue, 'Length:', mpinValue.length, 'Is Complete:', isComplete);
     }
     
     // Get current MPIN value
