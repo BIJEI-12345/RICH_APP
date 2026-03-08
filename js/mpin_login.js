@@ -11,7 +11,8 @@ window.goBack = function() {
     window.location.href = 'index.php';
 };
 
-document.addEventListener('DOMContentLoaded', function() {
+// Initialize function that works whether DOM is loaded or not
+function initializeMPINLogin() {
     // Get elements
     const mpinInputs = document.querySelectorAll('.mpin-digit');
     const loginBtn = document.getElementById('loginBtn');
@@ -83,8 +84,18 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // MPIN input handling
     mpinInputs.forEach((input, index) => {
+        // Ensure input type is password for masking
+        input.type = 'password';
+        
+        // Force password masking style
+        input.style.webkitTextSecurity = 'disc';
+        input.style.textSecurity = 'disc';
+        
         input.addEventListener('input', function(e) {
             let value = e.target.value;
+            
+            // Only allow numeric characters
+            value = value.replace(/\D/g, '');
             
             // Only allow single character - take only the last character if multiple
             if (value.length > 1) {
@@ -94,60 +105,91 @@ document.addEventListener('DOMContentLoaded', function() {
             // Set the value
             e.target.value = value;
             
+            // Ensure password masking is applied
+            e.target.style.webkitTextSecurity = 'disc';
+            e.target.style.textSecurity = 'disc';
+            
             // Add visual feedback if we have a value
             if (value) {
                 e.target.classList.add('filled');
                 e.target.classList.remove('error');
                 
-                // Move to next input if we have a value
+                // Move to next input immediately for continuous typing
                 if (index < mpinInputs.length - 1) {
-                    // Use requestAnimationFrame for smoother transition
-                    requestAnimationFrame(() => {
+                    // Use setTimeout with minimal delay for smoother transition
+                    setTimeout(() => {
                         mpinInputs[index + 1].focus();
                         mpinInputs[index + 1].select(); // Select text for easy replacement
-                    });
+                    }, 0);
                 }
             } else {
                 e.target.classList.remove('filled');
             }
             
-            // Update button state immediately and with delay to ensure value is set
+            // Update button state - use both immediate and delayed update
             updateLoginButton();
+            
+            // Also update after a short delay to ensure all values are captured
             setTimeout(() => {
                 updateLoginButton();
-                
-                // Auto-process when MPIN is complete
-                const mpinValue = getMPINValue();
-                if (mpinValue.length === 6) {
-                    autoVerifyMPIN();
-                }
-            }, 50);
+                // Don't auto-login - user must click the button
+            }, 10);
+        });
+        
+        // Also handle beforeinput for better control
+        input.addEventListener('beforeinput', function(e) {
+            // Allow only numeric input
+            if (e.data && !/^\d$/.test(e.data)) {
+                e.preventDefault();
+            }
         });
         
         input.addEventListener('keydown', function(e) {
             // Handle backspace
-            if (e.key === 'Backspace' && !e.target.value && index > 0) {
-                mpinInputs[index - 1].focus();
-                mpinInputs[index - 1].value = '';
-                updateLoginButton();
+            if (e.key === 'Backspace') {
+                if (e.target.value) {
+                    // If there's a value, clear it
+                    e.target.value = '';
+                    e.target.classList.remove('filled');
+                    updateLoginButton();
+                } else if (index > 0) {
+                    // If empty, move to previous and clear it
+                    e.preventDefault();
+                    mpinInputs[index - 1].focus();
+                    mpinInputs[index - 1].value = '';
+                    mpinInputs[index - 1].classList.remove('filled');
+                    updateLoginButton();
+                }
             }
             
             // Handle arrow keys
             if (e.key === 'ArrowLeft' && index > 0) {
+                e.preventDefault();
                 mpinInputs[index - 1].focus();
             }
             if (e.key === 'ArrowRight' && index < mpinInputs.length - 1) {
+                e.preventDefault();
                 mpinInputs[index + 1].focus();
+            }
+            
+            // Allow numeric keys and navigation keys
+            if (!/^[0-9]$/.test(e.key) && 
+                !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter'].includes(e.key) &&
+                !e.ctrlKey && !e.metaKey) {
+                // Prevent non-numeric characters
+                e.preventDefault();
             }
         });
         
         input.addEventListener('paste', function(e) {
             e.preventDefault();
             const pastedData = e.clipboardData.getData('text');
-            const chars = pastedData.slice(0, 6);
+            // Only get numeric characters and limit to 6
+            const numericData = pastedData.replace(/\D/g, '').slice(0, 6);
+            const chars = numericData.split('');
             
             // Fill inputs with pasted characters
-            chars.split('').forEach((char, i) => {
+            chars.forEach((char, i) => {
                 if (i < mpinInputs.length) {
                     mpinInputs[i].value = char;
                     mpinInputs[i].classList.add('filled');
@@ -156,60 +198,68 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             
             // Clear remaining inputs
-            for (let i = digits.length; i < mpinInputs.length; i++) {
+            for (let i = chars.length; i < mpinInputs.length; i++) {
                 mpinInputs[i].value = '';
                 mpinInputs[i].classList.remove('filled', 'error');
             }
             
             // Focus last filled input or next empty input
-            const lastFilledIndex = Math.min(digits.length - 1, mpinInputs.length - 1);
-            const nextEmptyIndex = Math.min(digits.length, mpinInputs.length - 1);
+            const lastFilledIndex = Math.min(chars.length - 1, mpinInputs.length - 1);
+            const nextEmptyIndex = Math.min(chars.length, mpinInputs.length - 1);
             mpinInputs[nextEmptyIndex].focus();
             
             // Trigger input event to ensure button state updates
             setTimeout(() => {
                 updateLoginButton();
-                
-                // Auto-process when MPIN is complete
-                if (digits.length === 6) {
-                    setTimeout(() => {
-                        autoVerifyMPIN();
-                    }, 100);
-                }
+                // Don't auto-login - user must click the button
             }, 10);
         });
     });
     
     // Update login button state
     function updateLoginButton() {
+        if (!loginBtn) return;
+        
         const mpinValue = getMPINValue();
-        const isComplete = mpinValue.length === 6;
+        const isComplete = mpinValue.length === 6 && /^\d{6}$/.test(mpinValue);
         
-        // Always update the button state
-        loginBtn.disabled = !isComplete;
-        
+        // Update the button state
         if (isComplete) {
+            loginBtn.disabled = false;
             loginBtn.classList.add('ready');
         } else {
+            loginBtn.disabled = true;
             loginBtn.classList.remove('ready');
         }
     }
     
     // Get current MPIN value
     function getMPINValue() {
-        return Array.from(mpinInputs).map(input => input.value).join('');
+        let value = '';
+        mpinInputs.forEach(input => {
+            const val = input.value.trim();
+            if (val && /^\d$/.test(val)) {
+                value += val;
+            }
+        });
+        return value;
     }
     
     // Clear MPIN inputs
-    function clearMPIN() {
+    window.clearMPIN = function() {
+        // Clear all inputs at once
         mpinInputs.forEach((input, index) => {
             input.value = '';
             input.classList.remove('error', 'filled');
         });
-        mpinInputs[0].focus();
-        updateLoginButton();
-        hideError();
-    }
+        
+        // Focus first input
+        setTimeout(() => {
+            mpinInputs[0].focus();
+            updateLoginButton();
+            hideError();
+        }, 0);
+    };
     
     // Show error message
     function showError(message) {
@@ -641,4 +691,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     `;
     document.head.appendChild(style);
-});
+}
+
+// Call initialize function - works whether DOM is loaded or not
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeMPINLogin);
+} else {
+    // DOM is already loaded
+    initializeMPINLogin();
+}

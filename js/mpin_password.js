@@ -38,26 +38,23 @@ function initializeButtons() {
 // Initialize MPIN input fields
 function initializeMPINInputs() {
     mpinInputs.forEach((input, index) => {
+        // Ensure input type is password for masking
+        input.type = 'password';
+        
+        // Force password masking style
+        input.style.webkitTextSecurity = 'disc';
+        input.style.textSecurity = 'disc';
+        
         // Add input event listener
         input.addEventListener('input', function(e) {
+            // Ensure password masking is applied
+            e.target.style.webkitTextSecurity = 'disc';
+            e.target.style.textSecurity = 'disc';
             handleMPINInput(e, index);
         });
 
         // Add keydown event listener for navigation
         input.addEventListener('keydown', function(e) {
-            // Block all non-numeric keys except navigation and control keys
-            const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab', 'Enter', 'Home', 'End'];
-            const isNumber = /^[0-9]$/.test(e.key);
-            const isAllowed = allowedKeys.includes(e.key) || 
-                             (e.ctrlKey && ['a', 'c', 'v', 'x'].includes(e.key.toLowerCase())) ||
-                             (e.metaKey && ['a', 'c', 'v', 'x'].includes(e.key.toLowerCase()));
-            
-            // Block if not a number and not an allowed key
-            if (!isNumber && !isAllowed) {
-                e.preventDefault();
-                return false;
-            }
-            
             handleKeyNavigation(e, index);
         });
         
@@ -77,6 +74,9 @@ function initializeMPINInputs() {
 // Handle MPIN input
 function handleMPINInput(e, index) {
     let value = e.target.value;
+    
+    // Only allow numeric characters
+    value = value.replace(/\D/g, '');
     
     // Only allow single character - take only the last character if multiple
     if (value.length > 1) {
@@ -101,16 +101,17 @@ function handleMPINInput(e, index) {
     e.target.classList.add('filled');
     e.target.classList.remove('error');
     
-    // Auto-focus next input
+    // Auto-focus next input immediately for continuous typing
     if (value && index < mpinInputs.length - 1) {
-        // Use requestAnimationFrame for smoother transition
-        requestAnimationFrame(() => {
+        // Use setTimeout with 0 delay to ensure value is set first
+        setTimeout(() => {
             mpinInputs[index + 1].focus();
             mpinInputs[index + 1].select(); // Select text for easy replacement
-        });
+        }, 0);
     }
     
-    // Check if MPIN is complete with small delay to ensure value is stored
+    // Check if MPIN is complete immediately and with delay
+    checkMPINComplete();
     setTimeout(() => {
         checkMPINComplete();
     }, 10);
@@ -153,9 +154,11 @@ function handleKeyNavigation(e, index) {
 function handlePaste(e) {
     e.preventDefault();
     const pastedData = e.clipboardData.getData('text');
+    // Only get numeric characters and limit to 6
+    const numericData = pastedData.replace(/\D/g, '').slice(0, 6);
+    const chars = numericData.split('');
     
-    if (pastedData.length >= 6) {
-        const chars = pastedData.slice(0, 6);
+    if (chars.length >= 6) {
         // Fill all inputs with pasted data
         for (let i = 0; i < 6; i++) {
             mpinInputs[i].value = chars[i];
@@ -165,20 +168,34 @@ function handlePaste(e) {
         }
         checkMPINComplete();
     } else {
-        showError('Please paste a valid 6-digit MPIN');
+        // Fill what we can
+        chars.forEach((char, i) => {
+            if (i < mpinInputs.length) {
+                mpinInputs[i].value = char;
+                mpinDigits[i] = char;
+                mpinInputs[i].classList.add('filled');
+                mpinInputs[i].classList.remove('error');
+            }
+        });
+        checkMPINComplete();
     }
 }
 
 // Check if MPIN is complete
 function checkMPINComplete() {
-    // Check both the mpinDigits array and the actual input values
-    const filledDigits = mpinDigits.filter(digit => digit !== undefined && digit !== '');
-    const inputValues = Array.from(mpinInputs).map(input => input.value).filter(val => val);
+    // Get actual input values and filter out empty ones
+    const inputValues = Array.from(mpinInputs).map(input => input.value.trim()).filter(val => val && /^\d$/.test(val));
+    
+    // Also check mpinDigits array
+    const filledDigits = mpinDigits.filter(digit => digit !== undefined && digit !== '' && /^\d$/.test(digit));
     
     // Use the longer of the two to ensure we catch all filled inputs
     const totalFilled = Math.max(filledDigits.length, inputValues.length);
     
-    if (totalFilled === 6) {
+    // Verify all 6 inputs have numeric values
+    const allFilled = totalFilled === 6 && inputValues.length === 6;
+    
+    if (allFilled && finishBtn) {
         isMPINComplete = true;
         finishBtn.disabled = false;
         
@@ -187,11 +204,12 @@ function checkMPINComplete() {
             input.classList.add('completed');
         });
         
-        // Auto-focus finish button
-        finishBtn.focus();
+        // Don't auto-focus button - let user decide when to click
     } else {
         isMPINComplete = false;
-        finishBtn.disabled = true;
+        if (finishBtn) {
+            finishBtn.disabled = true;
+        }
         
         // Remove completion animation
         mpinInputs.forEach(input => {
@@ -201,26 +219,32 @@ function checkMPINComplete() {
 }
 
 // Clear MPIN
-function clearMPIN() {
+window.clearMPIN = function() {
     mpinDigits = [];
     isMPINComplete = false;
     
+    // Clear all inputs at once
     mpinInputs.forEach((input, index) => {
         input.value = '';
         input.classList.remove('filled', 'error', 'completed');
         mpinDigits[index] = '';
     });
     
-    finishBtn.disabled = true;
-    checkMPINComplete();
-    focusFirstInput();
-    
-    // Clear any error messages
-    const errorMessage = document.querySelector('.error-message');
-    if (errorMessage) {
-        errorMessage.remove();
-    }
-}
+    // Update button state and focus first input
+    setTimeout(() => {
+        if (finishBtn) {
+            finishBtn.disabled = true;
+        }
+        checkMPINComplete();
+        focusFirstInput();
+        
+        // Clear any error messages
+        const errorMessage = document.querySelector('.error-message');
+        if (errorMessage) {
+            errorMessage.remove();
+        }
+    }, 0);
+};
 
 // Focus first input
 function focusFirstInput() {

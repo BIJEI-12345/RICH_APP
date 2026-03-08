@@ -75,6 +75,7 @@
         // Force reload to bypass cache - ensures latest version is loaded
         const script = document.createElement('script');
         script.src = 'js/mpin_login.js?v=' + new Date().getTime();
+        script.async = false; // Ensure script loads synchronously
         document.body.appendChild(script);
     </script>
 </body>

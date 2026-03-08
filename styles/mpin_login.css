@@ -156,12 +156,20 @@ body.keyboard-open {
     border: 2px solid #e5e7eb;
     border-radius: 12px;
     text-align: center;
-    font-size: 20px;
-    font-weight: 600;
-    color: #1f2937;
-    background: #ffffff;
+    font-size: 24px;
+    font-weight: 700;
+    color: #ffffff !important;
+    background: #374151;
     transition: all 0.2s ease;
     outline: none;
+    /* Ensure password masking shows dots */
+    -webkit-text-security: disc !important;
+    text-security: disc !important;
+    letter-spacing: 0;
+    line-height: 50px;
+    padding: 0;
+    margin: 0;
+    vertical-align: middle;
 }
 
 .mpin-digit:focus {
@@ -172,7 +180,7 @@ body.keyboard-open {
 
 .mpin-digit.filled {
     border-color: #10b981;
-    background: #f0fdf4;
+    background: #374151;
 }
 
 .mpin-digit.error {
@@ -342,9 +350,14 @@ body.keyboard-open {
     .mpin-digit {
         width: 48px;
         height: 48px;
-        font-size: 20px;
+        font-size: 22px;
         border-width: 2px;
         flex-shrink: 0;
+        color: #ffffff !important;
+        background: #374151;
+        line-height: 48px;
+        -webkit-text-security: disc;
+        text-security: disc;
     }
     
     .mpin-digit:focus {
@@ -389,7 +402,12 @@ body.keyboard-open {
     .mpin-digit {
         width: 42px;
         height: 42px;
-        font-size: 18px;
+        font-size: 20px;
+        color: #ffffff !important;
+        background: #374151;
+        line-height: 42px;
+        -webkit-text-security: disc;
+        text-security: disc;
     }
 }
 
@@ -444,6 +462,8 @@ body.keyboard-open {
         background: #374151;
         border-color: #4b5563;
         color: #f9fafb;
+        -webkit-text-security: disc;
+        text-security: disc;
     }
     
     .mpin-digit:focus {
