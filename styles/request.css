@@ -1912,6 +1912,8 @@ body {
 
 .report-card {
     padding: 2rem;
+    position: relative; /* Make it a positioning context for report-actions */
+    padding-bottom: 120px; /* Add padding to accommodate fixed actions */
 }
 
 .report-header {
@@ -1956,6 +1958,8 @@ body {
     display: flex;
     flex-direction: column;
     gap: 1rem;
+    margin-bottom: 100px; /* Add margin to create space for fixed actions at bottom */
+    padding-bottom: 1rem; /* Add padding after last detail-item */
 }
 
 .detail-item {
@@ -2044,10 +2048,16 @@ body {
     padding: 1.5rem 1rem; /* Add padding to ensure visibility */
     border-top: 1px solid #e8e8e8;
     flex-wrap: wrap;
-    position: sticky; /* Make buttons sticky at bottom */
+    position: fixed; /* Make buttons fixed at bottom */
     bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 600px; /* Match report-display max-width */
     background: white; /* Ensure background is white */
     z-index: 10; /* Ensure buttons are above content */
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1); /* Add shadow for better visibility */
+    margin-top: 0; /* Remove top margin since it's fixed */
 }
 
 .action-btn {
