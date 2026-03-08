@@ -106,24 +106,27 @@ document.addEventListener('DOMContentLoaded', function() {
             if (value && /^\d$/.test(value)) {
                 e.target.classList.add('filled');
                 e.target.classList.remove('error');
+                
+                // Move to next input if we have a valid digit
+                if (index < mpinInputs.length - 1) {
+                    // Use requestAnimationFrame for smoother transition
+                    requestAnimationFrame(() => {
+                        mpinInputs[index + 1].focus();
+                        mpinInputs[index + 1].select(); // Select text for easy replacement
+                    });
+                }
             } else {
                 e.target.classList.remove('filled');
             }
             
-            // Move to next input if we have a valid digit
-            if (value && /^\d$/.test(value) && index < mpinInputs.length - 1) {
-                setTimeout(() => {
-                    mpinInputs[index + 1].focus();
-                }, 10);
-            }
-            
-            // Update button state immediately
+            // Update button state immediately and with delay to ensure value is set
             updateLoginButton();
-            
-            // Auto-process when MPIN is complete
             setTimeout(() => {
+                updateLoginButton();
+                
+                // Auto-process when MPIN is complete
                 const mpinValue = getMPINValue();
-                if (mpinValue.length === 6) {
+                if (mpinValue.length === 6 && /^\d{6}$/.test(mpinValue)) {
                     autoVerifyMPIN();
                 }
             }, 50);
@@ -161,8 +164,8 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Additional keypress listener to block non-numeric characters
         input.addEventListener('keypress', function(e) {
-            // Only allow numeric keys (0-9)
-            if (!/^[0-9]$/.test(e.key)) {
+            // Only allow numeric keys (0-9) - but don't block if it's a number
+            if (e.key && !/^[0-9]$/.test(e.key) && !['Backspace', 'Delete', 'Tab', 'Enter'].includes(e.key)) {
                 e.preventDefault();
                 return false;
             }
@@ -210,8 +213,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Update login button state
     function updateLoginButton() {
         const mpinValue = getMPINValue();
-        const isComplete = mpinValue.length === 6;
+        const isComplete = mpinValue.length === 6 && /^\d{6}$/.test(mpinValue);
         
+        // Always update the button state
         loginBtn.disabled = !isComplete;
         
         if (isComplete) {
@@ -219,6 +223,9 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             loginBtn.classList.remove('ready');
         }
+        
+        // Debug log (can be removed later)
+        console.log('MPIN Value:', mpinValue, 'Length:', mpinValue.length, 'Is Complete:', isComplete);
     }
     
     // Get current MPIN value

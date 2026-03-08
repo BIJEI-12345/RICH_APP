@@ -63,8 +63,8 @@ function initializeMPINInputs() {
         
         // Additional keypress listener to block non-numeric characters
         input.addEventListener('keypress', function(e) {
-            // Only allow numeric keys (0-9)
-            if (!/^[0-9]$/.test(e.key)) {
+            // Only allow numeric keys (0-9) - but don't block if it's a number
+            if (e.key && !/^[0-9]$/.test(e.key) && !['Backspace', 'Delete', 'Tab', 'Enter'].includes(e.key)) {
                 e.preventDefault();
                 return false;
             }
@@ -87,24 +87,29 @@ function handleMPINInput(e, index) {
     let value = e.target.value;
     
     // Only allow numbers - remove any non-numeric characters
-    const numericValue = value.replace(/[^0-9]/g, '');
+    let numericValue = value.replace(/[^0-9]/g, '');
     
     // If there are non-numeric characters, replace with numeric only
     if (numericValue !== value) {
         value = numericValue;
-        e.target.value = value;
     }
     
     // Only allow single digit - take only the last character if multiple
     if (value.length > 1) {
         value = value.slice(-1);
-        e.target.value = value;
     }
+    
+    // Set the value
+    e.target.value = value;
     
     // If empty or not a digit, clear it
     if (value && !/^\d$/.test(value)) {
         e.target.value = '';
         value = '';
+        mpinDigits[index] = '';
+        e.target.classList.remove('filled');
+        checkMPINComplete();
+        return;
     }
     
     // Only proceed if we have a valid digit
@@ -124,13 +129,17 @@ function handleMPINInput(e, index) {
     
     // Auto-focus next input
     if (value && index < mpinInputs.length - 1) {
-        setTimeout(() => {
+        // Use requestAnimationFrame for smoother transition
+        requestAnimationFrame(() => {
             mpinInputs[index + 1].focus();
-        }, 10);
+            mpinInputs[index + 1].select(); // Select text for easy replacement
+        });
     }
     
-    // Check if MPIN is complete
-    checkMPINComplete();
+    // Check if MPIN is complete with small delay to ensure value is stored
+    setTimeout(() => {
+        checkMPINComplete();
+    }, 10);
 }
 
 // Handle key navigation
@@ -187,9 +196,14 @@ function handlePaste(e) {
 
 // Check if MPIN is complete
 function checkMPINComplete() {
+    // Check both the mpinDigits array and the actual input values
     const filledDigits = mpinDigits.filter(digit => digit !== undefined && digit !== '');
+    const inputValues = Array.from(mpinInputs).map(input => input.value).filter(val => val && /^\d$/.test(val));
     
-    if (filledDigits.length === 6) {
+    // Use the longer of the two to ensure we catch all filled inputs
+    const totalFilled = Math.max(filledDigits.length, inputValues.length);
+    
+    if (totalFilled === 6) {
         isMPINComplete = true;
         finishBtn.disabled = false;
         
