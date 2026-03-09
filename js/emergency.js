@@ -41,6 +41,25 @@ function setupEmergencyForm() {
     if (imageContainer && (!imagePreview || imagePreview.style.display === 'none' || !imagePreview.src)) {
         imageContainer.classList.add('empty');
     }
+    
+    // Initialize image upload input change handler
+    const emergencyImageUpload = document.getElementById('emergencyImageUpload');
+    if (emergencyImageUpload) {
+        emergencyImageUpload.addEventListener('change', function(e) {
+            console.log('Emergency image input changed');
+            const file = e.target.files[0];
+            if (file) {
+                console.log('File selected:', file.name, file.type, file.size);
+                previewImage(e.target, 'emergencyImagePreview');
+                // Show remove button
+                const removeBtn = document.getElementById('emergencyRemoveImageBtn');
+                if (removeBtn) {
+                    removeBtn.style.display = 'flex';
+                }
+                clearFieldError(e.target);
+            }
+        });
+    }
 }
 
 // Setup emergency type dropdown handler
@@ -242,16 +261,7 @@ window.openEmergencyFileUpload = function() {
         newInput.removeAttribute('capture');
     }
     
-    // Replace the old input with the new one
-    try {
-        parent.replaceChild(newInput, emergencyImageUpload);
-        console.log('Input element replaced successfully');
-    } catch (error) {
-        console.error('Error replacing input element:', error);
-        return;
-    }
-    
-    // Add event listener for file selection
+    // Add event listener BEFORE replacing to ensure it's attached
     newInput.addEventListener('change', function(e) {
         console.log('File selected for upload');
         const file = e.target.files[0];
@@ -282,19 +292,32 @@ window.openEmergencyFileUpload = function() {
         }
     });
     
-    // Trigger file picker with multiple attempts if needed
-    setTimeout(() => {
-        console.log('Triggering file picker...');
-        try {
-            newInput.click();
-        } catch (error) {
-            console.error('Error triggering file picker:', error);
-            // Try again after a short delay
-            setTimeout(() => {
+    // Replace the old input with the new one
+    try {
+        parent.replaceChild(newInput, emergencyImageUpload);
+        console.log('Input element replaced successfully');
+        
+        // Trigger file picker after replacement
+        setTimeout(() => {
+            console.log('Triggering file picker...');
+            try {
                 newInput.click();
-            }, 100);
-        }
-    }, 100);
+            } catch (error) {
+                console.error('Error triggering file picker:', error);
+                // Try again after a short delay
+                setTimeout(() => {
+                    try {
+                        newInput.click();
+                    } catch (err) {
+                        console.error('Second attempt failed:', err);
+                    }
+                }, 200);
+            }
+        }, 50);
+    } catch (error) {
+        console.error('Error replacing input element:', error);
+        return;
+    }
 };
 
 // Preview image function (same as concerns.js)
