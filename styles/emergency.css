@@ -315,6 +315,7 @@ body {
     background-color: #ffffff;
     padding: 1rem;
     margin-bottom: 1rem;
+    position: relative;
 }
 
 .image-preview { 
@@ -325,6 +326,34 @@ body {
     border-radius: 8px; 
     margin: 0;
     object-fit: contain;
+}
+
+.remove-image-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(220, 53, 69, 0.9);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    z-index: 10;
+    transition: background 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.remove-image-btn:hover {
+    background: rgba(220, 53, 69, 1);
+}
+
+.remove-image-btn i {
+    font-size: 14px;
 }
 
 /* Radio Group */

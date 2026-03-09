@@ -123,6 +123,11 @@ function setupEmergencyTypeHandler() {
     if (emergencyImageUpload) {
         emergencyImageUpload.addEventListener('change', function() {
             previewImage(this, 'emergencyImagePreview');
+            // Show remove button
+            const removeBtn = document.getElementById('emergencyRemoveImageBtn');
+            if (removeBtn && this.files && this.files.length > 0) {
+                removeBtn.style.display = 'block';
+            }
             clearFieldError(this); // Clear any validation errors when image is uploaded
             
             // Hide required indicator when image is uploaded
@@ -182,6 +187,11 @@ window.openEmergencyCamera = function() {
         if (file) {
             console.log('File captured from camera:', file.name, file.type, file.size);
             previewImage(e.target, 'emergencyImagePreview');
+            // Show remove button
+            const removeBtn = document.getElementById('emergencyRemoveImageBtn');
+            if (removeBtn) {
+                removeBtn.style.display = 'block';
+            }
             // Clear any validation errors when image is uploaded
             const formGroup = e.target.closest('.form-group');
             if (formGroup) {
@@ -224,22 +234,26 @@ window.openEmergencyFileUpload = function() {
     // Replace the old input with the new one
     emergencyImageUpload.parentNode.replaceChild(newInput, emergencyImageUpload);
     
-    // Add event listener for file selection
-    newInput.addEventListener('change', function(e) {
-        console.log('File selected for upload');
-        const file = e.target.files[0];
-        if (file) {
-            console.log('File selected:', file.name, file.type, file.size);
-            previewImage(e.target, 'emergencyImagePreview');
-            // Clear any validation errors when image is uploaded
-            const formGroup = e.target.closest('.form-group');
-            if (formGroup) {
-                const labelInGroup = formGroup.querySelector('label');
-                if (labelInGroup) {
-                    const requiredIndicator = labelInGroup.querySelector('.required-indicator');
-                    if (requiredIndicator && e.target.files && e.target.files.length > 0) {
-                        requiredIndicator.style.display = 'none';
-                    }
+    // Add event listener for file selection (same as the original)
+    newInput.addEventListener('change', function() {
+        previewImage(this, 'emergencyImagePreview');
+        // Show remove button
+        const removeBtn = document.getElementById('emergencyRemoveImageBtn');
+        if (removeBtn && this.files && this.files.length > 0) {
+            removeBtn.style.display = 'block';
+        }
+        clearFieldError(this); // Clear any validation errors when image is uploaded
+        
+        // Hide required indicator when image is uploaded
+        const formGroup = this.closest('.form-group');
+        if (formGroup) {
+            const labelInGroup = formGroup.querySelector('label');
+            if (labelInGroup) {
+                const requiredIndicator = labelInGroup.querySelector('.required-indicator');
+                if (requiredIndicator && this.files && this.files.length > 0) {
+                    requiredIndicator.style.display = 'none';
+                } else if (requiredIndicator && (!this.files || this.files.length === 0)) {
+                    requiredIndicator.style.display = 'inline';
                 }
             }
         }
@@ -263,12 +277,46 @@ function previewImage(input, previewId) {
         reader.onload = e => {
             img.src = e.target.result;
             img.style.display = 'block';
+            // Show remove button
+            if (previewId === 'emergencyImagePreview') {
+                const removeBtn = document.getElementById('emergencyRemoveImageBtn');
+                if (removeBtn) {
+                    removeBtn.style.display = 'block';
+                }
+            }
         };
         reader.readAsDataURL(file);
     } else {
         img.style.display = 'none';
+        // Hide remove button
+        if (previewId === 'emergencyImagePreview') {
+            const removeBtn = document.getElementById('emergencyRemoveImageBtn');
+            if (removeBtn) {
+                removeBtn.style.display = 'none';
+            }
+        }
     }
 }
+
+// Remove emergency image
+window.removeEmergencyImage = function() {
+    const emergencyImageUpload = document.getElementById('emergencyImageUpload');
+    const emergencyImagePreview = document.getElementById('emergencyImagePreview');
+    const removeBtn = document.getElementById('emergencyRemoveImageBtn');
+    
+    if (emergencyImageUpload) {
+        emergencyImageUpload.value = '';
+    }
+    
+    if (emergencyImagePreview) {
+        emergencyImagePreview.src = '';
+        emergencyImagePreview.style.display = 'none';
+    }
+    
+    if (removeBtn) {
+        removeBtn.style.display = 'none';
+    }
+};
 
 // Handle image preview display
 function handleImagePreview(input) {

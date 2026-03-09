@@ -39,8 +39,11 @@
                         <!-- Image Upload Section -->
                         <div class="form-group">
                             <label>Photo (optional):</label>
-                            <div class="image-preview-container">
+                            <div class="image-preview-container" style="position: relative;">
                                 <img id="emergencyImagePreview" class="image-preview" style="display:none" alt="Preview">
+                                <button type="button" id="emergencyRemoveImageBtn" class="remove-image-btn" style="display:none;" onclick="removeEmergencyImage()" title="Remove image">
+                                    <i class="fas fa-times"></i>
+                                </button>
                             </div>
                             <div style="display: flex; gap: 10px; margin-top: 10px;">
                                 <button type="button" class="upload-btn" onclick="openEmergencyCamera()">Take a Photo</button>

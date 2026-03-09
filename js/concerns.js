@@ -277,6 +277,11 @@ window.openConcernCamera = function() {
         if (file) {
             console.log('File captured from camera:', file.name, file.type, file.size);
             previewImage(e.target, 'cfImagePreview');
+            // Show remove button
+            const removeBtn = document.getElementById('concernRemoveImageBtn');
+            if (removeBtn) {
+                removeBtn.style.display = 'block';
+            }
         }
     });
     
@@ -315,6 +320,11 @@ window.openConcernFileUpload = function() {
         if (file) {
             console.log('File selected:', file.name, file.type, file.size);
             previewImage(e.target, 'cfImagePreview');
+            // Show remove button
+            const removeBtn = document.getElementById('concernRemoveImageBtn');
+            if (removeBtn) {
+                removeBtn.style.display = 'block';
+            }
         }
     });
     
@@ -331,12 +341,49 @@ function previewImage(input, previewId) {
     if (!img) return;
     if (file) {
         const reader = new FileReader();
-        reader.onload = e => { img.src = e.target.result; img.style.display = 'block'; };
+        reader.onload = e => { 
+            img.src = e.target.result; 
+            img.style.display = 'block';
+            // Show remove button
+            if (previewId === 'cfImagePreview') {
+                const removeBtn = document.getElementById('concernRemoveImageBtn');
+                if (removeBtn) {
+                    removeBtn.style.display = 'block';
+                }
+            }
+        };
         reader.readAsDataURL(file);
     } else {
         img.style.display = 'none';
+        // Hide remove button
+        if (previewId === 'cfImagePreview') {
+            const removeBtn = document.getElementById('concernRemoveImageBtn');
+            if (removeBtn) {
+                removeBtn.style.display = 'none';
+            }
+        }
     }
 }
+
+// Remove concern image
+window.removeConcernImage = function() {
+    const cfImageUpload = document.getElementById('cfImageUpload');
+    const cfImagePreview = document.getElementById('cfImagePreview');
+    const removeBtn = document.getElementById('concernRemoveImageBtn');
+    
+    if (cfImageUpload) {
+        cfImageUpload.value = '';
+    }
+    
+    if (cfImagePreview) {
+        cfImagePreview.src = '';
+        cfImagePreview.style.display = 'none';
+    }
+    
+    if (removeBtn) {
+        removeBtn.style.display = 'none';
+    }
+};
 
 function cfSubmitAnother() {
     // Reset the form

@@ -349,6 +349,7 @@ body {
 .image-preview-container { 
     display:flex; 
     justify-content:center; 
+    position: relative;
 }
 
 .image-preview { max-width:100%; 
@@ -357,6 +358,33 @@ body {
     border:2px solid #e9ecef; 
     margin-bottom:.75rem; 
     object-fit:cover; 
+}
+
+.remove-image-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: rgba(220, 53, 69, 0.9);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    z-index: 10;
+    transition: background 0.3s ease;
+}
+
+.remove-image-btn:hover {
+    background: rgba(220, 53, 69, 1);
+}
+
+.remove-image-btn i {
+    font-size: 14px;
 }
 
 .submit-section { 
