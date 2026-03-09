@@ -2381,7 +2381,22 @@ async function finalSubmitBarangayId() {
         });
         
         console.log('Response status:', response.status);
-        const result = await response.json();
+        
+        // Check if response is ok before parsing JSON
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        let result;
+        try {
+            const responseText = await response.text();
+            console.log('Response text:', responseText);
+            result = JSON.parse(responseText);
+        } catch (parseError) {
+            console.error('Error parsing JSON response:', parseError);
+            throw new Error('Invalid response from server. Please try again.');
+        }
+        
         console.log('Response result:', result);
         
         // Hide full-screen loading before showing SweetAlert
@@ -2430,7 +2445,7 @@ async function finalSubmitBarangayId() {
         // Hide full-screen loading
         hideFullScreenLoading();
         
-        showMessage('Check your internet connection and try again.', 'error', 'barangayIdFormElement');
+        showMessage('Error: ' + (error.message || 'Check your internet connection and try again.'), 'error', 'barangayIdFormElement');
     }
 }
 
@@ -2942,7 +2957,20 @@ async function finalSubmitCertification() {
             body: JSON.stringify(submissionData)
         });
         
-        const result = await response.json();
+        // Check if response is ok before parsing JSON
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        let result;
+        try {
+            const responseText = await response.text();
+            console.log('Response text:', responseText);
+            result = JSON.parse(responseText);
+        } catch (parseError) {
+            console.error('Error parsing JSON response:', parseError);
+            throw new Error('Invalid response from server. Please try again.');
+        }
         
         // Hide full-screen loading before showing SweetAlert
         hideFullScreenLoading();
@@ -2978,7 +3006,7 @@ async function finalSubmitCertification() {
     } catch (error) {
         console.error('Error submitting certification form:', error);
         hideFullScreenLoading();
-        showMessage('Check your internet connection and try again.', 'error', 'certificationFormElement');
+        showMessage('Error: ' + (error.message || 'Check your internet connection and try again.'), 'error', 'certificationFormElement');
     }
 }
 
@@ -3235,7 +3263,20 @@ async function finalSubmitCoe() {
             body: JSON.stringify(submissionData)
         });
         
-        const result = await response.json();
+        // Check if response is ok before parsing JSON
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        let result;
+        try {
+            const responseText = await response.text();
+            console.log('Response text:', responseText);
+            result = JSON.parse(responseText);
+        } catch (parseError) {
+            console.error('Error parsing JSON response:', parseError);
+            throw new Error('Invalid response from server. Please try again.');
+        }
         
         // Hide full-screen loading before showing SweetAlert
         hideFullScreenLoading();
@@ -3271,7 +3312,7 @@ async function finalSubmitCoe() {
     } catch (error) {
         console.error('Error submitting COE form:', error);
         hideFullScreenLoading();
-        showMessage('Check your internet connection and try again.', 'error', 'coeFormElement');
+        showMessage('Error: ' + (error.message || 'Check your internet connection and try again.'), 'error', 'coeFormElement');
     }
 }
 
@@ -3468,7 +3509,22 @@ async function finalSubmitIndigency() {
         });
         
         console.log('Response status:', response.status);
-        const result = await response.json();
+        
+        // Check if response is ok before parsing JSON
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        let result;
+        try {
+            const responseText = await response.text();
+            console.log('Response text:', responseText);
+            result = JSON.parse(responseText);
+        } catch (parseError) {
+            console.error('Error parsing JSON response:', parseError);
+            throw new Error('Invalid response from server. Please try again.');
+        }
+        
         console.log('Response result:', result);
         
         // Hide full-screen loading before showing SweetAlert
@@ -3500,7 +3556,7 @@ async function finalSubmitIndigency() {
             hideAllForms();
             showEmblemSection();
         } else {
-            showMessage('Error: ' + result.message, 'error', 'indigencyFormElement');
+            showMessage('Error: ' + (result.message || 'Failed to submit request'), 'error', 'indigencyFormElement');
         }
         
     } catch (error) {
@@ -3509,7 +3565,7 @@ async function finalSubmitIndigency() {
         // Hide full-screen loading
         hideFullScreenLoading();
         
-        showMessage('Check your internet connection and try again.', 'error', 'indigencyFormElement');
+        showMessage('Error: ' + (error.message || 'Check your internet connection and try again.'), 'error', 'indigencyFormElement');
     }
 }
 
@@ -3739,7 +3795,20 @@ async function confirmClearanceSubmission() {
             body: JSON.stringify(submissionData)
         });
 
-        const result = await response.json();
+        // Check if response is ok before parsing JSON
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        let result;
+        try {
+            const responseText = await response.text();
+            console.log('Response text:', responseText);
+            result = JSON.parse(responseText);
+        } catch (parseError) {
+            console.error('Error parsing JSON response:', parseError);
+            throw new Error('Invalid response from server. Please try again.');
+        }
 
         // Hide full-screen loading before showing SweetAlert
         hideFullScreenLoading();
@@ -3748,7 +3817,7 @@ async function confirmClearanceSubmission() {
             submitBtn.textContent = originalText;
             submitBtn.disabled = false;
         }
-
+        
         if (result.success) {
             // Hide preview display
             const previewDisplay = document.getElementById('clearancePreviewDisplay');
@@ -3787,7 +3856,7 @@ async function confirmClearanceSubmission() {
             submitBtn.textContent = originalText;
             submitBtn.disabled = false;
         }
-        showMessage('Check your internet connection and try again.', 'error', 'clearanceFormElement');
+        showMessage('Error: ' + (error.message || 'Check your internet connection and try again.'), 'error', 'clearanceFormElement');
     }
 }
 

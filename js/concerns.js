@@ -259,7 +259,15 @@ window.openConcernCamera = function() {
     cfImageUpload.setAttribute('accept', 'image/*');
     
     // Remove existing change listener and add new one
-    const newInput = cfImageUpload.cloneNode(true);
+    const newInput = cfImageUpload.cloneNode(false); // Don't clone event listeners
+    newInput.setAttribute('id', 'cfImageUpload');
+    newInput.setAttribute('name', 'cfImageUpload');
+    newInput.setAttribute('type', 'file');
+    newInput.setAttribute('accept', 'image/*');
+    newInput.setAttribute('capture', 'environment');
+    newInput.setAttribute('style', 'display:none');
+    
+    // Replace the old input with the new one
     cfImageUpload.parentNode.replaceChild(newInput, cfImageUpload);
     
     // Add event listener for camera capture
@@ -270,7 +278,7 @@ window.openConcernCamera = function() {
             console.log('File captured from camera:', file.name, file.type, file.size);
             previewImage(e.target, 'cfImagePreview');
         }
-    }, { once: true });
+    });
     
     // Trigger camera
     setTimeout(() => {
