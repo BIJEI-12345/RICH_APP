@@ -291,18 +291,14 @@ window.openConcernCamera = function() {
 window.openConcernFileUpload = function() {
     console.log('Opening file upload for concern photo...');
     
-    const cfImageUpload = document.getElementById('cfImageUpload');
+    let cfImageUpload = document.getElementById('cfImageUpload');
     if (!cfImageUpload) {
         console.error('Concern image upload input not found');
         return;
     }
     
-    // Remove capture attribute to allow file selection instead of camera
-    cfImageUpload.removeAttribute('capture');
-    cfImageUpload.setAttribute('accept', 'image/*');
-    
-    // Ensure change event handler is attached
-    const newInput = cfImageUpload.cloneNode(false);
+    // Create a new input element without capture attribute
+    const newInput = document.createElement('input');
     newInput.setAttribute('id', 'cfImageUpload');
     newInput.setAttribute('name', 'cfImageUpload');
     newInput.setAttribute('type', 'file');
@@ -324,6 +320,7 @@ window.openConcernFileUpload = function() {
     
     // Trigger file picker
     setTimeout(() => {
+        console.log('Triggering file picker...');
         newInput.click();
     }, 100);
 };

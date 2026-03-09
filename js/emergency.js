@@ -207,18 +207,14 @@ window.openEmergencyCamera = function() {
 window.openEmergencyFileUpload = function() {
     console.log('Opening file upload for emergency photo...');
     
-    const emergencyImageUpload = document.getElementById('emergencyImageUpload');
+    let emergencyImageUpload = document.getElementById('emergencyImageUpload');
     if (!emergencyImageUpload) {
         console.error('Emergency image upload input not found');
         return;
     }
     
-    // Remove capture attribute to allow file selection instead of camera
-    emergencyImageUpload.removeAttribute('capture');
-    emergencyImageUpload.setAttribute('accept', 'image/*');
-    
-    // Ensure change event handler is attached
-    const newInput = emergencyImageUpload.cloneNode(false);
+    // Create a new input element without capture attribute
+    const newInput = document.createElement('input');
     newInput.setAttribute('id', 'emergencyImageUpload');
     newInput.setAttribute('name', 'emergencyImageUpload');
     newInput.setAttribute('type', 'file');
@@ -251,6 +247,7 @@ window.openEmergencyFileUpload = function() {
     
     // Trigger file picker
     setTimeout(() => {
+        console.log('Triggering file picker...');
         newInput.click();
     }, 100);
 };
