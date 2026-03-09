@@ -164,7 +164,15 @@ window.openEmergencyCamera = function() {
     emergencyImageUpload.setAttribute('accept', 'image/*');
     
     // Remove existing change listener and add new one
-    const newInput = emergencyImageUpload.cloneNode(true);
+    const newInput = emergencyImageUpload.cloneNode(false); // Don't clone event listeners
+    newInput.setAttribute('id', 'emergencyImageUpload');
+    newInput.setAttribute('name', 'emergencyImageUpload');
+    newInput.setAttribute('type', 'file');
+    newInput.setAttribute('accept', 'image/*');
+    newInput.setAttribute('capture', 'environment');
+    newInput.setAttribute('style', 'display:none');
+    
+    // Replace the old input with the new one
     emergencyImageUpload.parentNode.replaceChild(newInput, emergencyImageUpload);
     
     // Add event listener for camera capture
@@ -186,11 +194,63 @@ window.openEmergencyCamera = function() {
                 }
             }
         }
-    }, { once: true });
+    });
     
     // Trigger camera
     setTimeout(() => {
         console.log('Triggering camera...');
+        newInput.click();
+    }, 100);
+};
+
+// Open file upload for emergency photo (without camera)
+window.openEmergencyFileUpload = function() {
+    console.log('Opening file upload for emergency photo...');
+    
+    const emergencyImageUpload = document.getElementById('emergencyImageUpload');
+    if (!emergencyImageUpload) {
+        console.error('Emergency image upload input not found');
+        return;
+    }
+    
+    // Remove capture attribute to allow file selection instead of camera
+    emergencyImageUpload.removeAttribute('capture');
+    emergencyImageUpload.setAttribute('accept', 'image/*');
+    
+    // Ensure change event handler is attached
+    const newInput = emergencyImageUpload.cloneNode(false);
+    newInput.setAttribute('id', 'emergencyImageUpload');
+    newInput.setAttribute('name', 'emergencyImageUpload');
+    newInput.setAttribute('type', 'file');
+    newInput.setAttribute('accept', 'image/*');
+    newInput.setAttribute('style', 'display:none');
+    
+    // Replace the old input with the new one
+    emergencyImageUpload.parentNode.replaceChild(newInput, emergencyImageUpload);
+    
+    // Add event listener for file selection
+    newInput.addEventListener('change', function(e) {
+        console.log('File selected for upload');
+        const file = e.target.files[0];
+        if (file) {
+            console.log('File selected:', file.name, file.type, file.size);
+            previewImage(e.target, 'emergencyImagePreview');
+            // Clear any validation errors when image is uploaded
+            const formGroup = e.target.closest('.form-group');
+            if (formGroup) {
+                const labelInGroup = formGroup.querySelector('label');
+                if (labelInGroup) {
+                    const requiredIndicator = labelInGroup.querySelector('.required-indicator');
+                    if (requiredIndicator && e.target.files && e.target.files.length > 0) {
+                        requiredIndicator.style.display = 'none';
+                    }
+                }
+            }
+        }
+    });
+    
+    // Trigger file picker
+    setTimeout(() => {
         newInput.click();
     }, 100);
 };

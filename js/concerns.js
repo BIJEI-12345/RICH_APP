@@ -287,6 +287,47 @@ window.openConcernCamera = function() {
     }, 100);
 };
 
+// Open file upload for concern photo (without camera)
+window.openConcernFileUpload = function() {
+    console.log('Opening file upload for concern photo...');
+    
+    const cfImageUpload = document.getElementById('cfImageUpload');
+    if (!cfImageUpload) {
+        console.error('Concern image upload input not found');
+        return;
+    }
+    
+    // Remove capture attribute to allow file selection instead of camera
+    cfImageUpload.removeAttribute('capture');
+    cfImageUpload.setAttribute('accept', 'image/*');
+    
+    // Ensure change event handler is attached
+    const newInput = cfImageUpload.cloneNode(false);
+    newInput.setAttribute('id', 'cfImageUpload');
+    newInput.setAttribute('name', 'cfImageUpload');
+    newInput.setAttribute('type', 'file');
+    newInput.setAttribute('accept', 'image/*');
+    newInput.setAttribute('style', 'display:none');
+    
+    // Replace the old input with the new one
+    cfImageUpload.parentNode.replaceChild(newInput, cfImageUpload);
+    
+    // Add event listener for file selection
+    newInput.addEventListener('change', function(e) {
+        console.log('File selected for upload');
+        const file = e.target.files[0];
+        if (file) {
+            console.log('File selected:', file.name, file.type, file.size);
+            previewImage(e.target, 'cfImagePreview');
+        }
+    });
+    
+    // Trigger file picker
+    setTimeout(() => {
+        newInput.click();
+    }, 100);
+};
+
 function previewImage(input, previewId) {
     const img = document.getElementById(previewId);
     const file = input.files[0];

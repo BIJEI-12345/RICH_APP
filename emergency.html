@@ -44,7 +44,7 @@
                             </div>
                             <div style="display: flex; gap: 10px; margin-top: 10px;">
                                 <button type="button" class="upload-btn" onclick="openEmergencyCamera()">Take a Photo</button>
-                                <button type="button" class="upload-btn" onclick="document.getElementById('emergencyImageUpload').click()">Upload Image</button>
+                                <button type="button" class="upload-btn" onclick="openEmergencyFileUpload()">Upload Image</button>
                             </div>
                             <input type="file" id="emergencyImageUpload" name="emergencyImageUpload" accept="image/*" style="display:none" onchange="previewImage(this, 'emergencyImagePreview')">
                         </div>
