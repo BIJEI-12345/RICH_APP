@@ -387,6 +387,10 @@ body {
     border-radius: 4px;
     width: 28px;
     height: 28px;
+    min-width: 28px;
+    max-width: 28px;
+    min-height: 28px;
+    max-height: 28px;
     cursor: pointer;
     display: none;
     align-items: center;
@@ -398,7 +402,9 @@ body {
     padding: 0;
     line-height: 1;
     flex-shrink: 0;
+    flex-grow: 0;
     visibility: visible;
+    box-sizing: border-box;
 }
 
 .remove-image-btn:hover {

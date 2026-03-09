@@ -280,9 +280,17 @@ window.openConcernCamera = function() {
             // Show remove button
             const removeBtn = document.getElementById('concernRemoveImageBtn');
             if (removeBtn) {
-                removeBtn.removeAttribute('style');
                 removeBtn.style.display = 'flex';
                 removeBtn.style.visibility = 'visible';
+                removeBtn.style.position = 'absolute';
+                removeBtn.style.top = '8px';
+                removeBtn.style.right = '8px';
+                removeBtn.style.width = '28px';
+                removeBtn.style.height = '28px';
+                removeBtn.style.minWidth = '28px';
+                removeBtn.style.maxWidth = '28px';
+                removeBtn.style.minHeight = '28px';
+                removeBtn.style.maxHeight = '28px';
             }
         }
     });
@@ -325,9 +333,17 @@ window.openConcernFileUpload = function() {
             // Show remove button
             const removeBtn = document.getElementById('concernRemoveImageBtn');
             if (removeBtn) {
-                removeBtn.removeAttribute('style');
                 removeBtn.style.display = 'flex';
                 removeBtn.style.visibility = 'visible';
+                removeBtn.style.position = 'absolute';
+                removeBtn.style.top = '8px';
+                removeBtn.style.right = '8px';
+                removeBtn.style.width = '28px';
+                removeBtn.style.height = '28px';
+                removeBtn.style.minWidth = '28px';
+                removeBtn.style.maxWidth = '28px';
+                removeBtn.style.minHeight = '28px';
+                removeBtn.style.maxHeight = '28px';
             }
         }
     });
@@ -357,9 +373,17 @@ function previewImage(input, previewId) {
             if (previewId === 'cfImagePreview') {
                 const removeBtn = document.getElementById('concernRemoveImageBtn');
                 if (removeBtn) {
-                    removeBtn.removeAttribute('style');
                     removeBtn.style.display = 'flex';
                     removeBtn.style.visibility = 'visible';
+                    removeBtn.style.position = 'absolute';
+                    removeBtn.style.top = '8px';
+                    removeBtn.style.right = '8px';
+                    removeBtn.style.width = '28px';
+                    removeBtn.style.height = '28px';
+                    removeBtn.style.minWidth = '28px';
+                    removeBtn.style.maxWidth = '28px';
+                    removeBtn.style.minHeight = '28px';
+                    removeBtn.style.maxHeight = '28px';
                 }
             }
         };

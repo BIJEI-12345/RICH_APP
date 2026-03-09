@@ -54,9 +54,11 @@ function setupEmergencyForm() {
                 // Show remove button
                 const removeBtn = document.getElementById('emergencyRemoveImageBtn');
                 if (removeBtn) {
-                    removeBtn.removeAttribute('style');
                     removeBtn.style.display = 'flex';
                     removeBtn.style.visibility = 'visible';
+                    removeBtn.style.position = 'absolute';
+                    removeBtn.style.top = '8px';
+                    removeBtn.style.right = '8px';
                 }
                 clearFieldError(e.target);
             }
@@ -148,6 +150,10 @@ function setupEmergencyTypeHandler() {
             const removeBtn = document.getElementById('emergencyRemoveImageBtn');
             if (removeBtn && this.files && this.files.length > 0) {
                 removeBtn.style.display = 'flex';
+                removeBtn.style.visibility = 'visible';
+                removeBtn.style.position = 'absolute';
+                removeBtn.style.top = '8px';
+                removeBtn.style.right = '8px';
             }
             clearFieldError(this); // Clear any validation errors when image is uploaded
             
@@ -211,9 +217,11 @@ window.openEmergencyCamera = function() {
             // Show remove button
             const removeBtn = document.getElementById('emergencyRemoveImageBtn');
             if (removeBtn) {
-                removeBtn.removeAttribute('style');
                 removeBtn.style.display = 'flex';
                 removeBtn.style.visibility = 'visible';
+                removeBtn.style.position = 'absolute';
+                removeBtn.style.top = '8px';
+                removeBtn.style.right = '8px';
             }
             // Clear any validation errors when image is uploaded
             const formGroup = e.target.closest('.form-group');
@@ -275,9 +283,11 @@ window.openEmergencyFileUpload = function() {
             // Show remove button
             const removeBtn = document.getElementById('emergencyRemoveImageBtn');
             if (removeBtn) {
-                removeBtn.removeAttribute('style');
                 removeBtn.style.display = 'flex';
                 removeBtn.style.visibility = 'visible';
+                removeBtn.style.position = 'absolute';
+                removeBtn.style.top = '8px';
+                removeBtn.style.right = '8px';
                 console.log('Remove button displayed');
             }
             clearFieldError(e.target); // Clear any validation errors when image is uploaded
@@ -345,9 +355,11 @@ function previewImage(input, previewId) {
             if (previewId === 'emergencyImagePreview') {
                 const removeBtn = document.getElementById('emergencyRemoveImageBtn');
                 if (removeBtn) {
-                    removeBtn.removeAttribute('style');
                     removeBtn.style.display = 'flex';
                     removeBtn.style.visibility = 'visible';
+                    removeBtn.style.position = 'absolute';
+                    removeBtn.style.top = '8px';
+                    removeBtn.style.right = '8px';
                 }
             }
         };
