@@ -126,7 +126,7 @@ function setupEmergencyTypeHandler() {
             // Show remove button
             const removeBtn = document.getElementById('emergencyRemoveImageBtn');
             if (removeBtn && this.files && this.files.length > 0) {
-                removeBtn.style.display = 'block';
+                removeBtn.style.display = 'flex';
             }
             clearFieldError(this); // Clear any validation errors when image is uploaded
             
@@ -190,7 +190,7 @@ window.openEmergencyCamera = function() {
             // Show remove button
             const removeBtn = document.getElementById('emergencyRemoveImageBtn');
             if (removeBtn) {
-                removeBtn.style.display = 'block';
+                removeBtn.style.display = 'flex';
             }
             // Clear any validation errors when image is uploaded
             const formGroup = e.target.closest('.form-group');
@@ -223,46 +223,77 @@ window.openEmergencyFileUpload = function() {
         return;
     }
     
+    // Store parent reference before replacing
+    const parent = emergencyImageUpload.parentNode;
+    if (!parent) {
+        console.error('Parent node not found for emergency image upload');
+        return;
+    }
+    
     // Create a new input element without capture attribute
     const newInput = document.createElement('input');
-    newInput.setAttribute('id', 'emergencyImageUpload');
-    newInput.setAttribute('name', 'emergencyImageUpload');
-    newInput.setAttribute('type', 'file');
-    newInput.setAttribute('accept', 'image/*');
-    newInput.setAttribute('style', 'display:none');
+    newInput.id = 'emergencyImageUpload';
+    newInput.name = 'emergencyImageUpload';
+    newInput.type = 'file';
+    newInput.accept = 'image/*';
+    newInput.style.display = 'none';
+    // Explicitly ensure no capture attribute
+    if (newInput.hasAttribute('capture')) {
+        newInput.removeAttribute('capture');
+    }
     
     // Replace the old input with the new one
-    emergencyImageUpload.parentNode.replaceChild(newInput, emergencyImageUpload);
+    try {
+        parent.replaceChild(newInput, emergencyImageUpload);
+        console.log('Input element replaced successfully');
+    } catch (error) {
+        console.error('Error replacing input element:', error);
+        return;
+    }
     
-    // Add event listener for file selection (same as the original)
-    newInput.addEventListener('change', function() {
-        previewImage(this, 'emergencyImagePreview');
-        // Show remove button
-        const removeBtn = document.getElementById('emergencyRemoveImageBtn');
-        if (removeBtn && this.files && this.files.length > 0) {
-            removeBtn.style.display = 'block';
-        }
-        clearFieldError(this); // Clear any validation errors when image is uploaded
-        
-        // Hide required indicator when image is uploaded
-        const formGroup = this.closest('.form-group');
-        if (formGroup) {
-            const labelInGroup = formGroup.querySelector('label');
-            if (labelInGroup) {
-                const requiredIndicator = labelInGroup.querySelector('.required-indicator');
-                if (requiredIndicator && this.files && this.files.length > 0) {
-                    requiredIndicator.style.display = 'none';
-                } else if (requiredIndicator && (!this.files || this.files.length === 0)) {
-                    requiredIndicator.style.display = 'inline';
+    // Add event listener for file selection
+    newInput.addEventListener('change', function(e) {
+        console.log('File selected for upload');
+        const file = e.target.files[0];
+        if (file) {
+            console.log('File selected:', file.name, file.type, file.size);
+            previewImage(e.target, 'emergencyImagePreview');
+            // Show remove button
+            const removeBtn = document.getElementById('emergencyRemoveImageBtn');
+            if (removeBtn) {
+                removeBtn.style.display = 'flex';
+                console.log('Remove button displayed');
+            }
+            clearFieldError(e.target); // Clear any validation errors when image is uploaded
+            
+            // Hide required indicator when image is uploaded
+            const formGroup = e.target.closest('.form-group');
+            if (formGroup) {
+                const labelInGroup = formGroup.querySelector('label');
+                if (labelInGroup) {
+                    const requiredIndicator = labelInGroup.querySelector('.required-indicator');
+                    if (requiredIndicator && e.target.files && e.target.files.length > 0) {
+                        requiredIndicator.style.display = 'none';
+                    } else if (requiredIndicator && (!e.target.files || e.target.files.length === 0)) {
+                        requiredIndicator.style.display = 'inline';
+                    }
                 }
             }
         }
     });
     
-    // Trigger file picker
+    // Trigger file picker with multiple attempts if needed
     setTimeout(() => {
         console.log('Triggering file picker...');
-        newInput.click();
+        try {
+            newInput.click();
+        } catch (error) {
+            console.error('Error triggering file picker:', error);
+            // Try again after a short delay
+            setTimeout(() => {
+                newInput.click();
+            }, 100);
+        }
     }, 100);
 };
 
@@ -281,7 +312,7 @@ function previewImage(input, previewId) {
             if (previewId === 'emergencyImagePreview') {
                 const removeBtn = document.getElementById('emergencyRemoveImageBtn');
                 if (removeBtn) {
-                    removeBtn.style.display = 'block';
+                    removeBtn.style.display = 'flex';
                 }
             }
         };

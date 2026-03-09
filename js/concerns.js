@@ -280,7 +280,7 @@ window.openConcernCamera = function() {
             // Show remove button
             const removeBtn = document.getElementById('concernRemoveImageBtn');
             if (removeBtn) {
-                removeBtn.style.display = 'block';
+                removeBtn.style.display = 'flex';
             }
         }
     });
@@ -323,7 +323,7 @@ window.openConcernFileUpload = function() {
             // Show remove button
             const removeBtn = document.getElementById('concernRemoveImageBtn');
             if (removeBtn) {
-                removeBtn.style.display = 'block';
+                removeBtn.style.display = 'flex';
             }
         }
     });
@@ -348,7 +348,7 @@ function previewImage(input, previewId) {
             if (previewId === 'cfImagePreview') {
                 const removeBtn = document.getElementById('concernRemoveImageBtn');
                 if (removeBtn) {
-                    removeBtn.style.display = 'block';
+                    removeBtn.style.display = 'flex';
                 }
             }
         };
