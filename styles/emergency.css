@@ -318,6 +318,10 @@ body {
     position: relative;
 }
 
+.image-preview-container.empty {
+    min-height: 120px;
+}
+
 .image-preview { 
     max-width: 100%; 
     max-height: 300px; 
@@ -326,6 +330,7 @@ body {
     border-radius: 8px; 
     margin: 0;
     object-fit: contain;
+    border: 2px solid #e9ecef;
 }
 
 .remove-image-btn {
@@ -349,6 +354,7 @@ body {
     padding: 0;
     line-height: 1;
     flex-shrink: 0;
+    visibility: visible;
 }
 
 .remove-image-btn:hover {

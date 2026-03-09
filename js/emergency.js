@@ -55,6 +55,7 @@ function setupEmergencyForm() {
                 const removeBtn = document.getElementById('emergencyRemoveImageBtn');
                 if (removeBtn) {
                     removeBtn.style.display = 'flex';
+                    removeBtn.style.visibility = 'visible';
                 }
                 clearFieldError(e.target);
             }
@@ -210,6 +211,7 @@ window.openEmergencyCamera = function() {
             const removeBtn = document.getElementById('emergencyRemoveImageBtn');
             if (removeBtn) {
                 removeBtn.style.display = 'flex';
+                removeBtn.style.visibility = 'visible';
             }
             // Clear any validation errors when image is uploaded
             const formGroup = e.target.closest('.form-group');
@@ -331,22 +333,32 @@ function previewImage(input, previewId) {
         reader.onload = e => {
             img.src = e.target.result;
             img.style.display = 'block';
+            // Remove empty class from container
+            if (container) {
+                container.classList.remove('empty');
+            }
             // Show remove button
             if (previewId === 'emergencyImagePreview') {
                 const removeBtn = document.getElementById('emergencyRemoveImageBtn');
                 if (removeBtn) {
                     removeBtn.style.display = 'flex';
+                    removeBtn.style.visibility = 'visible';
                 }
             }
         };
         reader.readAsDataURL(file);
     } else {
         img.style.display = 'none';
+        // Add empty class to container
+        if (container) {
+            container.classList.add('empty');
+        }
         // Hide remove button
         if (previewId === 'emergencyImagePreview') {
             const removeBtn = document.getElementById('emergencyRemoveImageBtn');
             if (removeBtn) {
                 removeBtn.style.display = 'none';
+                removeBtn.style.visibility = 'hidden';
             }
         }
     }

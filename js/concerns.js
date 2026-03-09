@@ -281,6 +281,7 @@ window.openConcernCamera = function() {
             const removeBtn = document.getElementById('concernRemoveImageBtn');
             if (removeBtn) {
                 removeBtn.style.display = 'flex';
+                removeBtn.style.visibility = 'visible';
             }
         }
     });
@@ -324,6 +325,7 @@ window.openConcernFileUpload = function() {
             const removeBtn = document.getElementById('concernRemoveImageBtn');
             if (removeBtn) {
                 removeBtn.style.display = 'flex';
+                removeBtn.style.visibility = 'visible';
             }
         }
     });
@@ -338,28 +340,39 @@ window.openConcernFileUpload = function() {
 function previewImage(input, previewId) {
     const img = document.getElementById(previewId);
     const file = input.files[0];
+    const container = img ? img.closest('.image-preview-container') : null;
     if (!img) return;
     if (file) {
         const reader = new FileReader();
         reader.onload = e => { 
             img.src = e.target.result; 
             img.style.display = 'block';
+            // Remove empty class from container
+            if (container) {
+                container.classList.remove('empty');
+            }
             // Show remove button
             if (previewId === 'cfImagePreview') {
                 const removeBtn = document.getElementById('concernRemoveImageBtn');
                 if (removeBtn) {
                     removeBtn.style.display = 'flex';
+                    removeBtn.style.visibility = 'visible';
                 }
             }
         };
         reader.readAsDataURL(file);
     } else {
         img.style.display = 'none';
+        // Add empty class to container
+        if (container) {
+            container.classList.add('empty');
+        }
         // Hide remove button
         if (previewId === 'cfImagePreview') {
             const removeBtn = document.getElementById('concernRemoveImageBtn');
             if (removeBtn) {
                 removeBtn.style.display = 'none';
+                removeBtn.style.visibility = 'hidden';
             }
         }
     }
