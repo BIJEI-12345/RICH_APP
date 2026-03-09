@@ -349,7 +349,7 @@ body {
 .image-preview-container { 
     display:flex; 
     justify-content:center; 
-    align-items: center;
+    align-items: flex-start;
     position: relative;
     min-height: 120px;
     border: 1px solid #e9ecef;
@@ -357,10 +357,12 @@ body {
     background-color: #ffffff;
     padding: 1rem;
     margin-bottom: 1rem;
+    width: 100%;
 }
 
 .image-preview-container.empty {
     min-height: 120px;
+    align-items: center;
 }
 
 .image-preview { 
@@ -372,6 +374,7 @@ body {
     object-fit:contain; 
     width: auto;
     height: auto;
+    display: block;
 }
 
 .remove-image-btn {
@@ -385,7 +388,7 @@ body {
     width: 28px;
     height: 28px;
     cursor: pointer;
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: center;
     font-size: 14px;

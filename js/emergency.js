@@ -54,6 +54,7 @@ function setupEmergencyForm() {
                 // Show remove button
                 const removeBtn = document.getElementById('emergencyRemoveImageBtn');
                 if (removeBtn) {
+                    removeBtn.removeAttribute('style');
                     removeBtn.style.display = 'flex';
                     removeBtn.style.visibility = 'visible';
                 }
@@ -210,6 +211,7 @@ window.openEmergencyCamera = function() {
             // Show remove button
             const removeBtn = document.getElementById('emergencyRemoveImageBtn');
             if (removeBtn) {
+                removeBtn.removeAttribute('style');
                 removeBtn.style.display = 'flex';
                 removeBtn.style.visibility = 'visible';
             }
@@ -273,7 +275,9 @@ window.openEmergencyFileUpload = function() {
             // Show remove button
             const removeBtn = document.getElementById('emergencyRemoveImageBtn');
             if (removeBtn) {
+                removeBtn.removeAttribute('style');
                 removeBtn.style.display = 'flex';
+                removeBtn.style.visibility = 'visible';
                 console.log('Remove button displayed');
             }
             clearFieldError(e.target); // Clear any validation errors when image is uploaded
@@ -341,6 +345,7 @@ function previewImage(input, previewId) {
             if (previewId === 'emergencyImagePreview') {
                 const removeBtn = document.getElementById('emergencyRemoveImageBtn');
                 if (removeBtn) {
+                    removeBtn.removeAttribute('style');
                     removeBtn.style.display = 'flex';
                     removeBtn.style.visibility = 'visible';
                 }
@@ -369,6 +374,7 @@ window.removeEmergencyImage = function() {
     const emergencyImageUpload = document.getElementById('emergencyImageUpload');
     const emergencyImagePreview = document.getElementById('emergencyImagePreview');
     const removeBtn = document.getElementById('emergencyRemoveImageBtn');
+    const container = emergencyImagePreview ? emergencyImagePreview.closest('.image-preview-container') : null;
     
     if (emergencyImageUpload) {
         emergencyImageUpload.value = '';
@@ -381,6 +387,11 @@ window.removeEmergencyImage = function() {
     
     if (removeBtn) {
         removeBtn.style.display = 'none';
+        removeBtn.style.visibility = 'hidden';
+    }
+    
+    if (container) {
+        container.classList.add('empty');
     }
 };
 

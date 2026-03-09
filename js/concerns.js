@@ -280,6 +280,7 @@ window.openConcernCamera = function() {
             // Show remove button
             const removeBtn = document.getElementById('concernRemoveImageBtn');
             if (removeBtn) {
+                removeBtn.removeAttribute('style');
                 removeBtn.style.display = 'flex';
                 removeBtn.style.visibility = 'visible';
             }
@@ -324,6 +325,7 @@ window.openConcernFileUpload = function() {
             // Show remove button
             const removeBtn = document.getElementById('concernRemoveImageBtn');
             if (removeBtn) {
+                removeBtn.removeAttribute('style');
                 removeBtn.style.display = 'flex';
                 removeBtn.style.visibility = 'visible';
             }
@@ -355,6 +357,7 @@ function previewImage(input, previewId) {
             if (previewId === 'cfImagePreview') {
                 const removeBtn = document.getElementById('concernRemoveImageBtn');
                 if (removeBtn) {
+                    removeBtn.removeAttribute('style');
                     removeBtn.style.display = 'flex';
                     removeBtn.style.visibility = 'visible';
                 }
@@ -383,6 +386,7 @@ window.removeConcernImage = function() {
     const cfImageUpload = document.getElementById('cfImageUpload');
     const cfImagePreview = document.getElementById('cfImagePreview');
     const removeBtn = document.getElementById('concernRemoveImageBtn');
+    const container = cfImagePreview ? cfImagePreview.closest('.image-preview-container') : null;
     
     if (cfImageUpload) {
         cfImageUpload.value = '';
@@ -395,6 +399,11 @@ window.removeConcernImage = function() {
     
     if (removeBtn) {
         removeBtn.style.display = 'none';
+        removeBtn.style.visibility = 'hidden';
+    }
+    
+    if (container) {
+        container.classList.add('empty');
     }
 };
 

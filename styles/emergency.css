@@ -308,7 +308,7 @@ body {
 .image-preview-container { 
     display: flex; 
     justify-content: center; 
-    align-items: center;
+    align-items: flex-start;
     min-height: 120px;
     border: 1px solid #e9ecef;
     border-radius: 8px;
@@ -316,10 +316,12 @@ body {
     padding: 1rem;
     margin-bottom: 1rem;
     position: relative;
+    width: 100%;
 }
 
 .image-preview-container.empty {
     min-height: 120px;
+    align-items: center;
 }
 
 .image-preview { 
@@ -331,6 +333,7 @@ body {
     margin: 0;
     object-fit: contain;
     border: 2px solid #e9ecef;
+    display: block;
 }
 
 .remove-image-btn {
@@ -344,7 +347,7 @@ body {
     width: 28px;
     height: 28px;
     cursor: pointer;
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: center;
     font-size: 14px;
