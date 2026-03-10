@@ -170,21 +170,12 @@ function populateAnnouncementDetail(announcement) {
     document.getElementById('detail-timestamp').textContent = timestamp;
     document.getElementById('detail-title').textContent = announcement.title || 'No Title';
     
-    // Set date information
-    // "Posted on:" - use created_at date
-    const postedDate = announcement.formatted_created_date || announcement.formatted_date || 'Not specified';
-    document.getElementById('detail-date').textContent = postedDate;
-    
-    // "Time posted:" - use created_at time (PH time)
-    const createdTime = announcement.formatted_created_time || 'Not specified';
-    document.getElementById('detail-time').textContent = createdTime;
+    // Set description (statement) - comes first in the container
+    document.getElementById('detail-description').textContent = announcement.description || announcement.content || 'No description available.';
     
     // "When:" - use date_and_time (full date and time)
     const whenDate = announcement.formatted_when || announcement.date_and_time || 'Not specified';
     document.getElementById('detail-duration').textContent = whenDate;
-    
-    // Set description
-    document.getElementById('detail-description').textContent = announcement.description || announcement.content || 'No description available.';
     
     // Update indicators
     updateDetailIndicators();

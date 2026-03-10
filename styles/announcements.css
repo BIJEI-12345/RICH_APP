@@ -756,6 +756,7 @@ body.detail-view {
         overflow-y: auto;
         overscroll-behavior-y: contain;
         scroll-snap-type: y proximity;
+        padding-top: 5px;
     }
     
     body.detail-view .announcement-detail-container {
@@ -766,6 +767,8 @@ body.detail-view {
         max-height: none;
         max-width: 100%;
         margin: 0;
+        margin-top: 10px;
+        padding-top: 0;
         transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
                     opacity 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     }
@@ -1207,6 +1210,17 @@ body.detail-view {
     font-weight: 600;
 }
 
+.detail-statement {
+    font-size: 16px;
+    line-height: 1.8;
+    color: black;
+    text-align: justify;
+    margin: 0 0 15px 0;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+}
+
 .detail-description {
     background: white;
     padding: 30px;
@@ -1289,9 +1303,13 @@ body.detail-view {
 @media (max-width: 768px) {
     .detail-header {
         margin-bottom: 20px;
-        top: 15px;
+        top: 5px;
         max-width: 100%;
-        padding: 0 15px;
+        padding: 10px 15px;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 12px;
+        margin-top: 10px;
     }
     
     .detail-back-btn {
@@ -1394,14 +1412,21 @@ body.detail-view {
 }
 
 @media (max-width: 480px) {
+    body.detail-view .announcement-detail-section {
+        padding-top: 8px;
+    }
 }
 
 @media (max-width: 480px) {
     .detail-header {
         margin-bottom: 15px;
-        top: 10px;
+        top: 5px;
         max-width: 100%;
-        padding: 0 12px;
+        padding: 8px 12px;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 12px;
+        margin-top: 8px;
     }
     
     .detail-back-btn {
@@ -1459,6 +1484,7 @@ body.detail-view {
     .announcement-detail-container {
         max-height: none;
         overflow: visible;
+        margin-top: 5px;
     }
     
     .detail-content {
