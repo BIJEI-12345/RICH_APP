@@ -4,6 +4,32 @@
 let allAnnouncements = [];
 let currentDetailIndex = -1;
 
+// Helper function to format days_ago fallback
+function formatDaysAgo(daysAgoStr) {
+    if (daysAgoStr.includes('day')) {
+        const days = daysAgoStr.match(/\d+/);
+        if (days) {
+            const dayCount = parseInt(days[0]);
+            if (dayCount === 1) {
+                return '1 day ago';
+            } else {
+                return `${dayCount} days ago`;
+            }
+        }
+    } else if (daysAgoStr.includes('hour')) {
+        const hours = daysAgoStr.match(/\d+/);
+        if (hours) {
+            return hours[0] + 'hr ago';
+        }
+    } else if (daysAgoStr.includes('minute')) {
+        const minutes = daysAgoStr.match(/\d+/);
+        if (minutes) {
+            return minutes[0] + 'mins ago';
+        }
+    }
+    return daysAgoStr;
+}
+
 // Function to go back to main page
 function goBack() {
     window.location.href = 'main_UI.html';
@@ -50,23 +76,57 @@ function createAnnouncementCard(announcement) {
         }
     }
     
-    // Format timestamp to match image style (e.g., "15mins", "1hr", "2hrs")
-    let timestamp = announcement.days_ago || '1hr';
-    if (timestamp.includes('day')) {
-        const days = timestamp.match(/\d+/);
-        if (days) {
-            timestamp = days[0] + 'd';
+    // Format timestamp based on date_and_time (When field)
+    // Calculate if event is upcoming or past
+    let timestamp = '';
+    
+    if (announcement.date_and_time && announcement.date_and_time !== '0000-00-00 00:00:00' && announcement.date_and_time !== '0000-00-00') {
+        try {
+            // Parse the date_and_time (format: YYYY-MM-DD HH:MM:SS in PH time)
+            const dateTimeString = announcement.date_and_time.replace(' ', 'T');
+            const eventDate = new Date(dateTimeString);
+            const now = new Date();
+            
+            // Validate that the date was parsed correctly
+            if (!isNaN(eventDate.getTime())) {
+                // Set both dates to start of day for accurate day calculation
+                const eventDateOnly = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
+                const nowDateOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                
+                // Calculate difference in days
+                const diffTime = eventDateOnly - nowDateOnly;
+                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                
+                if (diffDays < 0) {
+                    // Event has passed - show "X days ago" (full format)
+                    const daysAgo = Math.abs(diffDays);
+                    if (daysAgo === 1) {
+                        timestamp = '1 day ago';
+                    } else {
+                        timestamp = `${daysAgo} days ago`;
+                    }
+                } else if (diffDays === 0) {
+                    // Event is today
+                    timestamp = 'Today';
+                } else if (diffDays === 1) {
+                    // Event is tomorrow
+                    timestamp = '1d to go';
+                } else {
+                    // Event is in X days - show "Xd to go" (short format)
+                    timestamp = `${diffDays}d to go`;
+                }
+            } else {
+                // Fallback to days_ago if date parsing fails
+                timestamp = formatDaysAgo(announcement.days_ago || '1hr');
+            }
+        } catch (error) {
+            console.error('Error calculating timestamp:', error);
+            // Fallback to days_ago if date parsing fails
+            timestamp = formatDaysAgo(announcement.days_ago || '1hr');
         }
-    } else if (timestamp.includes('hour')) {
-        const hours = timestamp.match(/\d+/);
-        if (hours) {
-            timestamp = hours[0] + 'hr';
-        }
-    } else if (timestamp.includes('minute')) {
-        const minutes = timestamp.match(/\d+/);
-        if (minutes) {
-            timestamp = minutes[0] + 'mins';
-        }
+    } else {
+        // No date_and_time, use days_ago as fallback
+        timestamp = formatDaysAgo(announcement.days_ago || '1hr');
     }
     
     const defaultImage = 'Images/brgyHall.jpg';
@@ -148,26 +208,69 @@ function populateAnnouncementDetail(announcement) {
     categoryElement.className = `detail-category ${categoryClass}`;
     categoryElement.textContent = categoryText;
     
-    // Set timestamp
-    let timestamp = announcement.days_ago || '1hr';
-    if (timestamp.includes('day')) {
-        const days = timestamp.match(/\d+/);
-        if (days) {
-            timestamp = days[0] + 'd';
+    // Calculate days remaining based on "When" date (date_and_time)
+    const bannerElement = document.getElementById('detail-banner');
+    const timestampElement = document.getElementById('detail-timestamp');
+    
+    let daysRemaining = null;
+    let timestampText = '';
+    let bannerClass = '';
+    
+    if (announcement.date_and_time && announcement.date_and_time !== '0000-00-00 00:00:00' && announcement.date_and_time !== '0000-00-00') {
+        try {
+            // Parse the date_and_time (format: YYYY-MM-DD HH:MM:SS in PH time)
+            // Replace space with 'T' for ISO format compatibility
+            const dateTimeString = announcement.date_and_time.replace(' ', 'T');
+            const eventDate = new Date(dateTimeString);
+            const now = new Date();
+            
+            // Validate that the date was parsed correctly
+            if (isNaN(eventDate.getTime())) {
+                throw new Error('Invalid date format');
+            }
+            
+            // Set both dates to start of day for accurate day calculation (in local timezone)
+            const eventDateOnly = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
+            const nowDateOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            
+            // Calculate difference in days
+            const diffTime = eventDateOnly - nowDateOnly;
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            
+            daysRemaining = diffDays;
+            
+            if (diffDays < 0) {
+                // Event has passed
+                timestampText = 'Event Passed';
+                bannerClass = 'banner-passed';
+            } else if (diffDays === 0) {
+                // Event is today
+                timestampText = 'Today';
+                bannerClass = 'banner-today';
+            } else if (diffDays === 1) {
+                // Event is tomorrow
+                timestampText = '1 day';
+                bannerClass = 'banner-upcoming';
+            } else {
+                // Event is in X days
+                timestampText = `${diffDays} days`;
+                bannerClass = 'banner-upcoming';
+            }
+            
+            // Show banner
+            bannerElement.style.display = 'block';
+            bannerElement.className = `detail-banner ${bannerClass}`;
+            timestampElement.textContent = timestampText;
+        } catch (error) {
+            console.error('Error calculating days remaining:', error);
+            // Hide banner if date parsing fails
+            bannerElement.style.display = 'none';
         }
-    } else if (timestamp.includes('hour')) {
-        const hours = timestamp.match(/\d+/);
-        if (hours) {
-            timestamp = hours[0] + 'hr';
-        }
-    } else if (timestamp.includes('minute')) {
-        const minutes = timestamp.match(/\d+/);
-        if (minutes) {
-            timestamp = minutes[0] + 'mins';
-        }
+    } else {
+        // No date specified, hide banner
+        bannerElement.style.display = 'none';
     }
     
-    document.getElementById('detail-timestamp').textContent = timestamp;
     document.getElementById('detail-title').textContent = announcement.title || 'No Title';
     
     // Set description (statement) - comes first in the container
