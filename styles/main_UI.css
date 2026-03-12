@@ -123,9 +123,10 @@ body {
 }
 
 .logo-image {
-    width: 60px;
-    height: 60px;
+    width: 140px;
+    height: 44px;
     object-fit: contain;
+    max-width: 100%;
 }
 
 .logo-text {
@@ -609,6 +610,16 @@ body:has(.testing-mode-indicator) .main-container {
     overflow: hidden;
 }
 
+/* Section Container - Responsive for all mobile devices */
+@media screen and (max-width: 768px) {
+    .section-container {
+        max-width: 100%;
+        padding: 5px;
+        margin-left: 0;
+        margin-right: 0;
+    }
+}
+
 /* Section Container No Border - For content inside mobile container */
 .section-container-no-border {
     width: 100%;
@@ -655,7 +666,7 @@ body:has(.testing-mode-indicator) .main-container {
     gap: 2px;
 }
 .service-item p {
-    font-size: 8px;
+    font-size: 9px;
     font-weight: 700;
     color: #1a1a1a;
     margin: 0;
@@ -669,14 +680,14 @@ body:has(.testing-mode-indicator) .main-container {
 }
 
 .service-icon {
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
     border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
     margin: 0;
-    font-size: 12px;
+    font-size: 14px;
     color: white;
     flex-shrink: 0;
 }
@@ -706,9 +717,10 @@ body:has(.testing-mode-indicator) .main-container {
 }
 
 .service-label {
-    font-size: 8px;
+    font-size: 9px;
     font-weight: 500;
     color: #1a1a1a;
+    line-height: 1.2;
 }
 
 /* Document Requests */
@@ -2046,6 +2058,86 @@ body:has(.testing-mode-indicator) .main-container {
         font-size: 10px;
         padding: 0 6px;
     }
+    
+    /* Logo responsive styles for very small phones */
+    .logo-image {
+        width: 110px;
+        height: 35px;
+        max-width: 100%;
+        object-fit: contain;
+    }
+    
+    .logo-text {
+        font-size: 14px;
+    }
+    
+    .logo {
+        gap: 4px;
+    }
+    
+    /* Section container responsive for very small phones */
+    .section-container {
+        max-width: 100%;
+        padding: 4px;
+        margin-bottom: 4px;
+        border-radius: 8px;
+    }
+    
+    /* Service items responsive for very small phones */
+    .service-icon {
+        width: 26px;
+        height: 26px;
+        font-size: 13px;
+    }
+    
+    .service-label {
+        font-size: 8px;
+    }
+    
+    .service-item p {
+        font-size: 8px;
+    }
+}
+
+/* Extra small phones */
+@media (max-width: 280px) {
+    .logo-image {
+        width: 100px;
+        height: 32px;
+        max-width: 100%;
+        object-fit: contain;
+    }
+    
+    .logo-text {
+        font-size: 12px;
+    }
+    
+    .logo {
+        gap: 3px;
+    }
+    
+    /* Section container responsive for extra small phones */
+    .section-container {
+        max-width: 100%;
+        padding: 3px;
+        margin-bottom: 3px;
+        border-radius: 6px;
+    }
+    
+    /* Service items responsive for extra small phones */
+    .service-icon {
+        width: 24px;
+        height: 24px;
+        font-size: 12px;
+    }
+    
+    .service-label {
+        font-size: 7px;
+    }
+    
+    .service-item p {
+        font-size: 7px;
+    }
 }
 
 /* Short screens */
@@ -2161,8 +2253,10 @@ body:has(.testing-mode-indicator) .main-container {
     }
     
     .logo-image {
-        width: 35px;
-        height: 35px;
+        width: 140px;
+        height: 44px;
+        max-width: 100%;
+        object-fit: contain;
     }
     
     .main-container {
@@ -2250,18 +2344,19 @@ body:has(.testing-mode-indicator) .main-container {
     }
     
     .service-icon {
-        width: 32px;
-        height: 32px;
-        font-size: 16px;
+        width: 36px;
+        height: 36px;
+        font-size: 18px;
         border-radius: 6px;
     }
     
     .service-label {
-        font-size: 9px;
+        font-size: 10px;
+        font-weight: 500;
     }
     
     .service-item p {
-        font-size: 9px;
+        font-size: 10px;
     }
     
     .service-item[data-service="transactions"] {
@@ -2409,20 +2504,20 @@ body:has(.testing-mode-indicator) .main-container {
     }
     
     .service-icon {
-        width: 20px;
-        height: 20px;
-        font-size: 10px;
+        width: 24px;
+        height: 24px;
+        font-size: 12px;
         margin-bottom: 2px;
         border-radius: 5px;
         margin: 0 0 2px 0;
     }
     
     .service-label {
-        font-size: 7px;
+        font-size: 8px;
     }
     
     .service-item p {
-        font-size: 7px;
+        font-size: 8px;
     }
     
     .news-header h3 {
@@ -2465,8 +2560,8 @@ body:has(.testing-mode-indicator) .main-container {
     }
     
     .section-container {
-        max-width: 400px;
-        padding: 18px;
+        max-width: 100%;
+        padding: 12px;
     }
     
     .services-container {
@@ -2528,8 +2623,10 @@ body:has(.testing-mode-indicator) .main-container {
     }
     
     .logo-image {
-        width: 30px;
-        height: 30px;
+        width: 140px;
+        height: 44px;
+        max-width: 100%;
+        object-fit: contain;
     }
     
     .settings-icon {
@@ -2729,16 +2826,16 @@ body:has(.testing-mode-indicator) .main-container {
     }
     
     .service-icon {
-        width: 30px;
-        height: 30px;
-        font-size: 15px;
+        width: 34px;
+        height: 34px;
+        font-size: 17px;
         margin-bottom: 4px;
         border-radius: 6px;
         margin: 0 0 4px 0;
     }
     
     .service-label {
-        font-size: 9px;
+        font-size: 10px;
     }
     
     .service-item p {
@@ -2796,6 +2893,8 @@ body:has(.testing-mode-indicator) .main-container {
     .logo-image {
         width: 140px;
         height: 44px;
+        max-width: 100%;
+        object-fit: contain;
     }
     
     .settings-icon {
@@ -2985,20 +3084,21 @@ body:has(.testing-mode-indicator) .main-container {
     }
     
     .service-icon {
-        width: 32px;
-        height: 32px;
-        font-size: 16px;
+        width: 36px;
+        height: 36px;
+        font-size: 18px;
         margin-bottom: 0;
         border-radius: 6px;
         margin: 0;
     }
     
     .service-label {
-        font-size: 9px;
+        font-size: 10px;
+        font-weight: 500;
     }
     
     .service-item p {
-        font-size: 9px;
+        font-size: 10px;
     }
     
     .banner-text h2 {
@@ -3559,8 +3659,10 @@ body:has(.testing-mode-indicator) .main-container {
     }
     
     .logo-image {
-        width: 24px;
-        height: 24px;
+        width: 120px;
+        height: 38px;
+        max-width: 100%;
+        object-fit: contain;
     }
     
     .settings-icon {
@@ -3685,12 +3787,16 @@ body:has(.testing-mode-indicator) .main-container {
     }
     
     .service-icon {
-        width: 24px;
-        height: 24px;
-        font-size: 12px;
+        width: 28px;
+        height: 28px;
+        font-size: 14px;
         margin-bottom: 3px;
         border-radius: 5px;
         margin: 0 0 3px 0;
+    }
+    
+    .service-label {
+        font-size: 9px;
     }
     
     .service-item p {
@@ -4222,10 +4328,18 @@ html {
 
 /* SweetAlert2 confirm button gradient style */
 .swal2-popup .swal2-confirm.swal2-styled {
-    background-image: linear-gradient(180deg, #2c5aa0 0%, #1e3a5f 100%);
+    background-color: #3085d6 !important;
+    background-image: none !important;
     border: none;
     color: #ffffff;
     font-weight: 600;
+    box-shadow: none !important;
+}
+
+/* Remove box shadow on focus as well */
+.swal2-popup .swal2-confirm.swal2-styled:focus {
+    box-shadow: none !important;
+    outline: none !important;
 }
 
 /* SweetAlert2 Buttons - Row layout with equal width for all screens */
@@ -4239,6 +4353,13 @@ html {
     flex: 1 !important;
     width: auto !important;
     min-width: 0 !important;
+    box-shadow: none !important;
+}
+
+.swal2-confirm:focus,
+.swal2-cancel:focus {
+    box-shadow: none !important;
+    outline: none !important;
 }
 
 /* SweetAlert2 Mobile Responsive Styles */

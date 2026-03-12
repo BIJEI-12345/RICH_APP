@@ -2424,7 +2424,7 @@ async function finalSubmitBarangayId() {
             await Swal.fire({
                 icon: 'success',
                 title: 'Request Submitted Successfully!',
-                text: 'Your Barangay ID request has been submitted. You can view it in the Transactions Module.',
+                text: 'Ang iyong request para sa Barangay ID ay naisumite na. Maaari mo itong makita sa Transactions Module.',
                 confirmButtonText: 'OK',
                 confirmButtonColor: '#17a2b8',
                 allowOutsideClick: false,
@@ -4346,19 +4346,8 @@ function validate1x1Photo(file, input) {
             
             if (!isSquare) {
                 // Show warning but don't prevent upload
-                const warningMessage = `Warning: The uploaded photo is not 1x1. Current size: ${width}x${height}px. Please upload a square (1x1) photo.`;
+                const warningMessage = `Ang uploaded image ay hindi tama, marapat na mag submit ng valid na 1x1 image.`;
                 showFieldError(input, warningMessage);
-                
-                // Show SweetAlert for better visibility
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Photo Not 1x1',
-                    html: `The uploaded photo is not 1x1!<br><br><strong>Current dimensions:</strong> ${width}x${height}px<br><br>Please upload a square (1x1) photo for the Barangay ID.`,
-                    confirmButtonText: 'OK',
-                    confirmButtonColor: '#2677e1',
-                    allowOutsideClick: true,
-                    allowEscapeKey: true
-                });
             } else {
                 // Clear any previous errors if image is valid
                 clearFieldError(input);
@@ -5190,6 +5179,32 @@ function validateCurrentStep() {
             }
         }
     });
+    
+    // Special validation for 1x1 image upload on step 1
+    if (currentStep === 1) {
+        const idPictureUpload = document.getElementById('idPictureUpload');
+        if (idPictureUpload) {
+            // Check if file is uploaded
+            if (idPictureUpload.files && idPictureUpload.files.length > 0) {
+                // Check if there's a field-error in the form-group (meaning image is not 1x1)
+                const formGroup = idPictureUpload.closest('.form-group');
+                if (formGroup) {
+                    const fieldError = formGroup.querySelector('.field-error');
+                    if (fieldError) {
+                        isValid = false;
+                        // Scroll to the 1x1 image upload section (centered)
+                        setTimeout(() => {
+                            formGroup.scrollIntoView({ 
+                                behavior: 'smooth', 
+                                block: 'center',
+                                inline: 'nearest'
+                            });
+                        }, 100);
+                    }
+                }
+            }
+        }
+    }
     
     // If validation failed, scroll to the first error field
     if (!isValid) {

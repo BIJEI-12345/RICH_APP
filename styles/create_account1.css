@@ -241,7 +241,7 @@ body {
 .input-group input {
     width: 100%;
     padding: 16px 20px;
-    border: 1px solid #939393;
+    border: 1px solid #000000;
     border-radius: 12px;
     font-size: 16px;
     font-weight: 500;
@@ -888,6 +888,41 @@ body {
     background: rgba(0, 0, 0, 0.9);
 }
 
+/* Loading Spinner Styles */
+.loading-spinner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    min-height: 200px;
+    text-align: center;
+}
+
+.loading-spinner::before {
+    content: '';
+    width: 40px;
+    height: 40px;
+    border: 4px solid #e5e7eb;
+    border-top: 4px solid #2563eb;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 16px;
+    flex-shrink: 0;
+}
+
+.loading-spinner p {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 500;
+    color: #374151;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
 /* Error States for New Fields */
 .input-group.age input.error,
 .input-group.birthday input.error,
@@ -936,27 +971,121 @@ body {
     
     .upload-actions {
         flex-direction: column;
+        gap: 10px;
+        width: 100%;
     }
     
     .camera-btn,
     .gallery-btn {
         justify-content: center;
+        width: 100%;
+        padding: 14px 16px;
+        font-size: 15px;
+        min-height: 44px;
+    }
+    
+    .camera-btn svg,
+    .gallery-btn svg {
+        width: 18px;
+        height: 18px;
+    }
+    
+    .image-preview {
+        margin-top: 12px;
     }
     
     .image-preview img {
-        height: 150px;
+        height: 180px;
+        max-height: 50vh;
+    }
+    
+    .remove-image {
+        width: 36px;
+        height: 36px;
+        font-size: 20px;
+        top: 10px;
+        right: 10px;
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    .loading-spinner {
+        padding: 30px 16px;
+        min-height: 150px;
+    }
+    
+    .loading-spinner::before {
+        width: 36px;
+        height: 36px;
+        border-width: 3px;
+        margin-bottom: 12px;
+    }
+    
+    .loading-spinner p {
+        font-size: 15px;
+    }
+    
+    .upload-text {
+        font-size: 15px;
+    }
+    
+    .upload-subtext {
+        font-size: 13px;
+    }
+    
+    .id-upload-container {
+        padding: 20px 16px;
     }
 }
 
 @media (max-width: 480px) {
-    .image-preview img {
-        height: 150px;
+    .upload-actions {
+        gap: 8px;
     }
-}
-
-@media (max-width: 360px) {
-    .id-upload-container {
-        padding: 16px;
+    
+    .camera-btn,
+    .gallery-btn {
+        padding: 12px 14px;
+        font-size: 14px;
+        gap: 6px;
+        min-height: 44px;
+    }
+    
+    .camera-btn svg,
+    .gallery-btn svg {
+        width: 16px;
+        height: 16px;
+    }
+    
+    .image-preview img {
+        height: 160px;
+        max-height: 45vh;
+    }
+    
+    .remove-image {
+        width: 32px;
+        height: 32px;
+        font-size: 18px;
+        top: 8px;
+        right: 8px;
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    .loading-spinner {
+        padding: 24px 12px;
+        min-height: 120px;
+    }
+    
+    .loading-spinner::before {
+        width: 32px;
+        height: 32px;
+        border-width: 3px;
+        margin-bottom: 10px;
+    }
+    
+    .loading-spinner p {
+        font-size: 14px;
     }
     
     .upload-text {
@@ -967,9 +1096,206 @@ body {
         font-size: 12px;
     }
     
+    .id-upload-container {
+        padding: 16px 12px;
+    }
+    
+    .upload-content {
+        padding: 20px 12px;
+    }
+    
+    .upload-icon {
+        width: 40px;
+        height: 40px;
+    }
+}
+
+@media (max-width: 360px) {
+    .id-upload-container {
+        padding: 14px 10px;
+    }
+    
+    .upload-content {
+        padding: 16px 10px;
+    }
+    
+    .upload-icon {
+        width: 36px;
+        height: 36px;
+    }
+    
+    .upload-text {
+        font-size: 13px;
+    }
+    
+    .upload-subtext {
+        font-size: 11px;
+    }
+    
     .camera-btn,
     .gallery-btn {
         padding: 10px 12px;
         font-size: 13px;
+        gap: 5px;
+        min-height: 44px;
+    }
+    
+    .camera-btn svg,
+    .gallery-btn svg {
+        width: 15px;
+        height: 15px;
+    }
+    
+    .image-preview img {
+        height: 140px;
+        max-height: 40vh;
+    }
+    
+    .remove-image {
+        width: 28px;
+        height: 28px;
+        font-size: 16px;
+        top: 6px;
+        right: 6px;
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    .loading-spinner {
+        padding: 20px 10px;
+        min-height: 100px;
+    }
+    
+    .loading-spinner::before {
+        width: 28px;
+        height: 28px;
+        border-width: 2.5px;
+        margin-bottom: 8px;
+    }
+    
+    .loading-spinner p {
+        font-size: 13px;
+    }
+}
+
+/* Extra small devices (320px and below) */
+@media (max-width: 320px) {
+    .id-upload-container {
+        padding: 12px 8px;
+    }
+    
+    .upload-content {
+        padding: 14px 8px;
+    }
+    
+    .upload-icon {
+        width: 32px;
+        height: 32px;
+    }
+    
+    .upload-text {
+        font-size: 12px;
+    }
+    
+    .upload-subtext {
+        font-size: 10px;
+    }
+    
+    .camera-btn,
+    .gallery-btn {
+        padding: 8px 10px;
+        font-size: 12px;
+        gap: 4px;
+        min-height: 44px;
+    }
+    
+    .camera-btn svg,
+    .gallery-btn svg {
+        width: 14px;
+        height: 14px;
+    }
+    
+    .image-preview img {
+        height: 120px;
+        max-height: 35vh;
+    }
+    
+    .remove-image {
+        width: 24px;
+        height: 24px;
+        font-size: 14px;
+        top: 4px;
+        right: 4px;
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    .loading-spinner {
+        padding: 16px 8px;
+        min-height: 80px;
+    }
+    
+    .loading-spinner::before {
+        width: 24px;
+        height: 24px;
+        border-width: 2px;
+        margin-bottom: 6px;
+    }
+    
+    .loading-spinner p {
+        font-size: 12px;
+    }
+}
+
+/* Landscape orientation on mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+    .image-preview img {
+        height: 200px;
+        max-height: 60vh;
+    }
+    
+    .loading-spinner {
+        min-height: 120px;
+        padding: 20px;
+    }
+}
+
+/* Tablet portrait (768px - 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .upload-actions {
+        gap: 14px;
+    }
+    
+    .camera-btn,
+    .gallery-btn {
+        padding: 13px 18px;
+        font-size: 15px;
+    }
+    
+    .image-preview img {
+        height: 220px;
+    }
+    
+    .loading-spinner {
+        padding: 35px 20px;
+        min-height: 180px;
+    }
+    
+    .loading-spinner::before {
+        width: 38px;
+        height: 38px;
+    }
+}
+
+/* High DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .loading-spinner::before {
+        border-width: 3px;
+    }
+    
+    @media (max-width: 480px) {
+        .loading-spinner::before {
+            border-width: 2.5px;
+        }
     }
 }

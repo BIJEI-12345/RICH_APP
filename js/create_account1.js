@@ -416,6 +416,68 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let idOcrValidation = { ok: false, hasBigte: false, name: { first:'', middle:'', last:'' }, fullText: '' };
 
+    // Auto-crop image using Cloud Vision API with PHP GD fallback
+    async function autoCropImage(imageBase64) {
+        try {
+            // Create abort controller for timeout (fallback for browsers without AbortSignal.timeout)
+            let abortController = null;
+            let timeoutId = null;
+            
+            if (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) {
+                // Modern browsers with AbortSignal.timeout
+                abortController = { signal: AbortSignal.timeout(35000) };
+            } else {
+                // Fallback for older browsers
+                abortController = new AbortController();
+                timeoutId = setTimeout(() => abortController.abort(), 35000);
+            }
+
+            const response = await fetch('php/vision_crop.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    image_base64: imageBase64
+                }),
+                signal: abortController.signal
+            });
+            
+            // Clear timeout if it was set manually
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+            }
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            
+            if (result.success && result.cropped_image_base64) {
+                // Log which method was used
+                if (result.method === 'cloud_vision') {
+                    console.log('✓ Image auto-cropped using Cloud Vision API');
+                } else if (result.method === 'php_gd') {
+                    console.log('✓ Image auto-cropped using PHP GD (fallback)');
+                } else {
+                    console.log('ℹ Using original image (no crop needed)');
+                }
+                return result.cropped_image_base64;
+            } else {
+                console.warn('Auto-crop failed, using original image:', result.message);
+                return imageBase64;
+            }
+        } catch (error) {
+            if (error.name === 'TimeoutError' || error.name === 'AbortError') {
+                console.warn('Auto-crop timeout, using original image');
+            } else {
+                console.error('Auto-crop error:', error);
+            }
+            return imageBase64; // Return original on error
+        }
+    }
+
     async function handleImageUpload(file) {
         if (!validateIDImage(file)) {
             showError(idImageInput, 'Please upload a valid image file (JPG, PNG) under 5MB');
@@ -427,25 +489,46 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Show loading state
         const uploadAreaElement = document.getElementById('uploadArea');
-        uploadAreaElement.innerHTML = '<div class="loading-spinner"><p>Validating ID...</p></div>';
+        uploadAreaElement.innerHTML = '<div class="loading-spinner"><p>Processing image...</p></div>';
 
         // Convert image to base64
         const reader = new FileReader();
         reader.onload = async function(e) {
-            // Create preview immediately
-            previewImg.src = e.target.result;
-            imagePreview.style.display = 'block';
-            uploadArea.style.display = 'none';
-
+            let imageDataUrl = e.target.result;
+            
             try {
-                // Validate ID via Gemini API (server-side proxy)
-                const result = await validateIDAddressWithGemini(file);
+                // Step 1: Auto-crop the image (works for both camera and gallery)
+                uploadAreaElement.innerHTML = '<div class="loading-spinner"><p>Auto-cropping ID...</p></div>';
+                imageDataUrl = await autoCropImage(imageDataUrl);
+                
+                // Step 2: Show preview with processed image
+                previewImg.src = imageDataUrl;
+                imagePreview.style.display = 'block';
+                uploadArea.style.display = 'none';
+                
+                // Step 3: Update the file input with processed image
+                try {
+                    const response = await fetch(imageDataUrl);
+                    const blob = await response.blob();
+                    const processedFile = new File([blob], file.name, { type: file.type || 'image/jpeg' });
+                    
+                    // Create a new FileList with the processed file
+                    const dataTransfer = new DataTransfer();
+                    dataTransfer.items.add(processedFile);
+                    idImageInput.files = dataTransfer.files;
+                } catch (fileUpdateError) {
+                    console.warn('Failed to update file input, but continuing:', fileUpdateError);
+                }
+                
+                // Step 4: Validate ID via Gemini API
+                uploadAreaElement.innerHTML = '<div class="loading-spinner"><p>Validating ID...</p></div>';
+                const fileToValidate = idImageInput.files[0] || file;
+                const result = await validateIDAddressWithGemini(fileToValidate);
                 
                 if (!result.ok) {
                     console.log('Vision API not available, skipping validation');
                     idOcrValidation = { ok: false, hasBigte: false, name: { first:'', middle:'', last:'' } };
                 } else if (!result.hasBigte) {
-                    // Store validation result - will check on form submit
                     console.warn('ID validation: "Bigte" not found in address.');
                     idOcrValidation = { ok: true, hasBigte: false, name: result.name, fullText: result.fullText || '' };
                 } else {
@@ -453,8 +536,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     idOcrValidation = { ok: true, hasBigte: true, name: result.name, fullText: result.fullText || '' };
                 }
             } catch (error) {
-                console.error('ID validation error:', error);
-                // Store validation result - will check on form submit
+                console.error('Image processing error:', error);
+                // Show original image if processing fails
+                previewImg.src = e.target.result;
+                imagePreview.style.display = 'block';
+                uploadArea.style.display = 'none';
                 idOcrValidation = { ok: false, hasBigte: false, name: { first:'', middle:'', last:'' }, fullText: '' };
             }
         };

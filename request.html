@@ -98,34 +98,34 @@
                             <h2 class="step-title">Personal Information</h2>
                             
                             <div class="form-group">
-                                <label for="lastName">Last Name: <span class="required-indicator">*</span></label>
+                                <label for="lastName">Apelyido: <span class="required-indicator">*</span></label>
                                 <input type="text" id="lastName" name="lastName" required>
                             </div>
                             <div class="form-group">
-                                <label for="firstName">Given Name: <span class="required-indicator">*</span></label>
+                                <label for="firstName">Pangalan: <span class="required-indicator">*</span></label>
                                 <input type="text" id="firstName" name="firstName" required>
                             </div>
                             <div class="form-group">
-                                <label for="middleName">Middle Name:</label>
+                                <label for="middleName">Gitnang Pangalan:</label>
                                 <input type="text" id="middleName" name="middleName">
                             </div>
                             <div class="form-group">
-                                <label for="birthDate">Birth Date: <span class="required-indicator">*</span></label>
+                                <label for="birthDate">Petsa ng Kapanganakan: <span class="required-indicator">*</span></label>
                                 <input type="date" id="birthDate" name="birthDate" required>
                             </div>
                             <div class="form-row">
                                 <div class="form-group">
-                                    <label for="height">Height: <span class="required-indicator">*</span></label>
+                                    <label for="height">Taas: <span class="required-indicator">*</span></label>
                                     <input type="number" id="height" name="height" placeholder="cm" min="50" max="300" inputmode="numeric" required>
                                 </div>
                                 <div class="form-group">
-                                    <label for="weight">Weight: <span class="required-indicator">*</span></label>
+                                    <label for="weight">Timbang: <span class="required-indicator">*</span></label>
                                     <input type="number" id="weight" name="weight" placeholder="kg" min="10" max="500" step="0.1" inputmode="numeric" required>
                                 </div>
                             </div>
                             
                             <div class="form-group">
-                                <label>1x1 ID Picture: <span class="required-indicator">*</span></label>
+                                <label>Larawan na 1x1: <span class="required-indicator">*</span></label>
                                 <div class="image-preview-container">
                                     <img id="idPicturePreview" class="image-preview" style="display: none;" alt="1x1 ID Picture Preview">
                                 </div>
@@ -145,11 +145,11 @@
                             <h2 class="step-title">Address and Status</h2>
                             
                             <div class="form-group">
-                                <label for="province">Province:</label>
+                                <label for="province">Lalawigan:</label>
                                 <input type="text" id="province" name="province" placeholder="Bulacan" readonly style="background-color: #f5f5f5; color: #000000; font-weight: normal;">
                             </div>
                             <div class="form-group">
-                                <label for="municipality">Municipality:</label>
+                                <label for="municipality">Bayan:</label>
                                 <input type="text" id="municipality" name="municipality" placeholder="Norzagaray" readonly style="background-color: #f5f5f5; color: #000000; font-weight: normal;">
                             </div>
                             <div class="form-group">
@@ -157,53 +157,53 @@
                                 <input type="text" id="barangay" name="barangay" placeholder="Bigte" readonly style="background-color: #f5f5f5; color: #000000; font-weight: normal;">
                             </div>
                             <div class="form-group">
-                                <label for="streetAddress">Street Address: <span class="required-indicator">*</span></label>
-                                <input type="text" id="streetAddress" name="streetAddress" placeholder="Block No., House No., Street" required>
+                                <label for="streetAddress">Kalye: <span class="required-indicator">*</span></label>
+                                <input type="text" id="streetAddress" name="streetAddress" placeholder="(Blg., Bahay Blg., Kalye)" required>
                             </div>
                             <div class="form-group">
-                                <label>Civil Status: <span class="required-indicator">*</span></label>
+                                <label>Status: <span class="required-indicator">*</span></label>
                                 <div class="radio-group">
                                     <label class="radio-label">
                                         <input type="radio" name="civilStatus" value="single" required>
-                                        <span class="radio-text">Single</span>
+                                        <span class="radio-text">Walang Asawa</span>
                                     </label>
                                     <label class="radio-label">
                                         <input type="radio" name="civilStatus" value="married" required>
-                                        <span class="radio-text">Married</span>
+                                        <span class="radio-text">May Asawa</span>
                                     </label>
                                     <label class="radio-label">
                                         <input type="radio" name="civilStatus" value="widow" required>
-                                        <span class="radio-text">Widowed</span>
+                                        <span class="radio-text">Biyudo/Biyuda</span>
                                     </label>
                                 </div>
                             </div>
                             <div class="form-group">
-                                <label>Gender: <span class="required-indicator">*</span></label>
+                                <label>Kasarian: <span class="required-indicator">*</span></label>
                                 <div class="radio-group">
                                     <label class="radio-label">
                                         <input type="radio" name="gender" value="male" required>
-                                        <span class="radio-text">Male</span>
+                                        <span class="radio-text">Lalaki</span>
                                     </label>
                                     <label class="radio-label">
                                         <input type="radio" name="gender" value="female" required>
-                                        <span class="radio-text">Female</span>
+                                        <span class="radio-text">Babae</span>
                                     </label>
                                 </div>
                             </div>
                             <div class="form-group">
-                                <label for="nationality">Nationality: <span class="required-indicator">*</span></label>
+                                <label for="nationality">Nasyonalidad: <span class="required-indicator">*</span></label>
                                 <select id="nationality" name="nationality" required onchange="toggleOtherInput('nationality', 'otherNationality')">
-                                    <option value="">Select Nationality</option>
-                                    <option value="filipino">Filipino</option>
-                                    <option value="american">American</option>
-                                    <option value="chinese">Chinese</option>
-                                    <option value="japanese">Japanese</option>
-                                    <option value="other">Other</option>
+                                    <option value="">Pumili ng Nasyonalidad</option>
+                                    <option value="filipino">Pilipino</option>
+                                    <option value="american">Amerikano</option>
+                                    <option value="chinese">Tsino</option>
+                                    <option value="japanese">Hapones</option>
+                                    <option value="other">Iba pa</option>
                                 </select>
                             </div>
                             <div class="form-group" id="otherNationalityGroup" style="display: none;">
-                                <label for="otherNationality">Please specify nationality: <span class="required-indicator">*</span></label>
-                                <input type="text" id="otherNationality" name="otherNationality" placeholder="Please specify nationality">
+                                <label for="otherNationality">Mangyaring tukuyin ang nasyonalidad: <span class="required-indicator">*</span></label>
+                                <input type="text" id="otherNationality" name="otherNationality" placeholder="Mangyaring tukuyin ang nasyonalidad">
                             </div>
                             
                             <div class="step-navigation">
@@ -217,27 +217,24 @@
                             <h2 class="step-title">Contact and Documents</h2>
                             
                             <div class="form-group">
-                                <label>Contact person incase of emergency and contact No:</label>
+                                <label>Kontak ng tao sa kaso ng emergency:</label>
                             </div>
                             <div class="form-group">
-                                <label for="guardianName">Name of Guardian/parent: <span class="required-indicator">*</span></label>
-                                <input type="text" id="guardianName" name="guardianName" placeholder="Name of Guardian/parent:" required>
+                                <label for="guardianName">Pangalan ng Tagapag-alaga/Magulang: <span class="required-indicator">*</span></label>
+                                <input type="text" id="guardianName" name="guardianName" required>
                             </div>
                             <div class="form-group">
-                                <label for="guardianContact">Contact Number: <span class="required-indicator">*</span></label>
-                                <input type="tel" id="guardianContact" name="guardianContact" placeholder="Contact Number:" maxlength="11" pattern="[0-9]{11}" inputmode="numeric" required>
+                                <label for="guardianContact">Numero ng Telepono: <span class="required-indicator">*</span></label>
+                                <input type="tel" id="guardianContact" name="guardianContact" placeholder="" maxlength="11" pattern="[0-9]{11}" inputmode="numeric" required>
                             </div>
                             <div class="form-group">
-                                <label>Months/Years lived in Barangay:</label>
+                                <label for="residencyDuration">Buwan/Taon na nanirahan sa Barangay: <span class="required-indicator">*</span></label>
+                                <input type="text" id="residencyDuration" name="residencyDuration" placeholder="hal. 3 taon 8 buwan" required>
                             </div>
                             <div class="form-group">
-                                <label for="residencyDuration">Please specify: <span class="required-indicator">*</span></label>
-                                <input type="text" id="residencyDuration" name="residencyDuration" placeholder="ex, 3 years 8 months" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="idType">Type of ID: <span class="required-indicator">*</span></label>
+                                <label for="idType">Uri ng ID: <span class="required-indicator">*</span></label>
                                 <select id="idType" name="idType" required onchange="toggleOtherInput('idType', 'otherIdType')">
-                                    <option value="">Select ID Type</option>
+                                    <option value="">Pumili ng Uri ng ID</option>
                                     <option value="driver-license">Driver's License</option>
                                     <option value="passport">Passport</option>
                                     <option value="sss-id">SSS ID</option>
@@ -251,11 +248,11 @@
                                 </select>
                             </div>
                             <div class="form-group" id="otherIdTypeGroup" style="display: none;">
-                                <label for="otherIdType">Please specify ID type: <span class="required-indicator">*</span></label>
-                                <input type="text" id="otherIdType" name="otherIdType" placeholder="Please specify ID type">
+                                <label for="otherIdType">Mangyaring tukuyin ang uri ng ID: <span class="required-indicator">*</span></label>
+                                <input type="text" id="otherIdType" name="otherIdType" placeholder="Mangyaring tukuyin ang uri ng ID">
                             </div>
                             <div class="form-group">
-                                <label>Valid ID (Showing Current Address): <span class="required-indicator">*</span></label>
+                                <label>Valid ID (Nakikita ang Kasalukuyang Tirahan): <span class="required-indicator">*</span></label>
                                 <div class="image-preview-container">
                                     <img id="idPreview" class="image-preview" style="display: none;" alt="ID Preview">
                                 </div>
@@ -267,7 +264,7 @@
                             
                             <div class="step-navigation">
                                 <button type="button" class="prev-btn" onclick="prevStep()">Previous</button>
-                                <button type="submit" class="submit-btn">Submit Application</button>
+                                <button type="submit" class="submit-btn">Done</button>
                             </div>
                         </div>
                     </form>
@@ -366,7 +363,7 @@
 
                     <div class="report-actions">
                         <button class="action-btn secondary" onclick="goBackToBarangayIdForm()">Back to Form</button>
-                        <button class="action-btn primary" onclick="finalSubmitBarangayId()">Submit Application</button>
+                        <button class="action-btn primary" onclick="finalSubmitBarangayId()">Done</button>
                     </div>
                 </div>
             </div>
@@ -533,7 +530,7 @@
 
                     <div class="report-actions">
                         <button class="action-btn secondary" onclick="goBackToFormChoices()">Submit Another</button>
-                        <button class="action-btn primary" onclick="goToMainPage()">Back to Home</button>
+                        <button class="action-btn primary" onclick="goToMainPage()">Done</button>
                     </div>
                 </div>
             </div>
@@ -570,39 +567,38 @@
                             <h2 class="step-title">Personal Information</h2>
                             
                         <div class="form-group">
-                            <label for="certFirstName">First Name: <span class="required-indicator">*</span></label>
+                            <label for="certFirstName">Pangalan: <span class="required-indicator">*</span></label>
                             <input type="text" id="certFirstName" name="certFirstName" required>
                         </div>
                         <div class="form-group">
-                            <label for="certMiddleName">Middle Name:</label>
+                            <label for="certMiddleName">Gitnang Pangalan:</label>
                             <input type="text" id="certMiddleName" name="certMiddleName">
                         </div>
                         <div class="form-group">
-                            <label for="certLastName">Last Name: <span class="required-indicator">*</span></label>
+                            <label for="certLastName">Apelyido: <span class="required-indicator">*</span></label>
                             <input type="text" id="certLastName" name="certLastName" required>
                         </div>
                         <div class="form-group">
-                            <label for="certBirthDate">Birth Date: <span class="required-indicator">*</span></label>
+                            <label for="certBirthDate">Petsa ng Kapanganakan: <span class="required-indicator">*</span></label>
                             <input type="date" id="certBirthDate" name="certBirthDate" required>
                         </div>
                         <div class="form-group">
-                            <label for="certBirthPlace">Birth Place: <span class="required-indicator">*</span></label>
+                            <label for="certBirthPlace">Lugar ng Kapanganakan: <span class="required-indicator">*</span></label>
                             <input type="text" id="certBirthPlace" name="certBirthPlace" required>
                         </div>
                         <div class="form-group">
                             <label for="certPurpose">Purpose: <span class="required-indicator">*</span></label>
                                 <select id="certPurpose" name="certPurpose" required onchange="toggleCertificationConditionalFields(); toggleOtherInput('certPurpose', 'otherCertPurpose')">
-                                <option value="">Select Purpose</option>
+                                <option value="">Pumili ng Purpose:</option>
                                 <option value="proof-of-residency">Proof of Residency</option>
-                                <option value="pag-ibig-loan">Pag-Ibig Loan</option>
-                                <option value="jobseeker">JobSeeker</option>
-                                <option value="certification-for-dead">Certification for Dead</option>
-                                <option value="other">Others</option>
+                                <option value="jobseeker">Job Seeker</option>
+                                <option value="certification-for-dead">Certificataion for Dead</option>
+                                <option value="other">Iba pa</option>
                             </select>
-                        </div>
+                        </div> 
                         <div class="form-group" id="otherCertPurposeGroup" style="display: none;">
-                            <label for="otherCertPurpose">Please specify purpose: <span class="required-indicator">*</span></label>
-                            <input type="text" id="otherCertPurpose" name="otherCertPurpose" placeholder="Please specify purpose">
+                            <label for="otherCertPurpose">Mangyaring tukuyin ang Purpose: <span class="required-indicator">*</span></label>
+                            <input type="text" id="otherCertPurpose" name="otherCertPurpose" placeholder="">
                         </div>
 
                             <div class="step-navigation">
@@ -615,73 +611,73 @@
                             <h2 class="step-title">Status Information</h2>
                             
                             <div class="form-group">
-                                <label for="certAddress">Address: <span class="required-indicator">*</span></label>
-                                <input type="text" id="certAddress" placeholder="(Block No., House No., Street, Municipality, Province)" name="certAddress" required>
+                                <label for="certAddress">Kalye: <span class="required-indicator">*</span></label>
+                                <input type="text" id="certAddress" placeholder="(Blg., Bahay Blg., Kalye, Bayan, Lalawigan)" name="certAddress" required>
                             </div>
                             
                             <div class="form-group">
-                                <label for="certDateIssued">Date Issued: <span class="required-indicator">*</span></label>
+                                <label for="certDateIssued">Petsa ng Pag-isyu: <span class="required-indicator">*</span></label>
                                 <input type="date" id="certDateIssued" name="certDateIssued" required>
                             </div>
                             
                             <!-- Conditional field for Citizenship when Proof of Residency is selected -->
                             <div class="form-group" id="certResidencyCitizenshipGroup" style="display: none;">
-                                <label for="certResidencyCitizenship">Citizenship: <span class="required-indicator">*</span></label>
+                                <label for="certResidencyCitizenship">Pagkamamamayan: <span class="required-indicator">*</span></label>
                                 <select id="certResidencyCitizenship" name="certResidencyCitizenship">
-                                    <option value="">Select Citizenship</option>
-                                    <option value="filipino">Filipino</option>
+                                    <option value="">Pumili ng Pagkamamamayan</option>
+                                    <option value="filipino">Pilipino</option>
                                     <option value="dual">Dual Citizenship</option>
-                                    <option value="foreign">Foreign</option>
+                                    <option value="foreign">Dayuhan</option>
                                 </select>
                             </div>
                             
                             <!-- Conditional fields for Pag-Ibig Loan -->
                             <div class="form-group" id="certCitizenshipGroup" style="display: none;">
-                                <label for="certCitizenship">Citizenship: <span class="required-indicator">*</span></label>
+                                <label for="certCitizenship">Pagkamamamayan: <span class="required-indicator">*</span></label>
                                 <select id="certCitizenship" name="certCitizenship">
-                                    <option value="">Select Citizenship</option>
-                                    <option value="filipino">Filipino</option>
+                                    <option value="">Pumili ng Pagkamamamayan</option>
+                                    <option value="filipino">Pilipino</option>
                                     <option value="dual">Dual Citizenship</option>
-                                    <option value="foreign">Foreign</option>
+                                    <option value="foreign">Dayuhan</option>
                                 </select>
                             </div>
                             <div class="form-group" id="certJobGroup" style="display: none;">
-                                <label for="certJob">Job: <span class="required-indicator">*</span></label>
-                                <input type="text" id="certJob" placeholder="e.g. Teacher, Doctor, etc." name="certJob">
+                                <label for="certJob">Trabaho: <span class="required-indicator">*</span></label>
+                                <input type="text" id="certJob" placeholder="hal. Guro, Doktor, atbp." name="certJob">
                             </div>
                             <div class="form-group" id="certDateHireGroup" style="display: none;">
-                                <label for="certDateHire">Date of Hire: <span class="required-indicator">*</span></label>
+                                <label for="certDateHire">Petsa ng Pag-upa: <span class="required-indicator">*</span></label>
                                 <input type="date" id="certDateHire" name="certDateHire">
                             </div>
                             <div class="form-group" id="certMonthlyIncomeGroup" style="display: none;">
-                                <label for="certMonthlyIncome">Monthly Income: <span class="required-indicator">*</span></label>
-                                <input type="text" id="certMonthlyIncome" name="certMonthlyIncome" placeholder="e.g. 4,000">
+                                <label for="certMonthlyIncome">Buwanang Kita: <span class="required-indicator">*</span></label>
+                                <input type="text" id="certMonthlyIncome" name="certMonthlyIncome" placeholder="hal. 4,000">
                             </div>
                             
                             <!-- Conditional fields for Proof of Residency -->
                             <div class="form-group" id="certYearResidingGroup" style="display: none;">
-                                <label for="certYearResiding">Year Start Residing: <span class="required-indicator">*</span></label>
-                                <input type="text" id="certYearResiding" placeholder="e.g. 2020" name="certYearResiding">
+                                <label for="certYearResiding">Taon ng Pagsisimula ng Paninirahan: <span class="required-indicator">*</span></label>
+                                <input type="text" id="certYearResiding" placeholder="hal. 2020" name="certYearResiding">
                             </div>
                             
                             <!-- Conditional fields for Certification for Dead -->
                             <div class="form-group" id="certMonthYearPassingGroup" style="display: none;">
-                                <label for="certMonthYearPassing">Month and Year of Passing: <span class="required-indicator">*</span></label>
-                                <input type="text" id="certMonthYearPassing" name="certMonthYearPassing" placeholder="e.g. January 2020">
+                                <label for="certMonthYearPassing">Buwan at Taon ng Pagkamatay: <span class="required-indicator">*</span></label>
+                                <input type="text" id="certMonthYearPassing" name="certMonthYearPassing" placeholder="hal. Enero 2020">
                             </div>
                             
                             <!-- Conditional field for Educational Level and Course when JobSeeker is selected -->
                             <div class="form-group" id="certEducationalLevelGroup" style="display: none;">
-                                <label for="certEducationalAttainment">Educational Level: <span class="required-indicator" id="educationalLevelRequiredIndicator">*</span></label>
+                                <label for="certEducationalAttainment">Antas ng Edukasyon: <span class="required-indicator" id="educationalLevelRequiredIndicator">*</span></label>
                                 <select id="certEducationalAttainment" name="certEducationalAttainment">
-                                    <option value="">Select Educational Level</option>
+                                    <option value="">Pumili ng Antas ng Edukasyon</option>
                                     <option value="elementary">Elementary</option>
                                     <option value="high-school">High School</option>
                                     <option value="college">College</option>
                                 </select>
                             </div>
                             <div class="form-group" id="certCourseGroup" style="display: none;">
-                                <label for="certEducationalLevel">Course: <span class="required-indicator" id="courseRequiredIndicator">*</span></label>
+                                <label for="certEducationalLevel">Kurso: <span class="required-indicator" id="courseRequiredIndicator">*</span></label>
                                 <select id="certEducationalLevel" name="certEducationalLevel">
                                     <option value="">Select Course</option>
                                     <option value="bscs">Bachelor of Science in Computer Science (BSCS)</option>
@@ -750,39 +746,39 @@
                                 </select>
                             </div>
                         <div class="form-group" id="certOutOfSchoolYouthGroup" style="display: none;">
-                            <label>Check if not currently enrolled <span class="required-indicator" id="outOfSchoolYouthRequiredIndicator" style="display: none;">*</span></label>
+                            <label>Lagyan ng tsek kung hindi kasalukuyang nakapag-enroll <span class="required-indicator" id="outOfSchoolYouthRequiredIndicator" style="display: none;">*</span></label>
                             <label class="checkbox-label">
                                 <input type="checkbox" name="certOutOfSchoolYouth" value="yes" id="certOutOfSchoolYouthCheckbox">
                                 <span>Out of School Youth</span>
                             </label>
                         </div>
                         <div class="form-group">
-                            <label>Gender: <span class="required-indicator">*</span></label>
+                            <label>Kasarian: <span class="required-indicator">*</span></label>
                             <div class="radio-group">
                                 <label class="radio-label">
                                     <input type="radio" name="certGender" value="male" required>
-                                    <span class="radio-text">Male</span>
+                                    <span class="radio-text">Lalaki</span>
                                 </label>
                                 <label class="radio-label">
                                     <input type="radio" name="certGender" value="female" required>
-                                    <span class="radio-text">Female</span>
+                                    <span class="radio-text">Babae</span>
                                 </label>
                             </div>
                         </div>
                         <div class="form-group">
-                            <label>Civil Status: <span class="required-indicator">*</span></label>
+                            <label>Status: <span class="required-indicator">*</span></label>
                             <div class="radio-group">
                                 <label class="radio-label">
                                     <input type="radio" name="certCivilStatus" value="single" required>
-                                    <span class="radio-text">Single</span>
+                                    <span class="radio-text">Walang Asawa</span>
                                 </label>
                                 <label class="radio-label">
                                     <input type="radio" name="certCivilStatus" value="married" required>
-                                    <span class="radio-text">Married</span>
+                                    <span class="radio-text">May Asawa</span>
                                 </label>
                                 <label class="radio-label">
                                     <input type="radio" name="certCivilStatus" value="widow" required>
-                                    <span class="radio-text">Widow</span>
+                                    <span class="radio-text">Biyudo/Biyuda</span>
                                 </label>
                             </div>
                         </div>
@@ -798,9 +794,9 @@
                             <h2 class="step-title">Documents</h2>
                             
                         <div class="form-group">
-                            <label for="certIdType">Type of ID: <span class="required-indicator">*</span></label>
+                            <label for="certIdType">Uri ng ID: <span class="required-indicator">*</span></label>
                             <select id="certIdType" name="certIdType" required onchange="toggleOtherInput('certIdType', 'otherCertIdType')">
-                                <option value="">Select ID Type</option>
+                                <option value="">Pumili ng Uri ng ID</option>
                                 <option value="driver-license">Driver's License</option>
                                 <option value="passport">Passport</option>
                                 <option value="sss-id">SSS ID</option>
@@ -814,11 +810,11 @@
                             </select>
                         </div>
                         <div class="form-group" id="otherCertIdTypeGroup" style="display: none;">
-                            <label for="otherCertIdType">Please specify ID type: <span class="required-indicator">*</span></label>
-                            <input type="text" id="otherCertIdType" name="otherCertIdType" placeholder="Please specify ID type">
+                            <label for="otherCertIdType">Mangyaring tukuyin ang uri ng ID: <span class="required-indicator">*</span></label>
+                            <input type="text" id="otherCertIdType" name="otherCertIdType" placeholder="Mangyaring tukuyin ang uri ng ID">
                         </div>
                         <div class="form-group">
-                            <label>Valid ID (Showing Current Address): <span class="required-indicator">*</span></label>
+                            <label>Valid ID (Nakikita ang Kasalukuyang Tirahan): <span class="required-indicator">*</span></label>
                             <div class="image-preview-container">
                                 <img id="certIdPreview" class="image-preview" style="display: none;" alt="ID Preview">
                             </div>
@@ -830,7 +826,7 @@
 
                             <div class="step-navigation">
                                 <button type="button" class="prev-btn" onclick="prevCertStep()">Previous</button>
-                            <button type="submit" class="submit-btn">Submit Application</button>
+                            <button type="submit" class="submit-btn">Done</button>
                             </div>
                         </div>
                     </form>
@@ -842,7 +838,7 @@
                 <div class="report-card">
                     <div class="report-header">
                         <h2>Review Your Certification Details</h2>
-                        <p>Please review your information before submitting your application.</p>
+                        <p>Mangyaring suriin ang iyong impormasyon bago isumite ang iyong aplikasyon.</p>
                     </div>
 
                     <div class="report-details">
@@ -851,7 +847,7 @@
                                 <i class="fas fa-user"></i>
                             </div>
                             <div class="detail-content">
-                                <div class="detail-label">First Name</div>
+                                <div class="detail-label">Pangalan</div>
                                 <div class="detail-value" id="previewCertificationFirstName">-</div>
                             </div>
                         </div>
@@ -861,7 +857,7 @@
                                 <i class="fas fa-user"></i>
                             </div>
                             <div class="detail-content">
-                                <div class="detail-label">Middle Name</div>
+                                <div class="detail-label">Gitnang Pangalan</div>
                                 <div class="detail-value" id="previewCertificationMiddleName">-</div>
                             </div>
                         </div>
@@ -871,7 +867,7 @@
                                 <i class="fas fa-user"></i>
                             </div>
                             <div class="detail-content">
-                                <div class="detail-label">Last Name</div>
+                                <div class="detail-label">Apelyido</div>
                                 <div class="detail-value" id="previewCertificationLastName">-</div>
                             </div>
                         </div>
@@ -881,7 +877,7 @@
                                 <i class="fas fa-calendar-alt"></i>
                             </div>
                             <div class="detail-content">
-                                <div class="detail-label">Birth Date</div>
+                                <div class="detail-label">Kapanganakan</div>
                                 <div class="detail-value" id="previewCertificationBirthDate">-</div>
                             </div>
                         </div>
@@ -891,7 +887,7 @@
                                 <i class="fas fa-map-marker-alt"></i>
                             </div>
                             <div class="detail-content">
-                                <div class="detail-label">Birth Place</div>
+                                <div class="detail-label">Lugar ng Kapanganakan</div>
                                 <div class="detail-value" id="previewCertificationBirthPlace">-</div>
                             </div>
                         </div>
@@ -911,7 +907,7 @@
                                 <i class="fas fa-home"></i>
                             </div>
                             <div class="detail-content">
-                                <div class="detail-label">Address</div>
+                                <div class="detail-label">Tirahan</div>
                                 <div class="detail-value" id="previewCertificationAddress">-</div>
                             </div>
                         </div>
@@ -921,7 +917,7 @@
                                 <i class="fas fa-calendar-check"></i>
                             </div>
                             <div class="detail-content">
-                                <div class="detail-label">Date Issued</div>
+                                <div class="detail-label">Petsa ng Pagkakalabas</div>
                                 <div class="detail-value" id="previewCertificationDateIssued">-</div>
                             </div>
                         </div>
@@ -931,7 +927,7 @@
                                 <i class="fas fa-graduation-cap"></i>
                             </div>
                             <div class="detail-content">
-                                <div class="detail-label">Educational Level</div>
+                                <div class="detail-label">Antas ng Edukasyon</div>
                                 <div class="detail-value" id="previewCertificationEducationalAttainment">-</div>
                             </div>
                         </div>
@@ -989,7 +985,7 @@
 
                     <div class="report-actions">
                         <button class="action-btn secondary" onclick="goBackToCertificationStep3()">Back to Form</button>
-                        <button class="action-btn primary" onclick="finalSubmitCertification()">Submit Application</button>
+                        <button class="action-btn primary" onclick="finalSubmitCertification()">Done</button>
                     </div>
                 </div>
             </div>
@@ -999,7 +995,7 @@
                 <div class="report-card">
                     <div class="report-header">
                         <h2>Certification Form Submitted Successfully</h2>
-                        <p>Your certification application has been successfully submitted. Here are the details:</p>
+                        <p>Ang iyong aplikasyon para sa sertipikasyon ay matagumpay na naisumite. Narito ang mga detalye:</p>
                     </div>
                     
                     <div class="report-details">
@@ -1008,7 +1004,7 @@
                                 <i class="fas fa-user"></i>
                             </div>
                             <div class="detail-content">
-                                <div class="detail-label">Full Name</div>
+                                <div class="detail-label">Buong Pangalan</div>
                                 <div class="detail-value" id="displayCertificationName">-</div>
                             </div>
                         </div>
@@ -1018,7 +1014,7 @@
                                 <i class="fas fa-map-marker-alt"></i>
                             </div>
                             <div class="detail-content">
-                                <div class="detail-label">Address</div>
+                                <div class="detail-label">Tirahan</div>
                                 <div class="detail-value" id="displayCertificationAddress">-</div>
                             </div>
                         </div>
@@ -1028,7 +1024,7 @@
                                 <i class="fas fa-calendar-alt"></i>
                             </div>
                             <div class="detail-content">
-                                <div class="detail-label">Birth Date</div>
+                                <div class="detail-label">Kapanganakan</div>
                                 <div class="detail-value" id="displayCertificationBirthDate">-</div>
                             </div>
                         </div>
@@ -1038,7 +1034,7 @@
                                 <i class="fas fa-map-pin"></i>
                             </div>
                             <div class="detail-content">
-                                <div class="detail-label">Birth Place</div>
+                                <div class="detail-label">Lugar ng Kapanganakan</div>
                                 <div class="detail-value" id="displayCertificationBirthPlace">-</div>
                             </div>
                         </div>
@@ -1048,7 +1044,7 @@
                                 <i class="fas fa-venus-mars"></i>
                             </div>
                             <div class="detail-content">
-                                <div class="detail-label">Gender</div>
+                                <div class="detail-label">Kasarian</div>
                                 <div class="detail-value" id="displayCertificationGender">-</div>
                             </div>
                         </div>
@@ -1078,7 +1074,7 @@
                                 <i class="fas fa-calendar-check"></i>
                             </div>
                             <div class="detail-content">
-                                <div class="detail-label">Year Start Residing</div>
+                                <div class="detail-label">Taon ng Pagsisimula ng Paninirahan</div>
                                 <div class="detail-value" id="displayCertificationYearResiding">-</div>
                             </div>
                         </div>
@@ -1088,7 +1084,7 @@
                                 <i class="fas fa-calendar-times"></i>
                             </div>
                             <div class="detail-content">
-                                <div class="detail-label">Month and Year of Passing</div>
+                                <div class="detail-label">Buwan at Taon ng Pagkamatay</div>
                                 <div class="detail-value" id="displayCertificationMonthYearPassing">-</div>
                             </div>
                         </div>
@@ -1098,7 +1094,7 @@
                                 <i class="fas fa-briefcase"></i>
                             </div>
                             <div class="detail-content">
-                                <div class="detail-label">Job</div>
+                                <div class="detail-label">Trabaho</div>
                                 <div class="detail-value" id="displayCertificationJob">-</div>
                             </div>
                         </div>
@@ -1108,7 +1104,7 @@
                                 <i class="fas fa-calendar-alt"></i>
                             </div>
                             <div class="detail-content">
-                                <div class="detail-label">Date of Hire</div>
+                                <div class="detail-label">Petsa ng Pag-upa</div>
                                 <div class="detail-value" id="displayCertificationDateHire">-</div>
                             </div>
                         </div>
@@ -1118,7 +1114,7 @@
                                 <i class="fas fa-money-bill-wave"></i>
                             </div>
                             <div class="detail-content">
-                                <div class="detail-label">Monthly Income</div>
+                                <div class="detail-label">Buwanang Kita</div>
                                 <div class="detail-value" id="displayCertificationMonthlyIncome">-</div>
                             </div>
                         </div>
@@ -1128,7 +1124,7 @@
                                 <i class="fas fa-graduation-cap"></i>
                             </div>
                             <div class="detail-content">
-                                <div class="detail-label">Course</div>
+                                <div class="detail-label">Kurso</div>
                                 <div class="detail-value" id="displayCertificationEducationalLevel">-</div>
                             </div>
                         </div>
@@ -1166,7 +1162,7 @@
 
                     <div class="report-actions">
                         <button class="action-btn secondary" onclick="goBackToCertificationForm()">Submit Another</button>
-                        <button class="action-btn primary" onclick="goToMainPage()">Back to Home</button>
+                        <button class="action-btn primary" onclick="goToMainPage()">Done</button>
                     </div>
                 </div>
             </div>
@@ -1203,23 +1199,23 @@
                             <h2 class="step-title">Personal Information</h2>
                             
                         <div class="form-group">
-                            <label for="coeFirstName">First Name: <span class="required-indicator">*</span></label>
+                            <label for="coeFirstName">Pangalan: <span class="required-indicator">*</span></label>
                             <input type="text" id="coeFirstName" name="coeFirstName" required>
                         </div>
                         <div class="form-group">
-                            <label for="coeMiddleName">Middle Name:</label>
+                            <label for="coeMiddleName">Gitnang Pangalan:</label>
                             <input type="text" id="coeMiddleName" name="coeMiddleName">
                         </div>
                         <div class="form-group">
-                            <label for="coeLastName">Last Name: <span class="required-indicator">*</span></label>
+                            <label for="coeLastName">Apelyido: <span class="required-indicator">*</span></label>
                             <input type="text" id="coeLastName" name="coeLastName" required>
                         </div>
                         <div class="form-group">
-                            <label for="coeAddress">Address: <span class="required-indicator">*</span></label>
-                            <input type="text" id="coeAddress" placeholder="(Block No., House No., Street, Municipality, Province)" name="coeAddress" required>
+                            <label for="coeAddress">Direksyon: <span class="required-indicator">*</span></label>
+                            <input type="text" id="coeAddress" placeholder="(Blg., Bahay Blg., Kalye, Bayan, Lalawigan)" name="coeAddress" required>
                         </div>
                         <div class="form-group">
-                            <label for="coeAge">Age: <span class="required-indicator">*</span></label>
+                            <label for="coeAge">Edad: <span class="required-indicator">*</span></label>
                             <input type="number" id="coeAge" name="coeAge" min="18" max="100" inputmode="numeric" required>
                         </div>
 
@@ -1233,45 +1229,45 @@
                             <h2 class="step-title">Employment Information</h2>
                             
                         <div class="form-group">
-                            <label>Gender: <span class="required-indicator">*</span></label>
+                            <label>Kasarian: <span class="required-indicator">*</span></label>
                             <div class="radio-group">
                                 <label class="radio-label">
                                     <input type="radio" name="coeGender" value="male" required>
-                                    <span class="radio-text">Male</span>
+                                    <span class="radio-text">Lalaki</span>
                                 </label>
                                 <label class="radio-label">
                                     <input type="radio" name="coeGender" value="female" required>
-                                    <span class="radio-text">Female</span>
+                                    <span class="radio-text">Babae</span>
                                 </label>
                             </div>
                         </div>
                         <div class="form-group">
-                            <label>Civil Status: <span class="required-indicator">*</span></label>
+                            <label>Status: <span class="required-indicator">*</span></label>
                             <div class="radio-group">
                                 <label class="radio-label">
                                     <input type="radio" name="coeCivilStatus" value="single" required>
-                                    <span class="radio-text">Single</span>
+                                    <span class="radio-text">Walang Asawa</span>
                                 </label>
                                 <label class="radio-label">
                                     <input type="radio" name="coeCivilStatus" value="married" required>
-                                    <span class="radio-text">Married</span>
+                                    <span class="radio-text">May Asawa</span>
                                 </label>
                                 <label class="radio-label">
                                     <input type="radio" name="coeCivilStatus" value="widow" required>
-                                    <span class="radio-text">Widow</span>
+                                    <span class="radio-text">Biyudo/Biyuda</span>
                                 </label>
                             </div>
                         </div>
                         <div class="form-group">
-                            <label>Employment Type: <span class="required-indicator">*</span></label>
+                            <label>Uri ng Trabaho: <span class="required-indicator">*</span></label>
                             <div class="radio-group">
                                 <label class="radio-label">
                                     <input type="radio" name="coeEmploymentType" value="contractual" required>
-                                    <span class="radio-text">Contractual</span>
+                                    <span class="radio-text">Kontraktwal</span>
                                 </label>
                                 <label class="radio-label">
                                     <input type="radio" name="coeEmploymentType" value="self_employed" required>
-                                    <span class="radio-text">Self-Employed</span>
+                                    <span class="radio-text">Sariling Negosyo</span>
                                 </label>
                                 <label class="radio-label">
                                     <input type="radio" name="coeEmploymentType" value="on_call" required>
@@ -1280,16 +1276,16 @@
                             </div>
                         </div>
                         <div class="form-group">
-                            <label for="coePosition">Position/Job: <span class="required-indicator">*</span></label>
-                            <input type="text" id="coePosition" placeholder="e.g. Teacher, Doctor, etc." name="coePosition" required>
+                            <label for="coePosition">Posisyon/Trabaho: <span class="required-indicator">*</span></label>
+                            <input type="text" id="coePosition" placeholder="hal. Guro, Doktor, atbp." name="coePosition" required>
                         </div>
                         <div class="form-group">
-                            <label for="coeDateStarted">Date Started: <span class="required-indicator">*</span></label>
+                            <label for="coeDateStarted">Petsa ng Pagsisimula: <span class="required-indicator">*</span></label>
                             <input type="date" id="coeDateStarted" name="coeDateStarted" min="1950-01-01" max="2030-12-31" required>
                         </div>
                         <div class="form-group">
-                            <label for="coeMonthlySalary">Monthly Salary: <span class="required-indicator">*</span></label>
-                            <input type="text" id="coeMonthlySalary" name="coeMonthlySalary" placeholder="e.g. 4,000" required>
+                            <label for="coeMonthlySalary">Buwanang Sahod: <span class="required-indicator">*</span></label>
+                            <input type="text" id="coeMonthlySalary" name="coeMonthlySalary" placeholder="hal. 4,000" required>
                         </div>
 
                             <div class="step-navigation">
@@ -1303,9 +1299,9 @@
                             <h2 class="step-title">Documents</h2>
                             
                         <div class="form-group">
-                            <label for="coeIdType">Type of ID: <span class="required-indicator">*</span></label>
+                            <label for="coeIdType">Uri ng ID: <span class="required-indicator">*</span></label>
                             <select id="coeIdType" name="coeIdType" required onchange="toggleOtherInput('coeIdType', 'otherCoeIdType')">
-                                <option value="">Select ID Type</option>
+                                <option value="">Pumili ng Uri ng ID</option>
                                 <option value="driver-license">Driver's License</option>
                                 <option value="passport">Passport</option>
                                 <option value="sss-id">SSS ID</option>
@@ -1320,11 +1316,11 @@
                             </select>
                         </div>
                         <div class="form-group" id="otherCoeIdTypeGroup" style="display: none;">
-                            <label for="otherCoeIdType">Please specify ID type: <span class="required-indicator">*</span></label>
-                            <input type="text" id="otherCoeIdType" name="otherCoeIdType" placeholder="Please specify ID type">
+                            <label for="otherCoeIdType">Mangyaring tukuyin ang uri ng ID: <span class="required-indicator">*</span></label>
+                            <input type="text" id="otherCoeIdType" name="otherCoeIdType" placeholder="Mangyaring tukuyin ang uri ng ID">
                         </div>
                         <div class="form-group">
-                            <label>Valid ID (Showing Current Address): <span class="required-indicator">*</span></label>
+                            <label>Valid ID (Nakikita ang Kasalukuyang Tirahan): <span class="required-indicator">*</span></label>
                             <div class="image-preview-container">
                                 <img id="coeIdPreview" class="image-preview" style="display: none;" alt="ID Preview">
                             </div>
@@ -1336,7 +1332,7 @@
 
                             <div class="step-navigation">
                                 <button type="button" class="prev-btn" onclick="prevCoeStep()">Previous</button>
-                            <button type="submit" class="submit-btn">Submit Application</button>
+                            <button type="submit" class="submit-btn">Done</button>
                             </div>
                         </div>
                     </form>
@@ -1455,7 +1451,7 @@
 
                     <div class="report-actions">
                         <button class="action-btn secondary" onclick="goBackToCoeForm()">Back to Form</button>
-                        <button class="action-btn primary" onclick="finalSubmitCoe()">Submit Application</button>
+                        <button class="action-btn primary" onclick="finalSubmitCoe()">Done</button>
                     </div>
                 </div>
             </div>
@@ -1582,7 +1578,7 @@
 
                     <div class="report-actions">
                         <button class="action-btn secondary" onclick="goBackToCoeSelection()">Submit Another</button>
-                        <button class="action-btn primary" onclick="goToMainPage()">Back to Home</button>
+                        <button class="action-btn primary" onclick="goToMainPage()">Done</button>
                     </div>
                 </div>
             </div>
@@ -1619,24 +1615,24 @@
                             <h2 class="step-title">Personal Information</h2>
                             
                         <div class="form-group">
-                            <label for="indFirstName">First Name: <span class="required-indicator">*</span></label>
+                            <label for="indFirstName">Pangalan: <span class="required-indicator">*</span></label>
                             <input type="text" id="indFirstName" name="indFirstName" required>
                         </div>
                         <div class="form-group">
-                            <label for="indMiddleName">Middle Name:</label>
+                            <label for="indMiddleName">Gitnang Pangalan:</label>
                             <input type="text" id="indMiddleName" name="indMiddleName">
                         </div>
                         <div class="form-group">
-                            <label for="indLastName">Last Name: <span class="required-indicator">*</span></label>
+                            <label for="indLastName">Apelyido: <span class="required-indicator">*</span></label>
                             <input type="text" id="indLastName" name="indLastName" required>
                         </div>
                         <div class="form-group">
-                            <label for="indAge">Age: <span class="required-indicator">*</span></label>
+                            <label for="indAge">Edad: <span class="required-indicator">*</span></label>
                             <input type="number" id="indAge" name="indAge" min="1" max="120" inputmode="numeric" required>
                         </div>
                         <div class="form-group">
-                            <label for="indAddress">Address: <span class="required-indicator">*</span></label>
-                            <input type="text" id="indAddress" placeholder="(Block No., House No., Street, Municipality, Province)" name="indAddress" required>
+                            <label for="indAddress">Direksyon: <span class="required-indicator">*</span></label>
+                            <input type="text" id="indAddress" placeholder="(Blg., Bahay Blg., Kalye, Bayan, Lalawigan)" name="indAddress" required>
                         </div>
 
                             <div class="step-navigation">
@@ -1649,58 +1645,58 @@
                             <h2 class="step-title">Family and Status Information</h2>
                             
                         <div class="form-group">
-                            <label for="indBirthDate">Birth Date: <span class="required-indicator">*</span></label>
+                            <label for="indBirthDate">Petsa ng Kapanganakan: <span class="required-indicator">*</span></label>
                             <input type="date" id="indBirthDate" name="indBirthDate" required>
                         </div>
                         <div class="form-group">
-                            <label for="indBirthPlace">Birth Place: <span class="required-indicator">*</span></label>
+                            <label for="indBirthPlace">Lugar ng Kapanganakan: <span class="required-indicator">*</span></label>
                             <input type="text" id="indBirthPlace" name="indBirthPlace" required>
                         </div>
                         <div class="form-group">
-                            <label>Gender: <span class="required-indicator">*</span></label>
+                            <label>Kasarian: <span class="required-indicator">*</span></label>
                             <div class="radio-group">
                                 <label class="radio-label">
                                     <input type="radio" name="indGender" value="male" required>
-                                    <span class="radio-text">Male</span>
+                                    <span class="radio-text">Lalaki</span>
                                 </label>
                                 <label class="radio-label">
                                     <input type="radio" name="indGender" value="female" required>
-                                    <span class="radio-text">Female</span>
+                                    <span class="radio-text">Babae</span>
                                 </label>
                             </div>
                         </div>
                         <div class="form-group">
-                            <label>Civil Status: <span class="required-indicator">*</span></label>
+                            <label>Status: <span class="required-indicator">*</span></label>
                             <div class="radio-group">
                                 <label class="radio-label">
                                     <input type="radio" name="indCivilStatus" value="single" required>
-                                    <span class="radio-text">Single</span>
+                                    <span class="radio-text">Walang Asawa</span>
                                 </label>
                                 <label class="radio-label">
                                     <input type="radio" name="indCivilStatus" value="married" required>
-                                    <span class="radio-text">Married</span>
+                                    <span class="radio-text">May Asawa</span>
                                 </label>
                                 <label class="radio-label">
                                     <input type="radio" name="indCivilStatus" value="widow" required>
-                                    <span class="radio-text">Widow</span>
+                                    <span class="radio-text">Biyudo/Biyuda</span>
                                 </label>
                             </div>
                         </div>
                         <div class="form-group">
-                            <label for="indPurpose">Purpose: <span class="required-indicator">*</span></label>
+                            <label for="indPurpose">Layunin: <span class="required-indicator">*</span></label>
                             <select id="indPurpose" name="indPurpose" required onchange="toggleOtherInput('indPurpose', 'otherIndPurpose')">
-                                <option value="">Select Purpose</option>
+                                <option value="">Pumili ng Purposen</option>
                                 <option value="medical-assistance">Medical Assistance</option>
                                 <option value="educational-assistance">Educational Assistance</option>
                                 <option value="burial-assistance">Burial Assistance</option>
                                 <option value="livelihood-assistance">Livelihood Assistance</option>
                                 <option value="housing-assistance">Housing Assistance</option>
-                                <option value="other">Other</option>
+                                <option value="other">Iba pa</option>
                             </select>
                         </div>
                         <div class="form-group" id="otherIndPurposeGroup" style="display: none;">
-                            <label for="otherIndPurpose">Please specify purpose: <span class="required-indicator">*</span></label>
-                            <input type="text" id="otherIndPurpose" name="otherIndPurpose" placeholder="Please specify purpose">
+                            <label for="otherIndPurpose">Mangyaring tukuyin ang Purpose: <span class="required-indicator">*</span></label>
+                            <input type="text" id="otherIndPurpose" name="otherIndPurpose" placeholder="Mangyaring tukuyin ang layunin">
                         </div>
 
                             <div class="step-navigation">
@@ -1714,9 +1710,9 @@
                             <h2 class="step-title">Documents</h2>
                             
                         <div class="form-group">
-                            <label for="indIdType">Type of ID: <span class="required-indicator">*</span></label>
+                            <label for="indIdType">Uri ng ID: <span class="required-indicator">*</span></label>
                             <select id="indIdType" name="indIdType" required onchange="toggleOtherInput('indIdType', 'otherIndIdType')">
-                                <option value="">Select ID Type</option>
+                                <option value="">Pumili ng Uri ng ID</option>
                                 <option value="driver-license">Driver's License</option>
                                 <option value="passport">Passport</option>
                                 <option value="sss-id">SSS ID</option>
@@ -1732,11 +1728,11 @@
                             </select>
                         </div>
                         <div class="form-group" id="otherIndIdTypeGroup" style="display: none;">
-                            <label for="otherIndIdType">Please specify ID type: <span class="required-indicator">*</span></label>
-                            <input type="text" id="otherIndIdType" name="otherIndIdType" placeholder="Please specify ID type">
+                            <label for="otherIndIdType">Mangyaring tukuyin ang uri ng ID: <span class="required-indicator">*</span></label>
+                            <input type="text" id="otherIndIdType" name="otherIndIdType" placeholder="Mangyaring tukuyin ang uri ng ID">
                         </div>
                         <div class="form-group">
-                            <label>Valid ID (Showing Current Address): <span class="required-indicator">*</span></label>
+                            <label>Valid ID (Nakikita ang Kasalukuyang Tirahan): <span class="required-indicator">*</span></label>
                             <div class="image-preview-container">
                                 <img id="indIdPreview" class="image-preview" style="display: none;" alt="ID Preview">
                             </div>
@@ -1748,7 +1744,7 @@
 
                             <div class="step-navigation">
                                 <button type="button" class="prev-btn" onclick="prevIndStep()">Previous</button>
-                            <button type="submit" class="submit-btn">Submit Application</button>
+                            <button type="submit" class="submit-btn">Done</button>
                             </div>
                         </div>
                     </form>
@@ -1857,7 +1853,7 @@
 
                     <div class="report-actions">
                         <button class="action-btn secondary" onclick="goBackToIndigencyForm()">Back to Form</button>
-                        <button class="action-btn primary" onclick="finalSubmitIndigency()">Submit Application</button>
+                        <button class="action-btn primary" onclick="finalSubmitIndigency()">Done</button>
                     </div>
                 </div>
             </div>
@@ -1974,7 +1970,7 @@
 
                     <div class="report-actions">
                         <button class="action-btn secondary" onclick="goBackToIndigencyForm()">Submit Another</button>
-                        <button class="action-btn primary" onclick="goToMainPage()">Back to Home</button>
+                        <button class="action-btn primary" onclick="goToMainPage()">Done</button>
                     </div>
                 </div>
             </div>
@@ -2011,29 +2007,29 @@
                             <h2 class="step-title">Personal Information</h2>
                             
                         <div class="form-group">
-                            <label for="clearFirstName">First Name: <span class="required-indicator">*</span></label>
+                            <label for="clearFirstName">Pangalan: <span class="required-indicator">*</span></label>
                             <input type="text" id="clearFirstName" name="clearFirstName" required>
                         </div>
                         <div class="form-group">
-                            <label for="clearMiddleName">Middle Name:</label>
+                            <label for="clearMiddleName">Gitnang Pangalan:</label>
                             <input type="text" id="clearMiddleName" name="clearMiddleName">
                         </div>
                         <div class="form-group">
-                            <label for="clearLastName">Last Name: <span class="required-indicator">*</span></label>
+                            <label for="clearLastName">Apelyido: <span class="required-indicator">*</span></label>
                             <input type="text" id="clearLastName" name="clearLastName" required>
                         </div>
                         <div class="form-group">
-                            <label for="clearAge">Age: <span class="required-indicator">*</span></label>
+                            <label for="clearAge">Edad: <span class="required-indicator">*</span></label>
                             <input type="number" id="clearAge" name="clearAge" min="1" max="120" inputmode="numeric">
                         </div>
                         <div class="form-group">
-                            <label for="clearAddress">Address: <span class="required-indicator">*</span></label>
-                            <input type="text" id="clearAddress" placeholder="(Block No., House No., Street, Municipality, Province)" name="clearAddress" required>
+                            <label for="clearAddress">Direksyon: <span class="required-indicator">*</span></label>
+                            <input type="text" id="clearAddress" placeholder="(Blg., Bahay Blg., Kalye, Bayan, Lalawigan)" name="clearAddress" required>
                         </div>
                         <div class="form-group">
-                            <label for="clearPurpose">Purpose: <span class="required-indicator">*</span></label>
+                            <label for="clearPurpose">Layunin: <span class="required-indicator">*</span></label>
                             <select id="clearPurpose" name="clearPurpose" required onchange="toggleClearanceConditionalFields()">
-                                <option value="">Select Purpose</option>
+                                <option value="">Pumili ng Purpose</option>
                                 <option value="barangay-clearance">Barangay Clearance</option>
                                 <option value="business-clearance">Business Clearance</option>
                                 <option value="proof-of-residency">Proof of Residency</option>
@@ -2050,62 +2046,62 @@
                             <h2 class="step-title">Status Information</h2>
                             
                         <div class="form-group">
-                            <label for="clearBirthDate">Birth Date: <span class="required-indicator">*</span></label>
+                            <label for="clearBirthDate">Petsa ng Kapanganakan: <span class="required-indicator">*</span></label>
                             <input type="date" id="clearBirthDate" name="clearBirthDate" required>
                         </div>
                         <div class="form-group">
-                            <label for="clearBirthPlace">Birth Place: <span class="required-indicator">*</span></label>
+                            <label for="clearBirthPlace">Lugar ng Kapanganakan: <span class="required-indicator">*</span></label>
                             <input type="text" id="clearBirthPlace" name="clearBirthPlace" required>
                         </div>
                         <div class="form-group" id="clearCitizenshipGroup">
-                            <label for="clearCitizenship">Citizenship: <span class="required-indicator">*</span></label>
+                            <label for="clearCitizenship">Pagkamamamayan: <span class="required-indicator">*</span></label>
                             <select id="clearCitizenship" name="clearCitizenship">
-                                <option value="">Select Citizenship</option>
-                                <option value="filipino">Filipino</option>
+                                <option value="">Pumili ng Pagkamamamayan</option>
+                                <option value="filipino">Pilipino</option>
                                 <option value="dual">Dual Citizenship</option>
-                                <option value="foreign">Foreign</option>
+                                <option value="foreign">Dayuhan</option>
                             </select>
                         </div>
                         <div class="form-group" id="clearBusinessNameGroup" style="display: none;">
-                            <label for="clearBusinessName">Business Name: <span class="required-indicator">*</span></label>
-                            <input type="text" id="clearBusinessName" placeholder="e.g. ABC Corporation" name="clearBusinessName">
+                            <label for="clearBusinessName">Pangalan ng Negosyo: <span class="required-indicator">*</span></label>
+                            <input type="text" id="clearBusinessName" placeholder="hal. ABC Corporation" name="clearBusinessName">
                         </div>
                         <div class="form-group" id="clearBusinessLocationGroup" style="display: none;">
-                            <label for="clearBusinessLocation">Location of Business: <span class="required-indicator">*</span></label>
-                            <input type="text" id="clearBusinessLocation" placeholder="e.g. 123 Main St., Manila, Philippines" name="clearBusinessLocation">
+                            <label for="clearBusinessLocation">Lokasyon ng Negosyo: <span class="required-indicator">*</span></label>
+                            <input type="text" id="clearBusinessLocation" placeholder="hal. 123 Main St., Manila, Philippines" name="clearBusinessLocation">
                         </div>
                         <div class="form-group" id="clearYearResidingGroup" style="display: none;">
-                            <label for="clearYearResiding">Year Start Residing: <span class="required-indicator">*</span></label>
-                            <input type="text" id="clearYearResiding" name="clearYearResiding" placeholder="e.g. 2020">
+                            <label for="clearYearResiding">Taon ng Pagsisimula ng Paninirahan: <span class="required-indicator">*</span></label>
+                            <input type="text" id="clearYearResiding" name="clearYearResiding" placeholder="hal. 2020">
                         </div>
                         
                         <div class="form-group">
-                            <label>Gender: <span class="required-indicator">*</span></label>
+                            <label>Kasarian: <span class="required-indicator">*</span></label>
                             <div class="radio-group">
                                 <label class="radio-label">
                                     <input type="radio" name="clearGender" value="male" required>
-                                    <span class="radio-text">Male</span>
+                                    <span class="radio-text">Lalaki</span>
                                 </label>
                                 <label class="radio-label">
                                     <input type="radio" name="clearGender" value="female" required>
-                                    <span class="radio-text">Female</span>
+                                    <span class="radio-text">Babae</span>
                                 </label>
                             </div>
                         </div>
                         <div class="form-group">
-                            <label>Civil Status: <span class="required-indicator">*</span></label>
+                            <label>Status: <span class="required-indicator">*</span></label>
                             <div class="radio-group">
                                 <label class="radio-label">
                                     <input type="radio" name="clearCivilStatus" value="single" required>
-                                    <span class="radio-text">Single</span>
+                                    <span class="radio-text">Walang Asawa</span>
                                 </label>
                                 <label class="radio-label">
                                     <input type="radio" name="clearCivilStatus" value="married" required>
-                                    <span class="radio-text">Married</span>
+                                    <span class="radio-text">May Asawa</span>
                                 </label>
                                 <label class="radio-label">
                                     <input type="radio" name="clearCivilStatus" value="widow" required>
-                                    <span class="radio-text">Widow</span>
+                                    <span class="radio-text">Biyudo/Biyuda</span>
                                 </label>
                             </div>
                         </div>
@@ -2121,9 +2117,9 @@
                             <h2 class="step-title">Documents</h2>
                             
                             <div class="form-group">
-                                <label for="clearIdType">Type of ID: <span class="required-indicator">*</span></label>
+                                <label for="clearIdType">Uri ng ID: <span class="required-indicator">*</span></label>
                                 <select id="clearIdType" name="clearIdType" required onchange="toggleOtherInput('clearIdType', 'otherClearIdType')">
-                                    <option value="">Select ID Type</option>
+                                    <option value="">Pumili ng Uri ng ID</option>
                                     <option value="driver-license">Driver's License</option>
                                     <option value="passport">Passport</option>
                                     <option value="sss-id">SSS ID</option>
@@ -2135,15 +2131,15 @@
                                     <option value="pwd-id">PWD ID</option>
                                     <option value="company-id">Company ID</option>
                                     <option value="barangay-id">Barangay ID</option>
-                                    <option value="other">Other</option>
+                                    <option value="other">Iba pa</option>
                                 </select>
                             </div>
                             <div class="form-group" id="otherClearIdTypeGroup" style="display: none;">
-                                <label for="otherClearIdType">Please specify ID type: <span class="required-indicator">*</span></label>
-                                <input type="text" id="otherClearIdType" name="otherClearIdType" placeholder="Please specify ID type">
+                                <label for="otherClearIdType">Mangyaring tukuyin ang uri ng ID: <span class="required-indicator">*</span></label>
+                                <input type="text" id="otherClearIdType" name="otherClearIdType" placeholder="Mangyaring tukuyin ang uri ng ID">
                             </div>
                             <div class="form-group">
-                                <label>Valid ID (Showing Current Address): <span class="required-indicator">*</span></label>
+                                <label>Valid ID (Nakikita ang Kasalukuyang Direksyon): <span class="required-indicator">*</span></label>
                                 <div class="image-preview-container">
                                     <img id="clearIdPreview" class="image-preview" style="display: none;" alt="ID Preview">
                                 </div>
@@ -2155,7 +2151,7 @@
                             
                             <div class="step-navigation">
                                 <button type="button" class="prev-btn" onclick="prevClearStep()">Previous</button>
-                                <button type="submit" class="submit-btn">Submit Application</button>
+                                <button type="submit" class="submit-btn">Submit</button>
                             </div>
                         </div>
                     </form>
@@ -2167,7 +2163,7 @@
                 <div class="report-card">
                     <div class="report-header">
                         <h2>Review Your Clearance Details</h2>
-                        <p>Please review your information before submitting your application.</p>
+                        <p>Mangyaring suriin ang iyong impormasyon bago isumite ang iyong aplikasyon.</p>
                     </div>
 
                     <div class="report-details">
@@ -2264,7 +2260,7 @@
 
                     <div class="report-actions">
                         <button class="action-btn secondary" type="button" onclick="editClearanceApplication()">Back to Form</button>
-                        <button class="action-btn primary" type="button" onclick="confirmClearanceSubmission()">Submit Application</button>
+                        <button class="action-btn primary" type="button" onclick="confirmClearanceSubmission()">Done</button>
                     </div>
                 </div>
             </div>
@@ -2274,7 +2270,7 @@
                 <div class="report-card">
                     <div class="report-header">
                         <h2>Clearance Form Submitted Successfully</h2>
-                        <p>Your clearance application has been successfully submitted. Here are the details:</p>
+                        <p>Ang iyong aplikasyon para sa clearance ay matagumpay na naisumite. Narito ang mga detalye:</p>
                     </div>
                     
                     <div class="report-details">
@@ -2283,7 +2279,7 @@
                                 <i class="fas fa-user"></i>
                             </div>
                             <div class="detail-content">
-                                <div class="detail-label">Full Name</div>
+                                <div class="detail-label">Pangalan</div>
                                 <div class="detail-value" id="displayClearanceName">-</div>
                             </div>
                         </div>
@@ -2293,7 +2289,7 @@
                                 <i class="fas fa-map-marker-alt"></i>
                             </div>
                             <div class="detail-content">
-                                <div class="detail-label">Address</div>
+                                <div class="detail-label">Tirahan</div>
                                 <div class="detail-value" id="displayClearanceAddress">-</div>
                             </div>
                         </div>
@@ -2303,7 +2299,7 @@
                                 <i class="fas fa-calendar-alt"></i>
                             </div>
                             <div class="detail-content">
-                                <div class="detail-label">Birth Date</div>
+                                <div class="detail-label">Kapanganakan</div>
                                 <div class="detail-value" id="displayClearanceBirthDate">-</div>
                             </div>
                         </div>
@@ -2313,7 +2309,7 @@
                                 <i class="fas fa-map-pin"></i>
                             </div>
                             <div class="detail-content">
-                                <div class="detail-label">Birth Place</div>
+                                <div class="detail-label">Lugar ng Kapanganakan</div>
                                 <div class="detail-value" id="displayClearanceBirthPlace">-</div>
                             </div>
                         </div>
@@ -2323,7 +2319,7 @@
                                 <i class="fas fa-birthday-cake"></i>
                             </div>
                             <div class="detail-content">
-                                <div class="detail-label">Age</div>
+                                <div class="detail-label">Edad</div>
                                 <div class="detail-value" id="displayClearanceAge">-</div>
                             </div>
                         </div>
@@ -2333,7 +2329,7 @@
                                 <i class="fas fa-venus-mars"></i>
                             </div>
                             <div class="detail-content">
-                                <div class="detail-label">Gender</div>
+                                <div class="detail-label">Kasarian</div>
                                 <div class="detail-value" id="displayClearanceGender">-</div>
                             </div>
                         </div>
@@ -2343,7 +2339,7 @@
                                 <i class="fas fa-heart"></i>
                             </div>
                             <div class="detail-content">
-                                <div class="detail-label">Civil Status</div>
+                                <div class="detail-label">Katayuan</div>
                                 <div class="detail-value" id="displayClearanceCivilStatus">-</div>
                             </div>
                         </div>
@@ -2353,7 +2349,7 @@
                                 <i class="fas fa-flag"></i>
                             </div>
                             <div class="detail-content">
-                                <div class="detail-label">Citizenship</div>
+                                <div class="detail-label">Kababaihan</div>
                                 <div class="detail-value" id="displayClearanceCitizenship">-</div>
                             </div>
                         </div>
@@ -2363,7 +2359,7 @@
                                 <i class="fas fa-calendar-check"></i>
                             </div>
                             <div class="detail-content">
-                                <div class="detail-label">Year Start Residing</div>
+                                <div class="detail-label">Taon ng Pagsisimula ng Paninirahan</div>
                                 <div class="detail-value" id="displayClearanceYearResiding">-</div>
                             </div>
                         </div>
@@ -2373,7 +2369,7 @@
                                 <i class="fas fa-bullseye"></i>
                             </div>
                             <div class="detail-content">
-                                <div class="detail-label">Purpose</div>
+                                <div class="detail-label">Layunin</div>
                                 <div class="detail-value" id="displayClearancePurpose">-</div>
                             </div>
                         </div>
@@ -2393,7 +2389,7 @@
                                 <i class="fas fa-clock"></i>
                             </div>
                             <div class="detail-content">
-                                <div class="detail-label">Submitted At</div>
+                                <div class="detail-label">Petsa ng Pagkakalabas</div>
                                 <div class="detail-value" id="displayClearanceDateTime">-</div>
                             </div>
                         </div>
@@ -2403,7 +2399,7 @@
                                 <i class="fas fa-building"></i>
                             </div>
                             <div class="detail-content">
-                                <div class="detail-label">Business Name</div>
+                                <div class="detail-label">Pangalan ng Negosyo</div>
                                 <div class="detail-value" id="displayClearanceBusinessName">-</div>
                             </div>
                         </div>
@@ -2413,7 +2409,7 @@
                                 <i class="fas fa-map-marker-alt"></i>
                             </div>
                             <div class="detail-content">
-                                <div class="detail-label">Business Location</div>
+                                <div class="detail-label">Lokasyon ng Negosyo</div>
                                 <div class="detail-value" id="displayClearanceBusinessLocation">-</div>
                             </div>
                         </div>
@@ -2421,7 +2417,7 @@
 
                     <div class="report-actions">
                         <button class="action-btn secondary" onclick="goBackToClearanceForm()">Submit Another</button>
-                        <button class="action-btn primary" onclick="goToMainPage()">Back to Home</button>
+                        <button class="action-btn primary" onclick="goToMainPage()">Done</button>
                     </div>
                 </div>
             </div>
