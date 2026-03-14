@@ -104,12 +104,10 @@ body {
 }
 
 .logo-image {
-    width: 40px;
-    height: 40px;
+    width: 140px;
+    height: 44px;
     object-fit: contain;
-    position: relative;
-    z-index: 2;
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+    max-width: 100%;
 }
 
 /* Light blue square background behind the logo - REMOVED */
@@ -428,8 +426,10 @@ body {
     }
     
     .logo-image {
-        width: 35px;
-        height: 35px;
+        width: 140px;
+        height: 44px;
+        object-fit: contain;
+        max-width: 100%;
     }
     
     .logo-text {
@@ -828,12 +828,10 @@ body.detail-view {
 }
 
 .detail-logo .logo-image {
-    width: 40px;
-    height: 40px;
+    width: 140px;
+    height: 44px;
     object-fit: contain;
-    position: relative;
-    z-index: 2;
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+    max-width: 100%;
 }
 
 /* Light blue square background behind the logo - REMOVED */
@@ -1488,8 +1486,10 @@ body.detail-view {
     }
     
     .detail-logo .logo-image {
-        width: 35px;
-        height: 35px;
+        width: 140px;
+        height: 44px;
+        object-fit: contain;
+        max-width: 100%;
     }
     
     .detail-logo::before {
@@ -1676,8 +1676,10 @@ body.detail-view {
     }
     
     .detail-logo .logo-image {
-        width: 32px;
-        height: 32px;
+        width: 140px;
+        height: 44px;
+        object-fit: contain;
+        max-width: 100%;
     }
     
     .detail-logo::before {

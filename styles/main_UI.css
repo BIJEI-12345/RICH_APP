@@ -544,8 +544,8 @@ body:has(.testing-mode-indicator) .main-container {
 .banner-icon {
     font-size: 24px;
     opacity: 0.9;
-    width: 30px;
-    height: 30px;
+    width: 140px;
+    height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -553,10 +553,10 @@ body:has(.testing-mode-indicator) .main-container {
 }
 
 .banner-logo-img {
-    width: 100%;
-    height: 100%;
+    width: 140px;
+    height: 44px;
     object-fit: contain;
-    border-radius: 8px;
+    max-width: 100%;
 }
 
 .banner-text {
@@ -2067,6 +2067,18 @@ body:has(.testing-mode-indicator) .main-container {
         object-fit: contain;
     }
     
+    .banner-logo-img {
+        width: 110px;
+        height: 35px;
+        max-width: 100%;
+        object-fit: contain;
+    }
+    
+    .banner-icon {
+        width: 110px;
+        height: 35px;
+    }
+    
     .logo-text {
         font-size: 14px;
     }
@@ -2106,6 +2118,18 @@ body:has(.testing-mode-indicator) .main-container {
         height: 32px;
         max-width: 100%;
         object-fit: contain;
+    }
+    
+    .banner-logo-img {
+        width: 100px;
+        height: 32px;
+        max-width: 100%;
+        object-fit: contain;
+    }
+    
+    .banner-icon {
+        width: 100px;
+        height: 32px;
     }
     
     .logo-text {
@@ -2309,8 +2333,8 @@ body:has(.testing-mode-indicator) .main-container {
         align-items: center;
         justify-content: center;
         flex-shrink: 0;
-        width: 32px;
-        height: 32px;
+        width: 140px;
+        height: 44px;
         background-color: white;
         border-radius: 6px;
         padding: 2px;
@@ -2398,8 +2422,8 @@ body:has(.testing-mode-indicator) .main-container {
     }
     
     .banner-icon {
-        width: 32px;
-        height: 32px;
+        width: 140px;
+        height: 44px;
         flex-shrink: 0;
         display: flex;
         align-items: center;
@@ -2412,15 +2436,10 @@ body:has(.testing-mode-indicator) .main-container {
     }
     
     .banner-logo-img {
-        width: 100%;
-        height: 100%;
+        width: 140px;
+        height: 44px;
         object-fit: contain;
-    }
-    
-    .banner-logo-img {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
+        max-width: 100%;
     }
     
     .banner-text {
@@ -2767,13 +2786,15 @@ body:has(.testing-mode-indicator) .main-container {
     }
     
     .banner-icon {
-        width: 50px;
-        height: 50px;
+        width: 140px;
+        height: 44px;
     }
     
     .banner-logo-img {
-        width: 50px;
-        height: 50px;
+        width: 140px;
+        height: 44px;
+        object-fit: contain;
+        max-width: 100%;
     }
     
     .banner-text h1 {
@@ -3018,14 +3039,16 @@ body:has(.testing-mode-indicator) .main-container {
     }
     
     .banner-icon {
-        width: 38px;
-        height: 38px;
+        width: 140px;
+        height: 44px;
         flex-shrink: 0;
     }
     
     .banner-logo-img {
-        width: 38px;
-        height: 38px;
+        width: 140px;
+        height: 44px;
+        object-fit: contain;
+        max-width: 100%;
     }
     
     .banner-text {
@@ -3719,14 +3742,16 @@ body:has(.testing-mode-indicator) .main-container {
     }
     
     .banner-icon {
-        width: 30px;
-        height: 30px;
+        width: 140px;
+        height: 44px;
         flex-shrink: 0;
     }
     
     .banner-logo-img {
-        width: 30px;
-        height: 30px;
+        width: 140px;
+        height: 44px;
+        object-fit: contain;
+        max-width: 100%;
     }
     
     .banner-text {

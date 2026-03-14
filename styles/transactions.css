@@ -91,9 +91,10 @@ body {
 }
 
 .logo-image {
-    width: 40px;
-    height: 40px;
-    border-radius: 8px;
+    width: 140px;
+    height: 44px;
+    object-fit: contain;
+    max-width: 100%;
 }
 
 .logo-text {
