@@ -488,7 +488,7 @@ body:has(.testing-mode-indicator) .main-container {
 
 .banner-content {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
     position: relative;
     z-index: 2;
@@ -498,10 +498,12 @@ body:has(.testing-mode-indicator) .main-container {
 .banner-left {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
     width: 55%;
-    padding-left: 10px;
+    padding-left: 0;
     flex-shrink: 0;
+    margin: 0 auto;
 }
 
 .banner-right {
@@ -544,8 +546,8 @@ body:has(.testing-mode-indicator) .main-container {
 .banner-icon {
     font-size: 24px;
     opacity: 0.9;
-    width: 140px;
-    height: 44px;
+    width: 30px;
+    height: 30px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -553,10 +555,10 @@ body:has(.testing-mode-indicator) .main-container {
 }
 
 .banner-logo-img {
-    width: 140px;
-    height: 44px;
+    width: 100%;
+    height: 100%;
     object-fit: contain;
-    max-width: 100%;
+    border-radius: 8px;
 }
 
 .banner-text {
@@ -565,6 +567,9 @@ body:has(.testing-mode-indicator) .main-container {
     display: flex;
     flex-direction: column;
     gap: 2px;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
 }
 
 .banner-text h1 {
@@ -572,6 +577,7 @@ body:has(.testing-mode-indicator) .main-container {
     font-weight: bold;
     margin-bottom: 0px;
     line-height: 1.2;
+    text-align: center;
 }
 
 .banner-text h2 {
@@ -579,6 +585,7 @@ body:has(.testing-mode-indicator) .main-container {
     font-weight: 500;
     margin-bottom: 0px;
     line-height: 1.2;
+    text-align: center;
 }
 
 .banner-text p {
@@ -586,6 +593,7 @@ body:has(.testing-mode-indicator) .main-container {
     opacity: 0.95;
     line-height: 1.2;
     margin-top: 0;
+    text-align: center;
 }
 
 
@@ -2061,22 +2069,11 @@ body:has(.testing-mode-indicator) .main-container {
     
     /* Logo responsive styles for very small phones */
     .logo-image {
-        width: 110px;
-        height: 35px;
+        width: 115px;
+        height: 36px;
         max-width: 100%;
         object-fit: contain;
-    }
-    
-    .banner-logo-img {
-        width: 110px;
-        height: 35px;
-        max-width: 100%;
-        object-fit: contain;
-    }
-    
-    .banner-icon {
-        width: 110px;
-        height: 35px;
+        min-width: 90px;
     }
     
     .logo-text {
@@ -2114,22 +2111,11 @@ body:has(.testing-mode-indicator) .main-container {
 /* Extra small phones */
 @media (max-width: 280px) {
     .logo-image {
-        width: 100px;
-        height: 32px;
+        width: 105px;
+        height: 33px;
         max-width: 100%;
         object-fit: contain;
-    }
-    
-    .banner-logo-img {
-        width: 100px;
-        height: 32px;
-        max-width: 100%;
-        object-fit: contain;
-    }
-    
-    .banner-icon {
-        width: 100px;
-        height: 32px;
+        min-width: 85px;
     }
     
     .logo-text {
@@ -2223,6 +2209,14 @@ body:has(.testing-mode-indicator) .main-container {
         margin-bottom: 8px;
     }
     
+    .header-left {
+        gap: 8px;
+    }
+    
+    .logo {
+        gap: 8px;
+    }
+    
     .header-bottom {
         flex-direction: row;
         gap: 5px;
@@ -2277,10 +2271,11 @@ body:has(.testing-mode-indicator) .main-container {
     }
     
     .logo-image {
-        width: 140px;
-        height: 44px;
+        width: 130px;
+        height: 41px;
         max-width: 100%;
         object-fit: contain;
+        min-width: 100px;
     }
     
     .main-container {
@@ -2300,10 +2295,11 @@ body:has(.testing-mode-indicator) .main-container {
     
     .banner-content {
         flex-direction: row;
-        text-align: left;
+        text-align: center;
         gap: 0;
         height: 100%;
-        align-items: flex-end;
+        align-items: center;
+        justify-content: center;
         position: relative;
         width: 100%;
     }
@@ -2315,8 +2311,9 @@ body:has(.testing-mode-indicator) .main-container {
         text-align: center;
         padding-left: 0;
         padding-right: 0;
-        padding-bottom: 8px;
+        padding-bottom: 0;
         flex-direction: row;
+        margin: 0 auto;
         gap: 16px;
         order: 1;
         align-items: center;
@@ -2333,8 +2330,8 @@ body:has(.testing-mode-indicator) .main-container {
         align-items: center;
         justify-content: center;
         flex-shrink: 0;
-        width: 140px;
-        height: 44px;
+        width: 32px;
+        height: 32px;
         background-color: white;
         border-radius: 6px;
         padding: 2px;
@@ -2346,11 +2343,12 @@ body:has(.testing-mode-indicator) .main-container {
     .banner-text {
         display: flex;
         flex-direction: column;
-        align-items: flex-start;
+        align-items: center;
         justify-content: center;
         gap: 2px;
         flex: 0 0 auto;
         min-width: 0;
+        text-align: center;
     }
     
     .services-grid {
@@ -2422,8 +2420,8 @@ body:has(.testing-mode-indicator) .main-container {
     }
     
     .banner-icon {
-        width: 140px;
-        height: 44px;
+        width: 32px;
+        height: 32px;
         flex-shrink: 0;
         display: flex;
         align-items: center;
@@ -2436,20 +2434,20 @@ body:has(.testing-mode-indicator) .main-container {
     }
     
     .banner-logo-img {
-        width: 140px;
-        height: 44px;
+        width: 100%;
+        height: 100%;
         object-fit: contain;
-        max-width: 100%;
     }
     
     .banner-text {
         display: flex;
         flex-direction: column;
-        align-items: flex-start;
+        align-items: center;
         justify-content: center;
         gap: 2px;
         flex: 0 0 auto;
         min-width: 0;
+        text-align: center;
     }
     
     .banner-text h1 {
@@ -2459,6 +2457,7 @@ body:has(.testing-mode-indicator) .main-container {
         line-height: 1.2;
         font-weight: 700;
         white-space: nowrap;
+        text-align: center;
     }
     
     .banner-text p {
@@ -2468,6 +2467,7 @@ body:has(.testing-mode-indicator) .main-container {
         line-height: 1.2;
         opacity: 0.95;
         white-space: nowrap;
+        text-align: center;
     }
     
     .brgy-hall-image {
@@ -2576,6 +2576,7 @@ body:has(.testing-mode-indicator) .main-container {
     
     .banner-text h1 {
         font-size: 26px;
+        text-align: center;
     }
     
     .section-container {
@@ -2724,7 +2725,8 @@ body:has(.testing-mode-indicator) .main-container {
         text-align: center;
         gap: 20px;
         height: auto;
-        align-items: flex-end;
+        align-items: center;
+        justify-content: center;
     }
     
     .banner-left {
@@ -2732,11 +2734,11 @@ body:has(.testing-mode-indicator) .main-container {
         justify-content: center;
         text-align: center;
         padding-left: 0;
-        padding-bottom: 10px;
+        padding-bottom: 0;
         flex-direction: column;
         gap: 15px;
-        position: absolute;
-        bottom: 0;
+        position: relative;
+        margin: 0 auto;
         left: 0;
         right: 0;
     }
@@ -2786,23 +2788,23 @@ body:has(.testing-mode-indicator) .main-container {
     }
     
     .banner-icon {
-        width: 140px;
-        height: 44px;
+        width: 50px;
+        height: 50px;
     }
     
     .banner-logo-img {
-        width: 140px;
-        height: 44px;
-        object-fit: contain;
-        max-width: 100%;
+        width: 50px;
+        height: 50px;
     }
     
     .banner-text h1 {
         font-size: 22px;
+        text-align: center;
     }
     
     .banner-text p {
         font-size: 13px;
+        text-align: center;
     }
     
     .brgy-hall-image {
@@ -2991,10 +2993,11 @@ body:has(.testing-mode-indicator) .main-container {
     
     .banner-content {
         flex-direction: row;
-        text-align: left;
+        text-align: center;
         gap: 8px;
         height: 100%;
-        align-items: flex-end;
+        align-items: center;
+        justify-content: center;
         position: relative;
     }
     
@@ -3005,8 +3008,9 @@ body:has(.testing-mode-indicator) .main-container {
         text-align: center;
         padding-left: 0;
         padding-right: 0;
-        padding-bottom: 4px;
+        padding-bottom: 0;
         flex-direction: row;
+        margin: 0 auto;
         gap: 6px;
         order: 1;
         align-items: center;
@@ -3057,6 +3061,9 @@ body:has(.testing-mode-indicator) .main-container {
         display: flex;
         flex-direction: column;
         gap: 3px;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
     }
     
     .banner-text h1 {
@@ -3064,12 +3071,14 @@ body:has(.testing-mode-indicator) .main-container {
         margin-bottom: 0;
         line-height: 1.2;
         font-weight: 700;
+        text-align: center;
     }
     
     .banner-text p {
         font-size: 12px;
         line-height: 1.3;
         opacity: 0.95;
+        text-align: center;
     }
     
     .section-container {
@@ -3682,10 +3691,11 @@ body:has(.testing-mode-indicator) .main-container {
     }
     
     .logo-image {
-        width: 120px;
-        height: 38px;
+        width: 125px;
+        height: 39px;
         max-width: 100%;
         object-fit: contain;
+        min-width: 100px;
     }
     
     .settings-icon {
@@ -3735,10 +3745,12 @@ body:has(.testing-mode-indicator) .main-container {
     
     .banner-left {
         gap: 8px;
-        padding-left: 8px;
-        padding-right: 4px;
+        padding-left: 0;
+        padding-right: 0;
         align-items: center;
+        justify-content: center;
         flex-shrink: 0;
+        margin: 0 auto;
     }
     
     .banner-icon {
@@ -3760,6 +3772,9 @@ body:has(.testing-mode-indicator) .main-container {
         display: flex;
         flex-direction: column;
         gap: 2px;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
     }
     
     .banner-text h1 {
@@ -3767,12 +3782,14 @@ body:has(.testing-mode-indicator) .main-container {
         margin-bottom: 0;
         line-height: 1.2;
         font-weight: 700;
+        text-align: center;
     }
     
     .banner-text p {
         font-size: 10px;
         line-height: 1.2;
         opacity: 0.95;
+        text-align: center;
     }
     
     .banner-right {
@@ -3869,11 +3886,15 @@ body:has(.testing-mode-indicator) .main-container {
     .banner-content {
         flex-direction: row;
         height: 150px;
+        justify-content: center;
+        align-items: center;
     }
     
     .banner-left {
         width: 60%;
-        padding-left: 20px;
+        padding-left: 0;
+        justify-content: center;
+        margin: 0 auto;
     }
     
     .banner-right {
@@ -3885,10 +3906,12 @@ body:has(.testing-mode-indicator) .main-container {
     
     .banner-text h1 {
         font-size: 20px;
+        text-align: center;
     }
     
     .banner-text p {
         font-size: 12px;
+        text-align: center;
     }
 }
 
@@ -3902,11 +3925,15 @@ body:has(.testing-mode-indicator) .main-container {
     .banner-content {
         flex-direction: row;
         height: 150px;
+        justify-content: center;
+        align-items: center;
     }
     
     .banner-left {
         width: 60%;
-        padding-left: 20px;
+        padding-left: 0;
+        justify-content: center;
+        margin: 0 auto;
     }
     
     .banner-right {
@@ -3918,10 +3945,12 @@ body:has(.testing-mode-indicator) .main-container {
     
     .banner-text h1 {
         font-size: 20px;
+        text-align: center;
     }
     
     .banner-text p {
         font-size: 12px;
+        text-align: center;
     }
 }
 
