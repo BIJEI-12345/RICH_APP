@@ -2449,8 +2449,8 @@ async function finalSubmitBarangayId() {
     }
 }
 
-// Helper function to convert file to base64
-function fileToBase64(file) {
+// Helper function to convert file to base64 for form submission (strips prefix)
+function fileToBase64ForSubmission(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
@@ -2915,6 +2915,13 @@ async function finalSubmitCertification() {
     showFullScreenLoading('Submitting your request...');
     
     try {
+        // Handle image upload (optional)
+        let imageData = null;
+        const certIdUpload = document.getElementById('certIdUpload');
+        if (certIdUpload && certIdUpload.files && certIdUpload.files[0]) {
+            imageData = await fileToBase64ForSubmission(certIdUpload.files[0]);
+        }
+        
         // Get user email
         const userEmail = sessionStorage.getItem('user_email') || localStorage.getItem('user_email');
         
@@ -2945,7 +2952,7 @@ async function finalSubmitCertification() {
             // Map Out of School Youth checkbox to 'out_of_school_youth' column ('yes' when checked, null otherwise)
             out_of_school_youth: formData.get('certOutOfSchoolYouth') === 'yes' ? 'yes' : null,
             valid_id: formData.get('certIdType'),
-            id_image: formData.get('certIdUpload') ? await fileToBase64(formData.get('certIdUpload')) : null
+            id_image: imageData
         };
         
         // Submit to API
@@ -3232,6 +3239,13 @@ async function finalSubmitCoe() {
     showFullScreenLoading('Submitting your request...');
     
     try {
+        // Handle image upload (optional)
+        let imageData = null;
+        const coeIdUpload = document.getElementById('coeIdUpload');
+        if (coeIdUpload && coeIdUpload.files && coeIdUpload.files[0]) {
+            imageData = await fileToBase64ForSubmission(coeIdUpload.files[0]);
+        }
+        
         // Get user email
         const userEmail = sessionStorage.getItem('user_email') || localStorage.getItem('user_email');
         
@@ -3251,7 +3265,7 @@ async function finalSubmitCoe() {
             date_started: formData.get('coeDateStarted'),
             monthly_salary: formData.get('coeMonthlySalary') ? formData.get('coeMonthlySalary').replace(/,/g, '') : null,
             valid_id: formData.get('coeIdType'),
-            id_image: formData.get('coeIdUpload') ? await fileToBase64(formData.get('coeIdUpload')) : null
+            id_image: imageData
         };
         
         // Submit to API
@@ -3783,7 +3797,7 @@ async function confirmClearanceSubmission() {
         business_location: formData.get('clearBusinessLocation') || null,
         year_start_residing: formData.get('clearYearResiding') || null,
         valid_id: formData.get('clearIdType'),
-        id_image: formData.get('clearIdUpload') ? await fileToBase64(formData.get('clearIdUpload')) : null
+        id_image: clearIdUpload && clearIdUpload.files && clearIdUpload.files[0] ? await fileToBase64ForSubmission(clearIdUpload.files[0]) : null
     };
 
     try {
