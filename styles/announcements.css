@@ -94,6 +94,7 @@ body {
 .header-left {
     display: flex;
     align-items: center;
+    gap: 12px;
 }
 
 .logo {
@@ -163,6 +164,11 @@ body {
 .header-bottom {
     text-align: center;
     padding-top: 5px;
+}
+
+.page-title {
+    flex: 1;
+    text-align: center;
 }
 
 .page-title h1 {
@@ -423,6 +429,10 @@ body {
     
     .header {
         padding: 12px;
+    }
+    
+    .header-left {
+        gap: 10px;
     }
     
     .logo-image {
@@ -777,7 +787,7 @@ body.detail-view {
 
 .detail-header {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start;
     align-items: center;
     margin-bottom: 0;
     position: sticky;
@@ -787,9 +797,15 @@ body.detail-view {
     max-width: 90%;
     margin-left: auto;
     margin-right: auto;
-    padding: 10px 0;
+    padding: 10px 20px;
     background: rgba(255, 255, 255, 0.98);
     backdrop-filter: blur(10px);
+}
+
+.detail-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
 .detail-back-btn {
@@ -823,7 +839,6 @@ body.detail-view {
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-left: auto;
     position: relative;
 }
 
