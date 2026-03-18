@@ -77,6 +77,9 @@ try {
         $profilePicData = file_get_contents($_FILES['profilePicture']['tmp_name']);
         $updateQuery .= ", profile_pic = :profile_pic";
         $params[':profile_pic'] = $profilePicData;
+    } else if (isset($_POST['removeProfilePic']) && $_POST['removeProfilePic'] === '1') {
+        // Explicit removal request (no new upload) - set DB image to NULL
+        $updateQuery .= ", profile_pic = NULL";
     }
     
     $updateQuery .= " WHERE email = :email";
@@ -85,17 +88,10 @@ try {
     $stmt = $pdo->prepare($updateQuery);
     $stmt->execute($params);
     
-    if ($stmt->rowCount() > 0) {
-        echo json_encode([
-            'success' => true,
-            'message' => 'Profile updated successfully'
-        ]);
-    } else {
-        echo json_encode([
-            'success' => false,
-            'message' => 'No changes were made or user not found'
-        ]);
-    }
+    echo json_encode([
+        'success' => true,
+        'message' => $stmt->rowCount() > 0 ? 'Profile updated successfully' : 'Profile saved (no changes detected)'
+    ]);
     
 } catch (PDOException $e) {
     error_log("Database error: " . $e->getMessage());

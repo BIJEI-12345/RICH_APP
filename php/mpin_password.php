@@ -45,7 +45,8 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     exit;
 }
 
-// Validate MPIN format (6 digits)
+// Validate MPIN format (exactly 6 digits entered by user)
+// NOTE: Ito lang ang alam ng user: 6‑digit numeric MPIN.
 if (!preg_match('/^\d{6}$/', $mpin)) {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'MPIN must be exactly 6 digits']);
@@ -57,7 +58,8 @@ require_once __DIR__ . '/env_loader.php';
 
 // Save MPIN password
 function saveMPINPassword($email, $mpin) {
-    error_log("Starting MPIN save for email: " . $email . " with MPIN: " . $mpin);
+    // Never log raw MPIN for security
+    error_log("Starting MPIN save for email: " . $email);
     
     $pdo = getDBConnection();
     if (!$pdo) {
@@ -83,7 +85,7 @@ function saveMPINPassword($email, $mpin) {
                     civil_status VARCHAR(50) DEFAULT 'Not specified',
                     address TEXT DEFAULT 'Not specified',
                     email_verified TINYINT(1) DEFAULT 0,
-                    mpin_password VARCHAR(6) DEFAULT NULL,
+                    mpin_password VARCHAR(255) DEFAULT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
                 )
@@ -91,12 +93,27 @@ function saveMPINPassword($email, $mpin) {
             
             $pdo->exec($createTable);
             error_log("Table resident_information created successfully");
+        } else {
+            // Ensure mpin_password column is wide enough for password_hash
+            try {
+                $pdo->exec("ALTER TABLE resident_information MODIFY mpin_password VARCHAR(255) NULL");
+            } catch (PDOException $e) {
+                // Ignore if ALTER fails (e.g., already correct); just log for debugging
+                error_log("ALTER TABLE resident_information mpin_password resize skipped/failed: " . $e->getMessage());
+            }
         }
         
         // Always try to create/update user with MPIN
         error_log("Processing MPIN for email: " . $email);
-        
-        // First, try to insert or update using INSERT ... ON DUPLICATE KEY UPDATE
+
+        // Store MPIN as a strong hash (bcrypt via PASSWORD_DEFAULT).
+        // During login we will verify using password_verify().
+        $mpinHash = password_hash($mpin, PASSWORD_DEFAULT);
+        if ($mpinHash === false) {
+            error_log("Failed to hash MPIN for email: " . $email);
+            return ['success' => false, 'message' => 'Failed to hash MPIN'];
+        }
+
         $stmt = $pdo->prepare("
             INSERT INTO resident_information (
                 first_name, last_name, email, age, sex, birthday, 
@@ -108,7 +125,7 @@ function saveMPINPassword($email, $mpin) {
         ");
         
         $result = $stmt->execute([
-            'User', 'User', $email, 21, 'Male', '2000-01-01', 'Single', 'Not specified', 1, $mpin
+            'User', 'User', $email, 21, 'Male', '2000-01-01', 'Single', 'Not specified', 1, $mpinHash
         ]);
         
         if ($result) {

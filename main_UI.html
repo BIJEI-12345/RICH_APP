@@ -297,11 +297,16 @@
                         <label for="profilePicture">Profile Picture</label>
                         <div class="profile-picture-upload">
                             <div class="current-profile-pic" id="currentProfilePic">
-                                <img alt="Current Profile" id="profilePreview" style="display: none;">
-                                <div class="profile-placeholder" id="profilePlaceholder" style="display: none;">
-                                    <i class="fas fa-user"></i>
-                                    <span class="profile-initials-modal" style="display: none;"></span>
+                                <div class="current-profile-pic-inner">
+                                    <img alt="Current Profile" id="profilePreview" style="display: none;">
+                                    <div class="profile-placeholder" id="profilePlaceholder" style="display: none;">
+                                        <i class="fas fa-user"></i>
+                                        <span class="profile-initials-modal" style="display: none;"></span>
+                                    </div>
                                 </div>
+                                <button type="button" class="remove-profile-pic-btn" id="removeProfilePicBtn" onclick="removeProfilePicture()" title="Remove profile picture" style="display: none;">
+                                    <i class="fas fa-times"></i>
+                                </button>
                             </div>
                             <div class="upload-controls">
                                 <input type="file" id="profilePicture" name="profilePicture" accept="image/*" onchange="previewProfileImage(this)">
@@ -339,6 +344,11 @@
                         <label for="userEmail">Email Address</label>
                         <input type="email" id="userEmail" name="userEmail" placeholder="None" readonly>
                     </div>
+
+                    <div class="form-group">
+                        <label for="userAddress">Address</label>
+                        <textarea id="userAddress" name="userAddress" placeholder="None" rows="3" readonly></textarea>
+                    </div>
                     
                     <div class="form-row">
                         <div class="form-group">
@@ -373,8 +383,19 @@
                     </div>
                     
                     <div class="form-group">
-                        <label for="userAddress">Address</label>
-                        <textarea id="userAddress" name="userAddress" placeholder="None" rows="3" readonly></textarea>
+                        <label for="validIdType">Valid ID Type</label>
+                        <input type="text" id="validIdType" name="validIdType" placeholder="None" readonly>
+                    </div>
+
+                    <div class="form-group valid-id-group" id="validIdGroup" style="display: none;">
+                        <label>Uploaded Valid ID</label>
+                        <div class="valid-id-preview">
+                            <img id="validIdImage" alt="Valid ID" style="display: none;">
+                            <div class="valid-id-placeholder" id="validIdPlaceholder" style="display: none;">
+                                <i class="fas fa-id-card"></i>
+                                <span>No uploaded valid ID</span>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="form-actions" id="formActions" style="display: none;">
@@ -382,6 +403,30 @@
                         <button type="submit" class="save-btn">Save Changes</button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Email Change Verification Modal -->
+    <div class="modal-overlay" id="emailChangeModal">
+        <div class="modal-container email-change-modal">
+            <div class="modal-header">
+                <h3>Verify New Email</h3>
+                <div class="header-actions">
+                    <button class="close-btn" type="button" onclick="closeEmailChangeModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="emailChangeCode">Enter 6-digit code</label>
+                    <input type="text" id="emailChangeCode" inputmode="numeric" maxlength="6" placeholder="6-digit code">
+                </div>
+                <div class="form-actions" style="display: flex;">
+                    <button type="button" class="cancel-btn" onclick="cancelEmailChangeVerification()">Cancel</button>
+                    <button type="button" class="save-btn" onclick="submitEmailChangeCode()">Verify & Save</button>
+                </div>
             </div>
         </div>
     </div>
@@ -551,6 +596,8 @@
     </div>
     <!-- End Main Mobile Container -->
 
+    <!-- Shared helpers (includes full-screen loading circle) -->
+    <script src="js/request.js?v=20251004113000"></script>
     <script src="js/main_UI.js?v=20251004113000"></script>
 </body>
 </html> 

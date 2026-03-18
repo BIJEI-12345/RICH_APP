@@ -443,7 +443,10 @@ function initializeMPINLogin() {
                 window.location.href = 'main_UI.html';
             } else {
                 // Show message box for error
-                showMessageBox('Invalid MPIN', 'The MPIN you entered is incorrect. Please try again.', 'error');
+                const serverMessage = (data && typeof data.message === 'string' && data.message.trim())
+                    ? data.message.trim()
+                    : 'The MPIN you entered is incorrect. Please try again.';
+                showMessageBox('Login Failed', serverMessage, 'error');
                 clearMPIN();
             }
         })
@@ -619,6 +622,7 @@ function initializeMPINLogin() {
             border-radius: 15px;
             max-width: 400px;
             width: 90%;
+            min-height: 160px;
             max-height: 80vh;
             overflow-y: auto;
             transform: scale(0.9);

@@ -488,7 +488,7 @@ body:has(.testing-mode-indicator) .main-container {
 
 .banner-content {
     display: flex;
-    justify-content: center;
+    justify-content: center;  /* center horizontally */
     align-items: center;
     position: relative;
     z-index: 2;
@@ -498,22 +498,22 @@ body:has(.testing-mode-indicator) .main-container {
 .banner-left {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 6px;
-    width: 55%;
+    justify-content: center;  /* icon + text side‑by‑side centered */
+    gap: 10px;
+    width: auto;
     padding-left: 0;
+    padding-right: 0;
+    margin: 0 auto;          /* center block inside banner */
     flex-shrink: 0;
-    margin: 0 auto;
 }
 
 .banner-right {
-    width: 45%;
+    width: 40%;
     height: 100%;
     overflow: hidden;
     border-top-right-radius: 15px;
     border-bottom-right-radius: 15px;
-    position: absolute;
-    top: 0;
+    position: relative;   /* sumali sa flex layout para balanced */
     right: 0;
 }
 
@@ -558,11 +558,14 @@ body:has(.testing-mode-indicator) .main-container {
     width: 100%;
     height: 100%;
     object-fit: contain;
+    object-position: left center;
+    margin-left: -6px;
     border-radius: 8px;
 }
 
 .banner-text {
-    flex: 1;
+    flex: 0 0 auto;
+    margin-left: 2px;
     min-width: 0;
     display: flex;
     flex-direction: column;
@@ -1265,6 +1268,9 @@ body:has(.testing-mode-indicator) .main-container {
     align-items: center;
     z-index: 2000;
     backdrop-filter: blur(5px);
+    /* Prevent scroll chaining / overscroll to page */
+    overscroll-behavior: none;
+    touch-action: none;
 }
 
 .modal-overlay.active {
@@ -1282,6 +1288,7 @@ body:has(.testing-mode-indicator) .main-container {
     position: relative;
     display: flex;
     flex-direction: column;
+    overscroll-behavior: contain;
 }
 
 @keyframes modalSlideIn {
@@ -1369,11 +1376,22 @@ body:has(.testing-mode-indicator) .main-container {
 
 .modal-body {
     padding: 25px;
+    padding-bottom: 40px; /* ensure bottom space inside scroll */
     overflow-y: auto;
     flex: 1;
     /* Hide scrollbar for WebKit browsers (Chrome, Safari, Edge) */
     scrollbar-width: none; /* Firefox */
     -ms-overflow-style: none; /* Internet Explorer 10+ */
+    /* Smooth touch scrolling and prevent overscroll "rubber band" */
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: none;
+    touch-action: pan-y;
+}
+
+.modal-body::after {
+    content: '';
+    display: block;
+    height: 24px; /* extra space at the very bottom */
 }
 
 .modal-body::-webkit-scrollbar {
@@ -1536,16 +1554,93 @@ body:has(.testing-mode-indicator) .main-container {
     position: relative;
     width: 120px;
     height: 120px;
+    overflow: visible; /* allow X button to sit outside circle */
+}
+
+.current-profile-pic-inner {
+    width: 100%;
+    height: 100%;
     border-radius: 50%;
     overflow: hidden;
     border: 4px solid #e0e0e0;
     background-color: #f8f9fa;
+    position: relative;
 }
 
-.current-profile-pic img {
+.current-profile-pic-inner img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+}
+
+.remove-profile-pic-btn {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    border: none;
+    background: rgba(0, 0, 0, 0.55);
+    color: #ffffff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3;
+    transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.remove-profile-pic-btn:hover {
+    background: rgba(0, 0, 0, 0.7);
+    transform: scale(1.05);
+}
+
+.remove-profile-pic-btn:active {
+    transform: scale(0.95);
+}
+
+.remove-profile-pic-btn i {
+    font-size: 14px;
+    line-height: 1;
+}
+
+/* Valid ID preview inside View Profile modal */
+.valid-id-group .valid-id-preview {
+    width: 100%;
+    border: 2px dashed #e0e0e0;
+    border-radius: 12px;
+    background: #fafafa;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 140px;
+}
+
+.valid-id-group .valid-id-preview img {
+    max-width: 100%;
+    max-height: 240px;
+    border-radius: 10px;
+    object-fit: contain;
+    background: #ffffff;
+}
+
+.valid-id-placeholder {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+    color: #6b7280;
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-align: center;
+}
+
+.valid-id-placeholder i {
+    font-size: 26px;
+    color: #9ca3af;
 }
 
 .profile-placeholder {
@@ -1645,6 +1740,9 @@ body:has(.testing-mode-indicator) .main-container {
 }
 
 .save-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
 }
@@ -1664,16 +1762,16 @@ body:has(.testing-mode-indicator) .main-container {
 /* Responsive Design for Modals */
 @media screen and (min-width: 300px) and (max-width: 574px) {
     .modal-overlay {
-        padding: 10px;
+        padding: 10px 10px 18px;
         align-items: flex-start;
-        overflow-y: auto;
+        overflow: hidden; /* prevent outer scrollbar */
     }
     
     .modal-container {
         width: 95%;
         max-width: 95%;
-        margin: 10px auto;
-        max-height: calc(100vh - 20px);
+        margin: 10px auto 18px;
+        max-height: calc(100vh - 56px); /* leave visible space bottom outside */
     }
     
     .modal-header {
@@ -1687,7 +1785,7 @@ body:has(.testing-mode-indicator) .main-container {
     }
     
     .modal-body {
-        padding: 18px 15px;
+        padding: 18px 15px 34px;
     }
     
     .form-row {
@@ -1774,16 +1872,16 @@ body:has(.testing-mode-indicator) .main-container {
 
 @media screen and (min-width: 575px) and (max-width: 767px) {
     .modal-overlay {
-        padding: 10px;
+        padding: 10px 10px 18px;
         align-items: flex-start;
-        overflow-y: auto;
+        overflow: hidden; /* prevent outer scrollbar */
     }
     
     .modal-container {
         width: 95%;
         max-width: 95%;
-        margin: 10px auto;
-        max-height: calc(100vh - 20px);
+        margin: 10px auto 18px;
+        max-height: calc(100vh - 56px); /* leave visible space bottom outside */
     }
     
     .modal-header {
@@ -1797,7 +1895,7 @@ body:has(.testing-mode-indicator) .main-container {
     }
     
     .modal-body {
-        padding: 18px 15px;
+        padding: 18px 15px 34px;
     }
     
     .form-row {
@@ -1891,21 +1989,12 @@ body:has(.testing-mode-indicator) .main-container {
 
 .save-btn.loading {
     position: relative;
-    color: transparent;
+    /* Keep label visible; main loading is the full-screen circle */
+    opacity: 0.9;
 }
 
 .save-btn.loading::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 20px;
-    height: 20px;
-    border: 2px solid transparent;
-    border-top: 2px solid white;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
+    content: none;
 }
 
 @keyframes spin {
@@ -2247,14 +2336,21 @@ body:has(.testing-mode-indicator) .main-container {
     }
     
     .barangay-logo, .bagong-pilipinas-logo {
-        height: 28px;
-        max-width: 45px;
+        height: 20px;
+        width: auto;
+        max-width: 36px;
         object-fit: contain;
         display: block;
+        flex-shrink: 0;
     }
     
     .user-info h2 {
         font-size: 20px;
+        line-height: 1.2;
+        max-width: 60%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
     
     .profile-picture {
@@ -2685,16 +2781,18 @@ body:has(.testing-mode-indicator) .main-container {
     }
     
     .barangay-logo, .bagong-pilipinas-logo {
-        height: 30px;
+        height: 24px;
         width: auto;
-        max-width: 48px;
+        max-width: 40px;
         object-fit: contain;
         display: block;
+        flex-shrink: 0;
     }
     
     .user-info h2 {
         font-size: 16px;
         line-height: 1.2;
+        max-width: 60%;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -3011,14 +3109,14 @@ body:has(.testing-mode-indicator) .main-container {
         padding-bottom: 0;
         flex-direction: row;
         margin: 0 auto;
-        gap: 6px;
+        gap: 10px; /* maliit na pagitan ng logo at text */
         order: 1;
         align-items: center;
         flex-shrink: 0;
-        position: absolute;
-        bottom: 2px;
-        left: 50%;
-        transform: translateX(-50%);
+        position: static;   /* i-center na lang, hindi naka-absolute sa ibaba */
+        bottom: auto;
+        left: auto;
+        transform: none;
         z-index: 10;
     }
     
@@ -3879,13 +3977,13 @@ body:has(.testing-mode-indicator) .main-container {
 @media screen and (min-width: 300px) and (max-width: 574px) and (orientation: landscape) {
     .portal-banner {
         height: auto;
-        min-height: 150px;
-        padding: 15px 0;
+        min-height: 90px;
+        padding: 0;
     }
     
     .banner-content {
         flex-direction: row;
-        height: 150px;
+        height: auto;
         justify-content: center;
         align-items: center;
     }
@@ -3899,7 +3997,7 @@ body:has(.testing-mode-indicator) .main-container {
     
     .banner-right {
         width: 40%;
-        height: 150px;
+        height: 100%;
         position: relative;
         order: 2;
     }
@@ -3918,13 +4016,13 @@ body:has(.testing-mode-indicator) .main-container {
 @media screen and (min-width: 575px) and (max-width: 767px) and (orientation: landscape) {
     .portal-banner {
         height: auto;
-        min-height: 150px;
-        padding: 15px 0;
+        min-height: 90px;
+        padding: 0;
     }
     
     .banner-content {
         flex-direction: row;
-        height: 150px;
+        height: auto;
         justify-content: center;
         align-items: center;
     }
@@ -3938,7 +4036,7 @@ body:has(.testing-mode-indicator) .main-container {
     
     .banner-right {
         width: 40%;
-        height: 150px;
+        height: 100%;
         position: relative;
         order: 2;
     }
@@ -4032,7 +4130,7 @@ body:has(.testing-mode-indicator) .main-container {
 
 @media screen and (min-width: 575px) and (max-width: 767px) {
     .service-item {
-        min-height: 100px;
+        min-height: 0;
     }
     
     .settings-icon,
@@ -4390,6 +4488,101 @@ html {
     box-shadow: none !important;
 }
 
+/* Ensure SweetAlert2 overlays app modals */
+.swal2-container {
+    z-index: 4000 !important;
+}
+
+/* SweetAlert2 Toast: keep icon/checkmark properly sized */
+.swal2-popup.swal2-toast {
+    width: auto !important;
+    max-width: min(92vw, 420px) !important;
+    padding: 0.65rem 0.9rem !important;
+    align-items: center !important;
+}
+
+.swal2-popup.swal2-toast .swal2-title {
+    margin: 0 !important;
+    font-size: 1rem !important;
+    line-height: 1.2 !important;
+    text-align: center !important;
+}
+
+.swal2-popup.swal2-toast .swal2-html-container,
+.swal2-popup.swal2-toast .swal2-content {
+    margin: 0.25rem 0 0 0 !important;
+    font-size: 0.9rem !important;
+    line-height: 1.2 !important;
+    text-align: center !important;
+}
+
+/* Email change OTP modal sizing */
+.email-change-modal {
+    width: 90%;
+    max-width: 420px;
+    max-height: 90vh;
+}
+
+/* Center OTP input text and placeholder */
+#emailChangeCode {
+    text-align: center;
+    letter-spacing: 3px;
+}
+
+#emailChangeCode::placeholder {
+    text-align: center;
+}
+
+
+.swal2-popup.swal2-toast .swal2-icon {
+    width: 1.6em !important;
+    height: 1.6em !important;
+    margin: 0 0.6em 0 0 !important;
+}
+
+.swal2-popup.swal2-toast .swal2-icon .swal2-icon-content {
+    font-size: 1em !important;
+    line-height: 1.6em !important;
+}
+
+/* Success icon internal lines scale better in toast mode */
+.swal2-popup.swal2-toast .swal2-success-ring {
+    border-width: 0.2em !important;
+}
+
+.swal2-popup.swal2-toast .swal2-success-line-tip,
+.swal2-popup.swal2-toast .swal2-success-line-long {
+    height: 0.2em !important;
+}
+
+/* Use Font Awesome check icon instead of drawn success check */
+.swal2-icon.swal2-icon--fa-check {
+    color: #22c55e !important;
+    background: #ffffff !important;
+    border: 4px solid #22c55e !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+}
+
+.swal2-popup.swal2-toast .swal2-icon.swal2-icon--fa-check {
+    width: 56px !important;
+    height: 56px !important;
+    margin: 0 0.6em 0 0.25em !important; /* slight shift to the right */
+}
+
+.swal2-icon.swal2-icon--fa-check i {
+    font-size: 3.8rem;
+    line-height: 1;
+    display: block;
+}
+
+.swal2-popup.swal2-toast .swal2-icon.swal2-icon--fa-check i {
+    font-size: 2.8rem;
+}
+
 /* Remove box shadow on focus as well */
 .swal2-popup .swal2-confirm.swal2-styled:focus {
     box-shadow: none !important;
@@ -4418,7 +4611,7 @@ html {
 
 /* SweetAlert2 Mobile Responsive Styles */
 @media screen and (max-width: 768px) {
-    .swal2-popup {
+    .swal2-popup:not(.swal2-toast) {
         width: 90% !important;
         max-width: 90% !important;
         padding: 1.5rem 1rem !important;
@@ -4440,7 +4633,7 @@ html {
         padding: 0 0.5rem !important;
     }
     
-    .swal2-icon {
+    .swal2-popup:not(.swal2-toast) .swal2-icon {
         width: 60px !important;
         height: 60px !important;
         margin: 0 auto 1rem auto !important;
@@ -4450,7 +4643,7 @@ html {
         border-width: 3px !important;
     }
     
-    .swal2-icon .swal2-icon-content {
+    .swal2-popup:not(.swal2-toast) .swal2-icon .swal2-icon-content {
         font-size: 2rem !important;
         line-height: 60px !important;
     }
@@ -4489,7 +4682,7 @@ html {
 }
 
 @media screen and (max-width: 480px) {
-    .swal2-popup {
+    .swal2-popup:not(.swal2-toast) {
         width: 95% !important;
         max-width: 95% !important;
         padding: 1.25rem 0.875rem !important;
@@ -4508,13 +4701,13 @@ html {
         padding: 0 0.25rem !important;
     }
     
-    .swal2-icon {
+    .swal2-popup:not(.swal2-toast) .swal2-icon {
         width: 50px !important;
         height: 50px !important;
         margin: 0 auto 0.75rem auto !important;
     }
     
-    .swal2-icon .swal2-icon-content {
+    .swal2-popup:not(.swal2-toast) .swal2-icon .swal2-icon-content {
         font-size: 1.75rem !important;
         line-height: 50px !important;
     }
@@ -4546,12 +4739,12 @@ html {
 
 /* Landscape mobile orientation */
 @media screen and (max-width: 768px) and (orientation: landscape) {
-    .swal2-popup {
+    .swal2-popup:not(.swal2-toast) {
         max-height: 90vh !important;
         overflow-y: auto !important;
     }
     
-    .swal2-icon {
+    .swal2-popup:not(.swal2-toast) .swal2-icon {
         width: 50px !important;
         height: 50px !important;
         margin: 0 auto 0.75rem auto !important;

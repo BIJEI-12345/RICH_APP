@@ -48,6 +48,15 @@ function resetMpinPassword($email, $mpin) {
     if (!$pdo) {
         return ['success' => false, 'message' => 'Database connection failed'];
     }
+
+    // Ensure mpin_password column is wide enough for password_hash().
+    // Without this, the hash may get truncated and login will always fail.
+    try {
+        $pdo->exec("ALTER TABLE resident_information MODIFY mpin_password VARCHAR(255) NULL");
+    } catch (PDOException $e) {
+        // Best-effort: continue even if ALTER fails (e.g. already correct).
+        error_log("MPIN reset: resize mpin_password skipped/failed: " . $e->getMessage());
+    }
     
     try {
         // Check if email exists and is verified
@@ -59,6 +68,12 @@ function resetMpinPassword($email, $mpin) {
             return ['success' => false, 'message' => 'User not found or email not verified'];
         }
         
+        // Store MPIN as a strong hash (bcrypt via PASSWORD_DEFAULT).
+        $mpinHash = password_hash($mpin, PASSWORD_DEFAULT);
+        if ($mpinHash === false) {
+            return ['success' => false, 'message' => 'Failed to hash MPIN'];
+        }
+
         // Update MPIN password
         $stmt = $pdo->prepare("
             UPDATE resident_information 
@@ -66,7 +81,7 @@ function resetMpinPassword($email, $mpin) {
             WHERE email = ? AND email_verified = 1
         ");
         
-        $result = $stmt->execute([$mpin, $email]);
+        $result = $stmt->execute([$mpinHash, $email]);
         
         if ($result) {
             error_log("MPIN reset successfully for email: " . $email);

@@ -127,16 +127,10 @@ function computeOriginalSetWidth() {
     if (!track) return;
     const totalChildren = track.children.length;
     originalItemsCount = Math.floor(totalChildren / 2);
-    if (originalItemsCount > 1) {
-        // Measure distance from first to second to get step width
-        const itemA = track.querySelector('.directory-item');
-        const itemB = itemA && itemA.nextElementSibling;
-        if (itemA && itemB) {
-            const rectA = itemA.getBoundingClientRect();
-            const rectB = itemB.getBoundingClientRect();
-            const step = Math.round(rectB.left - rectA.left) || Math.round(rectA.width);
-            originalSetWidthPx = step * originalItemsCount;
-        }
+    if (originalItemsCount > 0) {
+        // Use scrollWidth to get the exact pixel width of the original set
+        // (track contains original set + cloned set, so divide by 2)
+        originalSetWidthPx = track.scrollWidth / 2;
     }
 }
 
@@ -353,30 +347,87 @@ function applyTransform() {
 // Smoothly move by exactly one card (left/right)
 function moveOneItem(direction) {
     if (!itemStepPx || !originalSetWidthPx) return;
-    stopInfiniteScroll();
-    // Normalize position to avoid accumulating rounding error
-    if (originalSetWidthPx > 0) {
-        scrollPositionPx = ((scrollPositionPx % originalSetWidthPx) + originalSetWidthPx) % originalSetWidthPx;
-    }
-    scrollPositionPx += direction * itemStepPx;
-    // Wrap around
-    if (originalSetWidthPx > 0) {
-        scrollPositionPx = ((scrollPositionPx % originalSetWidthPx) + originalSetWidthPx) % originalSetWidthPx;
-    }
     const track = document.getElementById('carouselTrack');
-    if (track) {
-        track.style.transition = 'transform 350ms ease-in-out';
-        track.style.transform = `translateX(${-scrollPositionPx}px)`;
-        const onEnd = () => {
-            track.removeEventListener('transitionend', onEnd);
-            // Remove transition to resume smooth RAF scrolling
-            track.style.transition = 'none';
-            startInfiniteScroll();
-        };
-        track.addEventListener('transitionend', onEnd);
-    } else {
+    const wrapper = document.querySelector('.carousel-wrapper');
+    if (!track || !wrapper) {
         startInfiniteScroll();
+        return;
     }
+
+    stopInfiniteScroll();
+
+    const items = Array.from(track.querySelectorAll('.directory-item'));
+    if (!items.length) {
+        startInfiniteScroll();
+        return;
+    }
+
+    const wrapperRect = wrapper.getBoundingClientRect();
+    const wrapperCenterX = (wrapperRect.left + wrapperRect.right) / 2;
+
+    // Find item currently closest to center
+    let currentIndex = 0;
+    let minDist = Infinity;
+    items.forEach((item, index) => {
+        const rect = item.getBoundingClientRect();
+        const centerX = (rect.left + rect.right) / 2;
+        const dist = Math.abs(centerX - wrapperCenterX);
+        if (dist < minDist) {
+            minDist = dist;
+            currentIndex = index;
+        }
+    });
+
+    // Target item is previous or next relative to the centered one
+    const itemCount = items.length;
+    const targetIndex = (currentIndex + direction + itemCount) % itemCount;
+    const targetRect = items[targetIndex].getBoundingClientRect();
+    const targetCenterX = (targetRect.left + targetRect.right) / 2;
+
+    // Read current translateX from computed style
+    const style = window.getComputedStyle(track);
+    let currentTranslateX = 0;
+    if (style.transform && style.transform !== 'none') {
+        try {
+            const matrix = new DOMMatrix(style.transform);
+            currentTranslateX = matrix.m41;
+        } catch (e) {
+            // Fallback: use internal scrollPositionPx if parsing fails
+            currentTranslateX = -scrollPositionPx;
+        }
+    } else {
+        currentTranslateX = -scrollPositionPx;
+    }
+
+    // Compute final translateX that will center the target item in the wrapper
+    const finalTranslateX = currentTranslateX + (wrapperCenterX - targetCenterX);
+
+    track.style.transition = 'transform 350ms ease-in-out';
+    track.style.transform = `translateX(${finalTranslateX}px)`;
+
+    const onEnd = () => {
+        track.removeEventListener('transitionend', onEnd);
+
+        // Update scrollPositionPx based on final transform, then normalize into loop range
+        let effectiveTranslateX = finalTranslateX;
+        if (originalSetWidthPx > 0) {
+            // scrollPositionPx is always positive distance scrolled to the left
+            scrollPositionPx = ((-effectiveTranslateX % originalSetWidthPx) + originalSetWidthPx) % originalSetWidthPx;
+        } else {
+            scrollPositionPx = -effectiveTranslateX;
+        }
+
+        // Snap instantly to normalized position (no visible jump because content is duplicated)
+        track.style.transition = 'none';
+        track.style.transform = `translateX(${-scrollPositionPx}px)`;
+
+        // Resume smooth infinite scroll AFTER a 2-second pause
+        setTimeout(() => {
+            startInfiniteScroll();
+        }, 2000);
+    };
+
+    track.addEventListener('transitionend', onEnd);
 }
 
 // Function to copy text to clipboard

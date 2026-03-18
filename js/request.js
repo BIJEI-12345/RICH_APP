@@ -1144,26 +1144,9 @@ function clearFieldErrorFromEvent(e) {
 
 // Show full-screen loading overlay
 function showFullScreenLoading(message = 'Submitting...') {
-    // Remove existing overlay if any
-    const existing = document.getElementById('fullscreen-loading-overlay');
-    if (existing) {
-        existing.remove();
-    }
-    
-    const overlay = document.createElement('div');
-    overlay.id = 'fullscreen-loading-overlay';
-    overlay.className = 'fullscreen-loading';
-    overlay.innerHTML = `
-        <div class="loading-content">
-            <div class="rotating-circle">
-                <img src="Images/cricle-removebg.png" alt="Loading Circle" class="circle-image">
-            </div>
-            <div class="loading-label">Loading Please Wait...</div>
-        </div>
-    `;
-    
-    document.body.appendChild(overlay);
-    document.body.style.overflow = 'hidden'; // Prevent scrolling
+    // Disabled full-screen loading overlay per design request
+    // Keep function for compatibility but do nothing.
+    return;
 }
 
 // Hide full-screen loading overlay
@@ -1172,7 +1155,10 @@ function hideFullScreenLoading() {
     if (overlay) {
         overlay.remove();
     }
-    document.body.style.overflow = ''; // Restore scrolling
+    // Only restore body overflow if we changed it
+    if (document.body.style.overflow === 'hidden') {
+        document.body.style.overflow = '';
+    }
 }
 
 // Set form loading state

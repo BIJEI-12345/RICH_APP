@@ -3,6 +3,9 @@
 // Global variables
 let currentUser = null;
 let editMode = false;
+let removeProfilePicPending = false;
+let pendingProfileSaveFormData = null;
+let pendingProfileNewEmail = null;
 const CENSUS_REMIND_LATER_MINUTES = 2; // How long to hide the census reminder after "Remind Me Later" is clicked
 let censusReminderTimeoutId = null;
 
@@ -1001,6 +1004,9 @@ async function loadUserDataForEditProfile() {
         
         if (data.success && data.user) {
             const user = data.user;
+            // Keep currentUser in sync for UI actions (e.g., remove profile picture)
+            currentUser = user;
+            removeProfilePicPending = false;
             
             // Check if elements exist before trying to set values
             const firstNameEl = document.getElementById('firstName');
@@ -1008,6 +1014,7 @@ async function loadUserDataForEditProfile() {
             const lastNameEl = document.getElementById('lastName');
             const suffixEl = document.getElementById('suffix');
             const userEmailEl = document.getElementById('userEmail');
+            const validIdTypeEl = document.getElementById('validIdType');
             const ageEl = document.getElementById('age');
             const sexEl = document.getElementById('sex');
             const birthdayEl = document.getElementById('birthday');
@@ -1019,11 +1026,33 @@ async function loadUserDataForEditProfile() {
             if (lastNameEl) lastNameEl.value = user.last_name || '';
             if (suffixEl) suffixEl.value = user.suffix || '';
             if (userEmailEl) userEmailEl.value = user.email || '';
-            if (ageEl) ageEl.value = user.age || '';
+            if (validIdTypeEl) validIdTypeEl.value = user.valid_id || '';
+            if (ageEl) {
+                // Recalculate age from birthday so it stays correct over years
+                const computedAge = calculateAgeFromBirthday(user.birthday);
+                ageEl.value = computedAge !== '' ? computedAge : (user.age || '');
+            }
             if (sexEl) sexEl.value = user.sex || '';
             if (birthdayEl) birthdayEl.value = user.birthday || '';
             if (civilStatusEl) civilStatusEl.value = user.civil_status || '';
             if (userAddressEl) userAddressEl.value = user.address || '';
+
+            // Render uploaded valid ID image (from create account)
+            const validIdGroup = document.getElementById('validIdGroup');
+            const validIdImage = document.getElementById('validIdImage');
+            const validIdPlaceholder = document.getElementById('validIdPlaceholder');
+            if (validIdGroup && validIdImage && validIdPlaceholder) {
+                validIdGroup.style.display = 'block';
+                if (user.id_image) {
+                    validIdImage.src = 'data:image/jpeg;base64,' + user.id_image;
+                    validIdImage.style.display = 'block';
+                    validIdPlaceholder.style.display = 'none';
+                } else {
+                    validIdImage.removeAttribute('src');
+                    validIdImage.style.display = 'none';
+                    validIdPlaceholder.style.display = 'flex';
+                }
+            }
             
             // Ensure inputs are in view mode
             disableInputs();
@@ -1060,6 +1089,9 @@ async function loadUserDataForEditProfile() {
                     }
                 }
             }
+
+            updateRemoveProfilePicButtonVisibility();
+            updateProfilePhotoControlsVisibility();
             
             console.log('User data loaded successfully');
         } else {
@@ -1107,6 +1139,8 @@ function toggleEditMode() {
         
         // Enable all inputs except email
         enableInputs();
+        updateRemoveProfilePicButtonVisibility();
+        updateProfilePhotoControlsVisibility();
     } else {
         // Exit edit mode
         exitEditMode();
@@ -1127,11 +1161,13 @@ function exitEditMode() {
     
     // Disable all inputs except email (keep readonly)
     disableInputs();
+    updateRemoveProfilePicButtonVisibility();
+    updateProfilePhotoControlsVisibility();
 }
 
 // Enable inputs for editing
 function enableInputs() {
-    const inputs = ['firstName', 'middleName', 'lastName', 'suffix', 'age', 'birthday', 'userAddress'];
+    const inputs = ['firstName', 'middleName', 'lastName', 'suffix', 'userEmail', 'age', 'birthday', 'userAddress'];
     const selects = ['sex', 'civilStatus'];
     
     inputs.forEach(id => {
@@ -1166,7 +1202,7 @@ function enableInputs() {
 
 // Disable inputs (view mode)
 function disableInputs() {
-    const inputs = ['firstName', 'middleName', 'lastName', 'suffix', 'age', 'birthday', 'userAddress'];
+    const inputs = ['firstName', 'middleName', 'lastName', 'suffix', 'userEmail', 'age', 'birthday', 'userAddress'];
     const selects = ['sex', 'civilStatus'];
     
     inputs.forEach(id => {
@@ -1190,6 +1226,95 @@ function disableInputs() {
     });
 }
 
+function normalizeEmail(value) {
+    return (value || '').trim().toLowerCase();
+}
+
+function calculateAgeFromBirthday(birthdayStr) {
+    if (!birthdayStr) return '';
+    const birthDate = new Date(birthdayStr);
+    if (Number.isNaN(birthDate.getTime())) return '';
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+    }
+    return age >= 0 ? age : '';
+}
+
+function openEmailChangeModal() {
+    const modal = document.getElementById('emailChangeModal');
+    if (!modal) return;
+    const codeInput = document.getElementById('emailChangeCode');
+    if (codeInput) codeInput.value = '';
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => codeInput && codeInput.focus(), 100);
+}
+
+function closeEmailChangeModal() {
+    const modal = document.getElementById('emailChangeModal');
+    if (!modal) return;
+    modal.classList.remove('active');
+    document.body.style.overflow = 'hidden'; // keep edit profile modal state
+}
+
+function cancelEmailChangeVerification() {
+    pendingProfileSaveFormData = null;
+    pendingProfileNewEmail = null;
+    closeEmailChangeModal();
+    const saveBtn = document.querySelector('.save-btn');
+    if (saveBtn) {
+        saveBtn.classList.remove('loading');
+        saveBtn.disabled = false;
+    }
+}
+
+async function submitEmailChangeCode() {
+    const oldEmail = normalizeEmail(sessionStorage.getItem('user_email') || localStorage.getItem('user_email'));
+    const newEmail = normalizeEmail(pendingProfileNewEmail);
+    const code = (document.getElementById('emailChangeCode')?.value || '').trim();
+
+    if (!/^\d{6}$/.test(code)) {
+        return Swal?.fire?.({ icon: 'error', title: 'Invalid code', text: 'Please enter the 6-digit code.' });
+    }
+
+    try {
+        const res = await fetch('php/verify_email_change_otp.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ oldEmail, newEmail, code })
+        });
+        const data = await res.json();
+        if (!data.success) {
+            return Swal?.fire?.({ icon: 'error', title: 'Verification failed', text: data.message || 'Invalid code.' });
+        }
+
+        // Update stored login email
+        sessionStorage.setItem('user_email', newEmail);
+        localStorage.setItem('user_email', newEmail);
+        if (currentUser) currentUser.email = newEmail;
+
+        closeEmailChangeModal();
+
+        if (pendingProfileSaveFormData) {
+            pendingProfileSaveFormData.set('email', newEmail);
+            const tmp = pendingProfileSaveFormData;
+            pendingProfileSaveFormData = null;
+            pendingProfileNewEmail = null;
+            await performProfileSave(tmp);
+        }
+    } catch (e) {
+        console.error('Email change verification error:', e);
+        return Swal?.fire?.({ icon: 'error', title: 'Network error', text: 'Please try again.' });
+    }
+}
+
+window.closeEmailChangeModal = closeEmailChangeModal;
+window.cancelEmailChangeVerification = cancelEmailChangeVerification;
+window.submitEmailChangeCode = submitEmailChangeCode;
+
 // Cancel edit
 function cancelEdit() {
     exitEditMode();
@@ -1210,11 +1335,74 @@ function previewProfileImage(input) {
             profilePreview.style.display = 'block';
             profilePlaceholder.style.display = 'none';
             if (initialsModal) initialsModal.style.display = 'none';
+
+            // New upload overrides any pending removal
+            removeProfilePicPending = false;
+            updateRemoveProfilePicButtonVisibility(true);
         };
         
         reader.readAsDataURL(input.files[0]);
     }
 }
+
+function updateRemoveProfilePicButtonVisibility(forceEditing = false) {
+    const btn = document.getElementById('removeProfilePicBtn');
+    const profilePreview = document.getElementById('profilePreview');
+    if (!btn || !profilePreview) return;
+
+    const isEditing = forceEditing ? true : !!editMode;
+    // Show X button in edit mode even if placeholder is visible (so it stays visible after removal)
+    btn.style.display = isEditing ? 'flex' : 'none';
+}
+
+function updateProfilePhotoControlsVisibility() {
+    const controls = document.querySelector('.profile-picture-group .upload-controls');
+    if (!controls) return;
+    controls.style.display = editMode ? 'flex' : 'none';
+}
+
+async function removeProfilePicture() {
+    const userEmail = sessionStorage.getItem('user_email') || localStorage.getItem('user_email');
+    if (!userEmail) return;
+
+    // Removal is staged; actual delete happens on "Save Changes"
+    if (!editMode) return;
+
+    removeProfilePicPending = true;
+
+    const profilePreview = document.getElementById('profilePreview');
+    const profilePlaceholder = document.getElementById('profilePlaceholder');
+    const initialsModal = document.querySelector('.profile-initials-modal');
+    const fileInput = document.getElementById('profilePicture');
+
+    if (profilePreview) {
+        profilePreview.removeAttribute('src');
+        profilePreview.style.display = 'none';
+    }
+    if (fileInput) {
+        fileInput.value = '';
+    }
+    if (profilePlaceholder) {
+        profilePlaceholder.style.display = 'flex';
+        const initial = getInitials(currentUser?.first_name || '', '', true);
+        if (initial && initialsModal) {
+            initialsModal.textContent = initial;
+            initialsModal.style.display = 'flex';
+            const icon = profilePlaceholder.querySelector('i');
+            if (icon) icon.style.display = 'none';
+        } else {
+            if (initialsModal) initialsModal.style.display = 'none';
+            const icon = profilePlaceholder.querySelector('i');
+            if (icon) icon.style.display = 'block';
+        }
+    }
+
+    // Keep X visible in edit mode (placeholder state)
+    updateRemoveProfilePicButtonVisibility();
+}
+
+// Make removeProfilePicture available for inline HTML onclick
+window.removeProfilePicture = removeProfilePicture;
 
 async function saveProfileChanges() {
     console.log('Saving profile changes');
@@ -1223,7 +1411,10 @@ async function saveProfileChanges() {
     const saveBtn = document.querySelector('.save-btn');
     const formData = new FormData(form);
     
-    // Show loading state
+    // Show loading state (full-screen overlay + button spinner)
+    if (typeof showFullScreenLoading === 'function') {
+        showFullScreenLoading('Saving profile...');
+    }
     saveBtn.classList.add('loading');
     saveBtn.disabled = true;
     
@@ -1236,9 +1427,15 @@ async function saveProfileChanges() {
     // Validate required fields
     const firstName = document.getElementById('firstName').value.trim();
     const lastName = document.getElementById('lastName').value.trim();
-    const age = document.getElementById('age').value;
+    const birthdayVal = document.getElementById('birthday').value;
+    const ageInput = document.getElementById('age');
+    const recomputedAge = calculateAgeFromBirthday(birthdayVal);
+    if (ageInput) {
+        ageInput.value = recomputedAge !== '' ? recomputedAge : ageInput.value;
+    }
+    const age = (ageInput && ageInput.value) || '';
     const sex = document.getElementById('sex').value;
-    const birthday = document.getElementById('birthday').value;
+    const birthday = birthdayVal;
     const civilStatus = document.getElementById('civilStatus').value;
     const address = document.getElementById('userAddress').value.trim();
     
@@ -1251,16 +1448,91 @@ async function saveProfileChanges() {
     }
     
     try {
-        // Add email to formData
-        const userEmail = sessionStorage.getItem('user_email') || localStorage.getItem('user_email');
-        formData.append('email', userEmail);
+        const storedEmail = normalizeEmail(sessionStorage.getItem('user_email') || localStorage.getItem('user_email'));
+        const enteredEmail = normalizeEmail(document.getElementById('userEmail')?.value);
+
+        if (!storedEmail) {
+            showFormMessage('No user session found. Please login again.', 'error');
+            saveBtn.classList.remove('loading');
+            saveBtn.disabled = false;
+            if (typeof hideFullScreenLoading === 'function') {
+                hideFullScreenLoading();
+            }
+            return;
+        }
+
+        if (!enteredEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(enteredEmail)) {
+            showFormMessage('Please enter a valid email address.', 'error');
+            saveBtn.classList.remove('loading');
+            saveBtn.disabled = false;
+            if (typeof hideFullScreenLoading === 'function') {
+                hideFullScreenLoading();
+            }
+            return;
+        }
+
+        // Add email for backend lookup (may be replaced after verification)
+        formData.set('email', storedEmail);
         
         // Handle profile picture if changed
         const profilePicture = document.getElementById('profilePicture').files[0];
         if (profilePicture) {
             formData.append('profilePicture', profilePicture);
+            // New upload cancels pending removal
+            removeProfilePicPending = false;
+        } else if (removeProfilePicPending) {
+            // Tell backend to NULL profile_pic on save
+            formData.append('removeProfilePic', '1');
         }
         
+        // If email changed, send OTP first and wait for verification
+        if (enteredEmail !== storedEmail) {
+            const otpRes = await fetch('php/send_email_change_otp.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ oldEmail: storedEmail, newEmail: enteredEmail })
+            });
+            const otpData = await otpRes.json();
+            if (!otpData.success) {
+                showFormMessage(otpData.message || 'Failed to send verification code.', 'error');
+                saveBtn.classList.remove('loading');
+                saveBtn.disabled = false;
+                if (typeof hideFullScreenLoading === 'function') {
+                    hideFullScreenLoading();
+                }
+                return;
+            }
+
+            pendingProfileSaveFormData = formData;
+            pendingProfileNewEmail = enteredEmail;
+            openEmailChangeModal();
+            // Stop loading while user enters code
+            saveBtn.classList.remove('loading');
+            if (typeof hideFullScreenLoading === 'function') {
+                hideFullScreenLoading();
+            }
+            return;
+        }
+
+        await performProfileSave(formData);
+    } catch (error) {
+        console.error('Error saving profile:', error);
+        showFormMessage('Error updating profile. Please try again.', 'error');
+        saveBtn.classList.remove('loading');
+        saveBtn.disabled = false;
+        if (typeof hideFullScreenLoading === 'function') {
+            hideFullScreenLoading();
+        }
+    }
+}
+
+async function performProfileSave(formData) {
+    const saveBtn = document.querySelector('.save-btn');
+    try {
+        if (saveBtn) {
+            saveBtn.classList.add('loading');
+            saveBtn.disabled = true;
+        }
         // Send to PHP endpoint for saving
         const response = await fetch('php/update_profile.php', {
             method: 'POST',
@@ -1270,6 +1542,9 @@ async function saveProfileChanges() {
         const data = await response.json();
         
         if (data.success) {
+            const firstName = document.getElementById('firstName').value.trim();
+            const userEmail = normalizeEmail(sessionStorage.getItem('user_email') || localStorage.getItem('user_email'));
+
             // Update local storage
             sessionStorage.setItem('user_name', firstName);
             localStorage.setItem('user_name', firstName);
@@ -1277,19 +1552,47 @@ async function saveProfileChanges() {
             // Update the main UI with new name
             updateUserGreeting(userEmail);
             
-            // Update profile picture in header if changed
+            // Update profile picture in header if changed or removed
             const profilePreview = document.getElementById('profilePreview');
             const headerProfileImg = document.querySelector('.profile-picture img');
-            if (profilePreview.src && headerProfileImg) {
-                headerProfileImg.src = profilePreview.src;
+            if (headerProfileImg) {
+                if (profilePreview && profilePreview.src && profilePreview.style.display !== 'none') {
+                    headerProfileImg.src = profilePreview.src;
+                } else if (removeProfilePicPending) {
+                    // If removed, force re-render to initials
+                    if (currentUser) currentUser.profile_pic = null;
+                    renderHeaderProfilePicture(currentUser || {});
+                }
             }
+
+            // Clear pending removal after successful save
+            removeProfilePicPending = false;
+            updateRemoveProfilePicButtonVisibility();
             
+            // Decide toast text based on whether there were actual changes
+            const msg = (data.message || '').toLowerCase();
+            const noChanges =
+                msg.includes('no changes') ||
+                msg.includes('no change') ||
+                msg.includes('no changes detected');
+
+            const toastTitle = noChanges ? 'No changes found' : 'Profile Updated Successfully';
+            const toastText = noChanges
+                ? 'There were no changes to save.'
+                : 'Your changes have been saved.';
+
             // Show success notification with SweetAlert2 in upper center
             if (typeof Swal !== 'undefined') {
                 Swal.fire({
-                    icon: 'success',
-                    title: 'Profile Updated Successfully',
-                    text: 'Your changes have been saved.',
+                    iconHtml: noChanges
+                        ? '<i class="fas fa-info-circle"></i>'
+                        : '<i class="fas fa-check-circle"></i>',
+                    customClass: {
+                        // Reuse same green circle styling for both check and info icons
+                        icon: 'swal2-icon--fa-check'
+                    },
+                    title: toastTitle,
+                    text: toastText,
                     timer: 5000,
                     showConfirmButton: false,
                     toast: true,
@@ -1301,23 +1604,26 @@ async function saveProfileChanges() {
                 showFormMessage('Profile updated successfully!', 'success');
             }
             
-            // Exit edit mode and close modal after a short delay
+            // Exit edit mode (back to View Profile) after a short delay, keep modal open
             setTimeout(() => {
                 exitEditMode();
-                setTimeout(() => {
-                    closeEditProfileModal();
-                }, 500);
+                const modalBody = document.querySelector('#editProfileModal .modal-body');
+                if (modalBody) {
+                    modalBody.scrollTop = 0; // scroll to top of profile content
+                }
             }, 1500);
             
         } else {
             showFormMessage(data.message || 'Error updating profile. Please try again.', 'error');
         }
-    } catch (error) {
-        console.error('Error saving profile:', error);
-        showFormMessage('Error updating profile. Please try again.', 'error');
     } finally {
-        saveBtn.classList.remove('loading');
-        saveBtn.disabled = false;
+        if (saveBtn) {
+            saveBtn.classList.remove('loading');
+            saveBtn.disabled = false;
+        }
+        if (typeof hideFullScreenLoading === 'function') {
+            hideFullScreenLoading();
+        }
     }
 }
 
@@ -1367,6 +1673,18 @@ function setupEditProfileEventListeners() {
             e.preventDefault();
             saveProfileChanges();
         });
+    }
+
+    // Auto-update age when birthday changes in Edit Profile
+    const birthdayInput = document.getElementById('birthday');
+    const ageInput = document.getElementById('age');
+    if (birthdayInput && ageInput) {
+        const updateAge = () => {
+            const computed = calculateAgeFromBirthday(birthdayInput.value);
+            ageInput.value = computed !== '' ? computed : '';
+        };
+        birthdayInput.addEventListener('change', updateAge);
+        birthdayInput.addEventListener('input', updateAge);
     }
     
     // Close modal when clicking outside

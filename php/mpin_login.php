@@ -33,8 +33,8 @@ $mpin = $input['mpin'];
 $email = $input['email'] ?? null;
 $mobile = $input['mobile'] ?? null;
 
-// Validate MPIN format
-if (!preg_match('/^[0-9]{6}$/', $mpin)) {
+// Validate MPIN format (exactly 6 digits the user types)
+if (!preg_match('/^\d{6}$/', $mpin)) {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'Invalid MPIN format']);
     exit;
@@ -79,8 +79,63 @@ function verifyMPIN($email, $mobile, $mpin) {
             return ['success' => false, 'message' => 'User not found or email not verified'];
         }
         
-        // Verify MPIN
-        if ($user['mpin_password'] !== $mpin) {
+        // Verify MPIN.
+        // - New format: mpin_password stores a strong hash => use password_verify().
+        // - Legacy format: mpin_password stores plaintext 6 digits => compare + upgrade to hash (best-effort).
+        $stored = $user['mpin_password'] ?? '';
+        $stored = is_string($stored) ? $stored : '';
+        $isValid = false;
+
+        $isLegacyPlaintext = preg_match('/^\d{6}$/', $stored) === 1;
+
+        if ($isLegacyPlaintext) {
+            $isValid = ($stored !== '' && hash_equals($stored, $mpin));
+
+            // If legacy plaintext matched, upgrade to hash (best-effort).
+            if ($isValid) {
+                // Ensure mpin_password column can store the full hash.
+                try {
+                    $pdo->exec("ALTER TABLE resident_information MODIFY mpin_password VARCHAR(255) NULL");
+                } catch (PDOException $e) {
+                    error_log("MPIN login: resize mpin_password skipped/failed: " . $e->getMessage());
+                }
+
+                $newHash = password_hash($mpin, PASSWORD_DEFAULT);
+                if ($newHash !== false) {
+                    try {
+                        if ($email) {
+                            $u = $pdo->prepare("UPDATE resident_information SET mpin_password = ?, updated_at = NOW() WHERE email = ? AND email_verified = 1");
+                            $u->execute([$newHash, $email]);
+                        } else {
+                            $u = $pdo->prepare("UPDATE resident_information SET mpin_password = ?, updated_at = NOW() WHERE mobile = ? AND email_verified = 1");
+                            $u->execute([$newHash, $mobile]);
+                        }
+                    } catch (PDOException $e) {
+                        // Ignore upgrade failure; login succeeded.
+                        error_log("MPIN hash upgrade failed: " . $e->getMessage());
+                    }
+                }
+            }
+        } else {
+            // Assume hashed format; password_verify() handles bcrypt/argon hashes created by password_hash().
+            $isValid = ($stored !== '' && password_verify($mpin, $stored));
+        }
+
+        if (!$isValid) {
+            // Helpful debug for the specific failure mode (without exposing raw MPIN).
+            if ($stored !== '' && !preg_match('/^\d{6}$/', $stored)) {
+                $storedLen = strlen($stored);
+                error_log("MPIN login failed: stored hash length=" . $storedLen);
+
+                // Typical password_hash() outputs are ~60 chars (bcrypt).
+                // If the DB column is too small, the hash gets truncated and verify will always fail.
+                if ($storedLen > 0 && $storedLen < 50) {
+                    return [
+                        'success' => false,
+                        'message' => 'MPIN hash in DB appears truncated (stored length: ' . $storedLen . '). Please reset MPIN.'
+                    ];
+                }
+            }
             return ['success' => false, 'message' => 'Invalid MPIN'];
         }
         
