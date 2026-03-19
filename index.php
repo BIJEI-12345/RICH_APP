@@ -330,8 +330,106 @@ $userEmail = $_SESSION['user_email'] ?? '';
             // If no sessionStorage, show login page (do nothing, let page load)
         })();
     </script>
+    <style>
+        /* Full-screen loading screen shown before the login-card becomes visible */
+        #loadingOverlay {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #ffffff;
+            z-index: 9999;
+            animation: overlayFadeOut 4s ease forwards;
+        }
+
+        #loadingOverlay .rotating-circle {
+            /* Match height with the text image for perfect vertical alignment */
+            width: 140px;
+            height: 140px;
+            /* Shrink near the end; position stays centered (scale only). */
+            animation: shrinkCircleToNothing 0.8s ease forwards;
+            animation-delay: 3.2s;
+        }
+
+        #loadingOverlay .loading-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 28px;
+            flex-wrap: nowrap;
+        }
+
+        #loadingOverlay .rotating-circle .spin {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: rotate 3s linear infinite;
+        }
+
+        #loadingOverlay .rotating-circle .circle-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        #loadingOverlay .no-bg-logo {
+            /* Base size while loading */
+            height: 100px;
+            width: auto;
+            max-width: 220px;
+            object-fit: contain;
+            transform-origin: center center;
+            /* Slower, continuous smooth growth (ease-in-out) */
+            animation: growTextAndShiftLeft 2.4s ease-in-out forwards;
+            animation-delay: 1.8s;
+        }
+
+        /* Login card fades in after loading overlay is gone */
+        #mainContent {
+            opacity: 0;
+            visibility: hidden;
+            animation: loginContentFadeIn 0.6s ease-out forwards;
+            animation-delay: 4s;
+        }
+
+        @keyframes overlayFadeOut {
+            0% { opacity: 1; visibility: visible; pointer-events: auto; }
+            98% { opacity: 1; }
+            100% { opacity: 0; visibility: hidden; pointer-events: none; }
+        }
+
+        @keyframes loginContentFadeIn {
+            0% { opacity: 0; visibility: hidden; }
+            100% { opacity: 1; visibility: visible; }
+        }
+
+        @keyframes shrinkCircleToNothing {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+
+        @keyframes growTextAndShiftLeft {
+            0% { transform: translateX(0) scale(1); }
+            100% { transform: translateX(-95px) scale(3.1); }
+        }
+    </style>
 </head>
 <body>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" aria-label="Loading">
+        <div class="loading-row">
+            <div class="rotating-circle">
+                <div class="spin">
+                    <img class="circle-image" src="Images/cricle-removebg.png" alt="Loading Circle">
+                </div>
+            </div>
+                <img class="no-bg-logo" src="Images/text.png" alt="RICH Text">
+        </div>
+    </div>
+
     <!-- Main Content -->
     <div id="mainContent" class="main-content">
         <div class="container">

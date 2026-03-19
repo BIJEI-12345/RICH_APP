@@ -291,14 +291,23 @@ body.keyboard-open {
 @media (max-width: 480px) {
     body {
         padding: 10px;
+
+        /* Keep body scrollable even in WebView */
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+
+        /* Prefer dynamic viewport units so keyboard overlay won't trap content */
         min-height: 100vh;
+        min-height: 100svh;
+        min-height: 100dvh;
         min-height: -webkit-fill-available; /* iOS Safari fix */
     }
     
     body.keyboard-open {
         padding: 10px;
         align-items: flex-start;
-        min-height: auto;
+        justify-content: flex-start;
+        overflow-y: auto;
     }
     
     .container {
@@ -381,6 +390,8 @@ body.keyboard-open {
     /* Adjust card when keyboard is visible */
     .mpin-login-card {
         position: relative;
+        max-height: calc(100dvh - 40px);
+        overflow-y: auto;
     }
 }
 

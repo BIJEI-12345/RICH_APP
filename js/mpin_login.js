@@ -500,7 +500,7 @@ function initializeMPINLogin() {
                     // Use scrollIntoView with better options for mobile
                     activeInput.scrollIntoView({ 
                         behavior: 'smooth', 
-                        block: 'center',
+                        block: 'nearest',
                         inline: 'nearest'
                     });
                     
@@ -540,10 +540,16 @@ function initializeMPINLogin() {
             
             // Small delay to allow keyboard to appear first
             setTimeout(() => {
+                // WebView-friendly: toggle keyboard classes on focus
+                // (some Android WebViews don't update innerHeight reliably)
+                const container = document.querySelector('.container');
+                if (container) container.classList.add('keyboard-visible');
+                document.body.classList.add('keyboard-open');
+
                 // Scroll input into view
                 input.scrollIntoView({ 
                     behavior: 'smooth', 
-                    block: 'center',
+                    block: 'nearest',
                     inline: 'nearest'
                 });
                 
@@ -566,6 +572,10 @@ function initializeMPINLogin() {
             
             // Small delay to check if keyboard closed
             setTimeout(() => {
+                // Ensure classes are removed even if keyboard visibility detection fails
+                const container = document.querySelector('.container');
+                if (container) container.classList.remove('keyboard-visible');
+                document.body.classList.remove('keyboard-open');
                 handleKeyboardVisibility();
             }, 200);
         });
