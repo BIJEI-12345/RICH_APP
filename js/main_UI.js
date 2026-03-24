@@ -28,10 +28,20 @@ function scheduleCensusReminder(delayMs) {
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
+    if (typeof showFullScreenLoading === 'function') {
+        showFullScreenLoading('Loading...');
+    }
+
     initializeApp();
-    loadUserData();
     setupEventListeners();
-    loadAnnouncements();
+    Promise.allSettled([
+        loadUserData(),
+        loadAnnouncements()
+    ]).finally(() => {
+        if (typeof hideFullScreenLoading === 'function') {
+            hideFullScreenLoading();
+        }
+    });
 });
 
 // Initialize the application
@@ -96,7 +106,7 @@ function loadUserData() {
     const userEmail = sessionStorage.getItem('user_email') || localStorage.getItem('user_email');
     if (userEmail) {
         // Fetch user data from server
-        fetch('php/main_UI.php', {
+        return fetch('php/main_UI.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -151,13 +161,14 @@ function loadUserData() {
                 mobile: '+63 935 *** 8039'
             });
         });
-    } else {
-        // Use default data for testing when no session exists
-        updateUserInterface({
-            first_name: 'JUAN',
-            mobile: '+63 935 *** 8039'
-        });
     }
+
+    // Use default data for testing when no session exists
+    updateUserInterface({
+        first_name: 'JUAN',
+        mobile: '+63 935 *** 8039'
+    });
+    return Promise.resolve();
 }
 
 // Update user greeting
@@ -282,14 +293,9 @@ function setupDocumentRequestButtons() {
 }
 
 function navigateToRequestWithLoading(targetUrl = 'request.html') {
-    if (typeof showFullScreenLoading === 'function') {
-        showFullScreenLoading('Loading...');
-    }
-
-    // Give the browser a short moment to paint the loader before navigation.
-    setTimeout(() => {
-        window.location.href = targetUrl;
-    }, 120);
+    // Keep first overlay for main_UI loading only.
+    // request.html handles its own loading overlay on entry.
+    window.location.href = targetUrl;
 }
 
 // Setup See All button navigation
