@@ -37,6 +37,48 @@ foreach ($requiredFields as $field) {
     }
 }
 
+if (!function_exists('census_extract_house_number')) {
+    /**
+     * House/unit segment from complete_address (first part before comma), same as check_census.php.
+     */
+    function census_extract_house_number($completeAddress) {
+        $completeAddress = trim((string) $completeAddress);
+        if ($completeAddress === '') {
+            return '';
+        }
+        $parts = explode(',', $completeAddress, 2);
+        return trim($parts[0]);
+    }
+}
+
+if (!function_exists('census_person_already_recorded')) {
+    /**
+     * True if census_form already has this first + last name at the same house number.
+     */
+    function census_person_already_recorded(PDO $pdo, $firstName, $lastName, $houseNumber) {
+        $firstName = trim((string) $firstName);
+        $lastName = trim((string) $lastName);
+        $houseNumber = trim((string) $houseNumber);
+        if ($firstName === '' || $lastName === '' || $houseNumber === '') {
+            return false;
+        }
+        $stmt = $pdo->query('SELECT first_name, last_name, complete_address FROM census_form');
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($rows as $row) {
+            $hn = census_extract_house_number($row['complete_address'] ?? '');
+            if (strcasecmp($hn, $houseNumber) !== 0) {
+                continue;
+            }
+            $fn = trim($row['first_name'] ?? '');
+            $ln = trim($row['last_name'] ?? '');
+            if (strcasecmp($fn, $firstName) === 0 && strcasecmp($ln, $lastName) === 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+}
+
 // Database connection - Load from centralized config
 require_once __DIR__ . '/env_loader.php';
 
@@ -95,6 +137,52 @@ try {
             'message' => 'User email is required. Please ensure you are logged in.'
         ]);
         exit;
+    }
+
+    // Combined address as stored in census_form (house number must match for duplicate rule)
+    $fullAddressPreview = trim($input['address']);
+    if (!empty($input['unitHouseNumber'])) {
+        $fullAddressPreview = trim($input['unitHouseNumber']) . ', ' . $fullAddressPreview;
+    }
+    $submittedHouseNumber = census_extract_house_number($fullAddressPreview);
+
+    if ($submittedHouseNumber === '') {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Please enter your unit or house number so the census can check for duplicate household records.'
+        ]);
+        exit;
+    }
+
+    $headFirst = trim($input['firstName']);
+    $headLast = trim($input['lastName']);
+    if (census_person_already_recorded($pdo, $headFirst, $headLast, $submittedHouseNumber)) {
+        echo json_encode([
+            'success' => false,
+            'message' => $headFirst . ' ' . $headLast . ' is already censused for this household (same house number).'
+        ]);
+        exit;
+    }
+
+    $householdMembers = $input['householdMembers'] ?? [];
+    if (is_array($householdMembers)) {
+        foreach ($householdMembers as $member) {
+            if (empty($member['firstName']) || !is_string($member['firstName']) || trim($member['firstName']) === '') {
+                continue;
+            }
+            if (empty($member['lastName']) || !is_string($member['lastName']) || trim($member['lastName']) === '') {
+                continue;
+            }
+            $mf = trim($member['firstName']);
+            $ml = trim($member['lastName']);
+            if (census_person_already_recorded($pdo, $mf, $ml, $submittedHouseNumber)) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => $mf . ' ' . $ml . ' is already censused for this household (same house number).'
+                ]);
+                exit;
+            }
+        }
     }
     
     // Get user_id (census_id) from resident_information table
