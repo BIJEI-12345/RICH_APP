@@ -1260,15 +1260,18 @@ body:has(.testing-mode-indicator) .main-container {
 /* Edit Profile Modal Styles */
 .modal-overlay {
     position: fixed;
-    top: 0;
-    left: 0;
+    inset: 0;
     width: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
     height: 100%;
+    box-sizing: border-box;
     background-color: rgba(0, 0, 0, 0.5);
     display: none;
     justify-content: center;
     align-items: center;
     z-index: 2000;
+    -webkit-backdrop-filter: blur(5px);
     backdrop-filter: blur(5px);
     /* Prevent scroll chaining / overscroll to page */
     overscroll-behavior: none;
