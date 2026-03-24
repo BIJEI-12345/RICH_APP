@@ -2083,6 +2083,61 @@ body:has(.testing-mode-indicator) .main-container {
     margin: 0;
 }
 
+/* Fullscreen Loading Overlay (used before navigating to request page) */
+.fullscreen-loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: all;
+}
+
+.fullscreen-loading .loading-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    padding: 20px;
+    box-sizing: border-box;
+    gap: 1rem;
+}
+
+.fullscreen-loading .rotating-circle {
+    width: 5.5rem;
+    height: 5.5rem;
+    position: relative;
+    animation: rotate 3s linear infinite;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-bottom: 0;
+}
+
+.fullscreen-loading .circle-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.fullscreen-loading .loading-label {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #ffffff;
+    text-align: center;
+    margin-top: 0.5rem;
+}
+
 /* Responsive Design for Loading Indicator - Mobile Devices */
 /* Tablet portrait */
 @media (max-width: 768px) {
