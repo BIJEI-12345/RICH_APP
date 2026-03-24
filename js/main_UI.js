@@ -274,11 +274,22 @@ function setupDocumentRequestButtons() {
             const documentType = documentTypeMap[documentTitle] || 'barangay-id';
             
             // Navigate to request page with document type parameter
-            window.location.href = `request.html?type=${documentType}`;
+            navigateToRequestWithLoading(`request.html?type=${documentType}`);
         });
     });
     
     console.log('Document request buttons navigation initialized');
+}
+
+function navigateToRequestWithLoading(targetUrl = 'request.html') {
+    if (typeof showFullScreenLoading === 'function') {
+        showFullScreenLoading('Loading...');
+    }
+
+    // Give the browser a short moment to paint the loader before navigation.
+    setTimeout(() => {
+        window.location.href = targetUrl;
+    }, 120);
 }
 
 // Setup See All button navigation
@@ -825,7 +836,7 @@ async function loadAnnouncements() {
 }
 
 function Documents() {
-    window.location.href = 'request.html';
+    navigateToRequestWithLoading('request.html');
 }
 
 // Notification Dropdown Functions

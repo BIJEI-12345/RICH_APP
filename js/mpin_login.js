@@ -534,50 +534,70 @@ function initializeMPINLogin() {
     });
     
     // Also listen for focus events on inputs to ensure they're visible
+    let focusScrollTimeout = null;
+    let blurCleanupTimeout = null;
+    let lastScrollAt = 0;
+
     mpinInputs.forEach(input => {
         input.addEventListener('focus', function() {
             if (!isMobile) return;
-            
-            // Small delay to allow keyboard to appear first
-            setTimeout(() => {
-                // WebView-friendly: toggle keyboard classes on focus
-                // (some Android WebViews don't update innerHeight reliably)
-                const container = document.querySelector('.container');
-                if (container) container.classList.add('keyboard-visible');
-                document.body.classList.add('keyboard-open');
 
-                // Scroll input into view
-                input.scrollIntoView({ 
-                    behavior: 'smooth', 
+            // Cancel pending blur cleanup when moving between MPIN digits
+            clearTimeout(blurCleanupTimeout);
+            clearTimeout(focusScrollTimeout);
+
+            // WebView-friendly: keep keyboard classes while any MPIN field is focused
+            const container = document.querySelector('.container');
+            if (container) container.classList.add('keyboard-visible');
+            document.body.classList.add('keyboard-open');
+
+            // Throttle scrolling to avoid bounce/flicker on every digit focus jump
+            const now = Date.now();
+            if (now - lastScrollAt < 250) {
+                return;
+            }
+
+            // Small delay to allow keyboard to appear first
+            focusScrollTimeout = setTimeout(() => {
+                // Scroll input into view with less aggressive behavior
+                input.scrollIntoView({
+                    behavior: 'auto',
                     block: 'nearest',
                     inline: 'nearest'
                 });
-                
+
                 // Also ensure the MPIN section is visible
                 const mpinSection = document.querySelector('.mpin-section');
                 if (mpinSection) {
-                    mpinSection.scrollIntoView({ 
-                        behavior: 'smooth', 
+                    mpinSection.scrollIntoView({
+                        behavior: 'auto',
                         block: 'nearest'
                     });
                 }
-                
-                // Check if keyboard is visible after focus
+
+                lastScrollAt = Date.now();
+                // Re-check keyboard state after focus settles
                 handleKeyboardVisibility();
-            }, 300);
+            }, 220);
         });
         
         input.addEventListener('blur', function() {
             if (!isMobile) return;
-            
-            // Small delay to check if keyboard closed
-            setTimeout(() => {
-                // Ensure classes are removed even if keyboard visibility detection fails
+
+            // Delay cleanup and only remove classes if focus truly left MPIN inputs
+            clearTimeout(blurCleanupTimeout);
+            blurCleanupTimeout = setTimeout(() => {
+                const active = document.activeElement;
+                const stillOnMpinInput = active && active.classList && active.classList.contains('mpin-digit');
+                if (stillOnMpinInput) {
+                    return;
+                }
+
                 const container = document.querySelector('.container');
                 if (container) container.classList.remove('keyboard-visible');
                 document.body.classList.remove('keyboard-open');
                 handleKeyboardVisibility();
-            }, 200);
+            }, 180);
         });
     });
     

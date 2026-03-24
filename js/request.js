@@ -508,6 +508,15 @@ async function handleIDImageUpload(file, formType) {
 
 // Request Page JavaScript
 document.addEventListener('DOMContentLoaded', async function() {
+    const isRequestPage =
+        !!document.getElementById('emblemSection') &&
+        !!document.querySelector('.document-btn[data-document]');
+
+    // Prevent request page init from running on other pages (e.g., main_UI).
+    if (!isRequestPage) {
+        return;
+    }
+
     // Show full-screen loading when page loads
     showFullScreenLoading('Loading...');
     
@@ -1144,9 +1153,22 @@ function clearFieldErrorFromEvent(e) {
 
 // Show full-screen loading overlay
 function showFullScreenLoading(message = 'Submitting...') {
-    // Disabled full-screen loading overlay per design request
-    // Keep function for compatibility but do nothing.
-    return;
+    hideFullScreenLoading();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'fullscreen-loading-overlay';
+    overlay.className = 'fullscreen-loading';
+    overlay.innerHTML = `
+        <div class="loading-content">
+            <div class="rotating-circle">
+                <img src="Images/cricle-removebg.png" alt="Loading Circle" class="circle-image">
+            </div>
+            <div class="loading-label">${message}</div>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+    document.body.style.overflow = 'hidden';
 }
 
 // Hide full-screen loading overlay
@@ -1398,37 +1420,45 @@ function setupSidebarNavigation() {
                     return; // User cancelled, don't switch forms
                 }
             }
-            
-            // Clear all forms when switching documents
-            clearAllFormInputs();
-            
-            // Hide all report displays when switching documents
-            hideAllReportDisplays();
-            
-            // Hide sidebar when document button is clicked
-            const sidebar = document.querySelector('.sidebar');
-            if (sidebar && !sidebar.classList.contains('collapsed')) {
-                sidebar.classList.add('collapsed');
-            }
-            
-            // Update active state
-            documentButtons.forEach(btn => btn.classList.remove('active'));
-            this.classList.add('active');
-            
-            // Show/hide content based on document type
-            if (documentType === 'barangay-id') {
-                showBarangayIdForm();
-            } else if (documentType === 'certification-form') {
-                showCertificationForm();
-            } else if (documentType === 'certification-employment') {
-                showCoeForm();
-            } else if (documentType === 'indigency-form') {
-                showIndigencyForm();
-            } else if (documentType === 'clearance-form') {
-                showClearanceForm();
-            } else {
-                hideAllForms();
-                showEmblemSection();
+
+            showFullScreenLoading('Loading document request...');
+            try {
+                // Keep overlay visible long enough for users to notice the transition.
+                await new Promise(resolve => setTimeout(resolve, 450));
+
+                // Clear all forms when switching documents
+                clearAllFormInputs();
+
+                // Hide all report displays when switching documents
+                hideAllReportDisplays();
+
+                // Hide sidebar when document button is clicked
+                const sidebar = document.querySelector('.sidebar');
+                if (sidebar && !sidebar.classList.contains('collapsed')) {
+                    sidebar.classList.add('collapsed');
+                }
+
+                // Update active state
+                documentButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+
+                // Show/hide content based on document type
+                if (documentType === 'barangay-id') {
+                    showBarangayIdForm();
+                } else if (documentType === 'certification-form') {
+                    showCertificationForm();
+                } else if (documentType === 'certification-employment') {
+                    showCoeForm();
+                } else if (documentType === 'indigency-form') {
+                    showIndigencyForm();
+                } else if (documentType === 'clearance-form') {
+                    showClearanceForm();
+                } else {
+                    hideAllForms();
+                    showEmblemSection();
+                }
+            } finally {
+                hideFullScreenLoading();
             }
         });
     });
