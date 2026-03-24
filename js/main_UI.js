@@ -1727,6 +1727,38 @@ function setupEditProfileEventListeners() {
 
 // ==================== CENSUS FORM FUNCTIONS ====================
 
+function computeCensusAgeFromBirthday(isoDateString) {
+    if (!isoDateString) return '';
+    const today = new Date();
+    const birth = new Date(isoDateString);
+    if (Number.isNaN(birth.getTime())) return '';
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+        age--;
+    }
+    return age >= 0 ? String(age) : '';
+}
+
+function syncCensusHeadAgeFromBirthday() {
+    const birthdayEl = document.getElementById('censusBirthday');
+    const ageEl = document.getElementById('censusAge');
+    if (!birthdayEl || !ageEl) return;
+    ageEl.value = computeCensusAgeFromBirthday(birthdayEl.value);
+}
+
+function wireMemberBirthdayToAge(memberIndex) {
+    const birthdayEl = document.getElementById(`memberBirthday_${memberIndex}`);
+    const ageEl = document.getElementById(`memberAge_${memberIndex}`);
+    if (!birthdayEl || !ageEl) return;
+    const sync = () => {
+        ageEl.value = computeCensusAgeFromBirthday(birthdayEl.value);
+    };
+    birthdayEl.addEventListener('change', sync);
+    birthdayEl.addEventListener('input', sync);
+    sync();
+}
+
 // Check if user has completed census
 async function checkCensusStatus() {
     // First check if user is actually loaded and exists in database
@@ -2019,10 +2051,14 @@ async function autoPopulateCensusForm() {
                 console.log('Populated censusSuffix from main_UI.php:', user.suffix);
             }
             
-            // Populate other fields
-            if (ageEl) ageEl.value = user.age || '';
-            if (sexEl) sexEl.value = user.sex || '';
+            // Populate other fields (age from birthday when available)
             if (birthdayEl) birthdayEl.value = user.birthday || '';
+            if (ageEl) {
+                ageEl.value = user.birthday
+                    ? computeCensusAgeFromBirthday(user.birthday)
+                    : (user.age != null && user.age !== '' ? String(user.age) : '');
+            }
+            if (sexEl) sexEl.value = user.sex || '';
             if (civilStatusEl) civilStatusEl.value = user.civil_status || '';
             
             // Parse address to extract house number and remaining address
@@ -2057,6 +2093,8 @@ async function autoPopulateCensusForm() {
                 if (addressEl) addressEl.value = '';
             }
             
+            syncCensusHeadAgeFromBirthday();
+
             console.log('Census form populated successfully with data from main_UI.php');
         } else {
             // User not found - silently return without logging error
@@ -2071,12 +2109,23 @@ async function autoPopulateCensusForm() {
 
 // Setup census form event listeners
 function setupCensusFormListeners() {
-    // Form submission
     const censusForm = document.getElementById('censusForm');
     if (censusForm) {
-        censusForm.addEventListener('submit', handleCensusSubmission);
+        if (!censusForm.dataset.censusSubmitBound) {
+            censusForm.dataset.censusSubmitBound = '1';
+            censusForm.addEventListener('submit', handleCensusSubmission);
+        }
+        if (!censusForm.dataset.censusBirthdaySyncBound) {
+            censusForm.dataset.censusBirthdaySyncBound = '1';
+            const birthdayEl = document.getElementById('censusBirthday');
+            if (birthdayEl) {
+                birthdayEl.addEventListener('change', syncCensusHeadAgeFromBirthday);
+                birthdayEl.addEventListener('input', syncCensusHeadAgeFromBirthday);
+            }
+        }
+        syncCensusHeadAgeFromBirthday();
     }
-    
+
     // Initialize with at least one household member field
     const container = document.getElementById('householdMembersContainer');
     if (container && container.children.length === 0) {
@@ -2137,8 +2186,12 @@ function addHouseholdMember() {
             </div>
             <div class="form-row">
                 <div class="form-group">
+                    <label for="memberBirthday_${householdMemberCounter}">Birthday <span class="required-indicator">*</span></label>
+                    <input type="date" id="memberBirthday_${householdMemberCounter}" name="memberBirthday_${householdMemberCounter}" required placeholder="Birthday" title="Birthday">
+                </div>
+                <div class="form-group">
                     <label for="memberAge_${householdMemberCounter}">Age <span class="required-indicator">*</span></label>
-                    <input type="number" id="memberAge_${householdMemberCounter}" name="memberAge_${householdMemberCounter}" min="0" max="120" required placeholder="Age">
+                    <input type="number" id="memberAge_${householdMemberCounter}" name="memberAge_${householdMemberCounter}" min="0" max="120" required readonly placeholder="Auto from birthday">
                 </div>
                 <div class="form-group">
                     <label for="memberSex_${householdMemberCounter}">Sex <span class="required-indicator">*</span></label>
@@ -2150,10 +2203,6 @@ function addHouseholdMember() {
                 </div>
             </div>
             <div class="form-row">
-                <div class="form-group">
-                    <label for="memberBirthday_${householdMemberCounter}">Birthday <span class="required-indicator">*</span></label>
-                    <input type="date" id="memberBirthday_${householdMemberCounter}" name="memberBirthday_${householdMemberCounter}" required>
-                </div>
                 <div class="form-group">
                     <label for="memberCivilStatus_${householdMemberCounter}">Civil Status <span class="required-indicator">*</span></label>
                     <select id="memberCivilStatus_${householdMemberCounter}" name="memberCivilStatus_${householdMemberCounter}" required>
@@ -2187,7 +2236,9 @@ function addHouseholdMember() {
     `;
     
     container.appendChild(memberCard);
-    
+
+    wireMemberBirthdayToAge(householdMemberCounter);
+
     // Scroll to the new member card
     memberCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }

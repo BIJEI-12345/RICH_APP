@@ -499,8 +499,12 @@
                             
                             <div class="form-row">
                                 <div class="form-group">
+                                    <label for="censusBirthday">Birthday <span class="required-indicator">*</span></label>
+                                    <input type="date" id="censusBirthday" name="birthday" required placeholder="Birthday" title="Birthday">
+                                </div>
+                                <div class="form-group">
                                     <label for="censusAge">Age <span class="required-indicator">*</span></label>
-                                    <input type="number" id="censusAge" name="age" min="1" max="120" required placeholder="Your age">
+                                    <input type="number" id="censusAge" name="age" min="0" max="120" required readonly placeholder="Auto from birthday">
                                 </div>
                                 <div class="form-group">
                                     <label for="censusSex">Sex <span class="required-indicator">*</span></label>
@@ -513,10 +517,6 @@
                             </div>
                             
                             <div class="form-row">
-                                <div class="form-group">
-                                    <label for="censusBirthday">Birthday <span class="required-indicator">*</span></label>
-                                    <input type="date" id="censusBirthday" name="birthday" required>
-                                </div>
                                 <div class="form-group">
                                     <label for="censusCivilStatus">Civil Status <span class="required-indicator">*</span></label>
                                     <select id="censusCivilStatus" name="civilStatus" required>
