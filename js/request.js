@@ -2513,6 +2513,14 @@ async function handleCertificationSubmission(e) {
             clearFieldError(otherCertPurpose);
         }
     }
+
+    if (certPurpose === 'jobseeker' && window.certificationJobSeekerUsed) {
+        isValid = false;
+        const certPurposeEl = document.getElementById('certPurpose');
+        if (certPurposeEl) {
+            showFieldError(certPurposeEl, 'The Job Seeker form may be requested only once.');
+        }
+    }
     
     // Validate conditional fields based on purpose
     const certCitizenship = document.getElementById('certCitizenship');
@@ -2926,6 +2934,21 @@ window.goBackToCertificationStep3 = goBackToCertificationStep3;
 async function finalSubmitCertification() {
     const form = document.getElementById('certificationFormElement');
     const formData = new FormData(form);
+
+    if (formData.get('certPurpose') === 'jobseeker' && window.certificationJobSeekerUsed) {
+        if (typeof Swal !== 'undefined') {
+            await Swal.fire({
+                icon: 'info',
+                title: 'Job Seeker',
+                text: 'The Job Seeker certification may be requested only once. You have already submitted this request.',
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#17a2b8'
+            });
+        } else {
+            showMessage('The Job Seeker certification may be requested only once.', 'error', 'certificationFormElement');
+        }
+        return;
+    }
     
     // Show full-screen loading
     showFullScreenLoading('Submitting your request...');
@@ -6094,6 +6117,26 @@ function initializeBirthDateYearRestriction() {
     console.log('Birth date year restriction initialized');
 }
 
+/** Disable Job Seeker in certification purpose after one successful submission (server flag). */
+function applyCertificationJobSeekerOptionState() {
+    const sel = document.getElementById('certPurpose');
+    if (!sel) return;
+    const opt = sel.querySelector('option[value="jobseeker"]');
+    if (!opt) return;
+    const used = !!window.certificationJobSeekerUsed;
+    opt.disabled = used;
+    opt.setAttribute('aria-disabled', used ? 'true' : 'false');
+    if (used && sel.value === 'jobseeker') {
+        sel.value = '';
+        if (typeof toggleCertificationConditionalFields === 'function') {
+            toggleCertificationConditionalFields();
+        }
+        if (typeof toggleOtherInput === 'function') {
+            toggleOtherInput('certPurpose', 'otherCertPurpose');
+        }
+    }
+}
+
 // Active request restrictions
 async function applyActiveRequestRestrictions() {
     try {
@@ -6111,7 +6154,9 @@ async function applyActiveRequestRestrictions() {
         
         // Store active restrictions globally
         window.activeRestrictions = active;
+        window.certificationJobSeekerUsed = !!data.certification_jobseeker_used;
         console.log('Stored window.activeRestrictions:', window.activeRestrictions);
+        applyCertificationJobSeekerOptionState();
         
         // Map UI buttons to request keys
         const map = {

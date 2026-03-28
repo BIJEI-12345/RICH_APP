@@ -588,12 +588,12 @@
                         <div class="form-group">
                             <label for="certPurpose">Purpose: <span class="required-indicator">*</span></label>
                                 <select id="certPurpose" name="certPurpose" required onchange="toggleCertificationConditionalFields(); toggleOtherInput('certPurpose', 'otherCertPurpose')">
-                                <option value="">Pumili ng Purpose:</option>
+                                <option value="" selected hidden>Pumili ng Purpose</option>
                                 <option value="proof-of-residency">Proof of Residency</option>
                                 <option value="jobseeker">Job Seeker</option>
                                 <option value="certification-for-dead">Certificataion for Dead</option>
-                                <option value="other">Iba pa</option>
                             </select>
+                            <p class="cert-purpose-jobseeker-note" style="font-size: 0.85rem; color: #5a5a5a; margin: 8px 0 0 0; line-height: 1.4;">Note: The form (Job Seeker) is generally granted only once.</p>
                         </div> 
                         <div class="form-group" id="otherCertPurposeGroup" style="display: none;">
                             <label for="otherCertPurpose">Mangyaring tukuyin ang Purpose: <span class="required-indicator">*</span></label>
@@ -2028,7 +2028,7 @@
                         <div class="form-group">
                             <label for="clearPurpose">Layunin: <span class="required-indicator">*</span></label>
                             <select id="clearPurpose" name="clearPurpose" required onchange="toggleClearanceConditionalFields()">
-                                <option value="">Pumili ng Purpose</option>
+                                <option value="" selected hidden>Pumili ng Purpose</option>
                                 <option value="barangay-clearance">Barangay Clearance</option>
                                 <option value="business-clearance">Business Clearance</option>
                                 <option value="proof-of-residency">Proof of Residency</option>

@@ -98,7 +98,7 @@
             </div>
             <div class="greeting-logos">
                 <img src="Images/Bagong_Pilipinas_logo.png" alt="Bagong Pilipinas Logo" class="bagong-pilipinas-logo">
-                <img src="Images/logo1.png" alt="Barangay Logo" class="barangay-logo">
+                <img src="Images/logo_nobg.png" alt="Barangay Logo" class="barangay-logo">
             </div>
         </div>
     </header>
@@ -285,17 +285,13 @@
             <div class="modal-header">
                 <h3>View Profile</h3>
                 <div class="header-actions">
-                    <button class="edit-btn" id="editProfileBtn" onclick="toggleEditMode()">
-                        <i class="fas fa-edit"></i>
-                        <span>Edit</span>
-                    </button>
-                    <button class="close-btn" onclick="closeEditProfileModal()">
+                    <button type="button" class="close-btn" onclick="closeEditProfileModal()" aria-label="Close">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
             </div>
             <div class="modal-body">
-                <form id="editProfileForm" enctype="multipart/form-data">
+                <form id="editProfileForm" enctype="multipart/form-data" onsubmit="return false;">
                     <div class="form-group profile-picture-group">
                         <label for="profilePicture">Profile Picture</label>
                         <div class="profile-picture-upload">
@@ -322,43 +318,43 @@
                     </div>
                     
                     <div class="form-row">
-                        <div class="form-group">
+                        <div class="form-group form-group-profile-card">
                             <label for="firstName">First Name</label>
                             <input type="text" id="firstName" name="firstName" placeholder="None" readonly>
                         </div>
-                        <div class="form-group">
+                        <div class="form-group form-group-profile-card">
                             <label for="middleName">Middle Name</label>
                             <input type="text" id="middleName" name="middleName" placeholder="None" readonly>
                         </div>
                     </div>
                     
                     <div class="form-row">
-                        <div class="form-group">
+                        <div class="form-group form-group-profile-card">
                             <label for="lastName">Last Name</label>
                             <input type="text" id="lastName" name="lastName" placeholder="None" readonly>
                         </div>
-                        <div class="form-group">
+                        <div class="form-group form-group-profile-card">
                             <label for="suffix">Suffix</label>
                             <input type="text" id="suffix" name="suffix" placeholder="None" readonly>
                         </div>
                     </div>
                     
-                    <div class="form-group">
+                    <div class="form-group form-group-profile-card">
                         <label for="userEmail">Email Address</label>
                         <input type="email" id="userEmail" name="userEmail" placeholder="None" readonly>
                     </div>
 
-                    <div class="form-group">
+                    <div class="form-group form-group-profile-card">
                         <label for="userAddress">Address</label>
                         <textarea id="userAddress" name="userAddress" placeholder="None" rows="3" readonly></textarea>
                     </div>
                     
                     <div class="form-row">
-                        <div class="form-group">
+                        <div class="form-group form-group-profile-card">
                             <label for="age">Age</label>
                             <input type="number" id="age" name="age" placeholder="None" readonly>
                         </div>
-                        <div class="form-group">
+                        <div class="form-group form-group-profile-card">
                             <label for="sex">Sex</label>
                             <select id="sex" name="sex" disabled>
                                 <option value="">None</option>
@@ -369,11 +365,11 @@
                     </div>
                     
                     <div class="form-row">
-                        <div class="form-group">
+                        <div class="form-group form-group-profile-card">
                             <label for="birthday">Birthday</label>
                             <input type="date" id="birthday" name="birthday" readonly>
                         </div>
-                        <div class="form-group">
+                        <div class="form-group form-group-profile-card">
                             <label for="civilStatus">Civil Status</label>
                             <select id="civilStatus" name="civilStatus" disabled>
                                 
@@ -385,7 +381,7 @@
                         </div>
                     </div>
                     
-                    <div class="form-group">
+                    <div class="form-group form-group-profile-card">
                         <label for="validIdType">Valid ID Type</label>
                         <input type="text" id="validIdType" name="validIdType" placeholder="None" readonly>
                     </div>
@@ -399,11 +395,6 @@
                                 <span>No uploaded valid ID</span>
                             </div>
                         </div>
-                    </div>
-                    
-                    <div class="form-actions" id="formActions" style="display: none;">
-                        <button type="button" class="cancel-btn" onclick="cancelEdit()">Cancel</button>
-                        <button type="submit" class="save-btn">Save Changes</button>
                     </div>
                 </form>
             </div>

@@ -383,6 +383,13 @@ body {
     margin-bottom: 20px;
 }
 
+/* Email login: white wrapper + shadow (index.php #emailForm) */
+#emailForm .input-group {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+}
+
 .input-group input {
     width: 100%;
     padding: 16px 20px;

@@ -156,6 +156,25 @@ try {
         error_log("Certification FLAGGED as active for email '{$email}'");
     }
 
+    // Job Seeker certification: allow only one submission per user (any status)
+    $certificationJobSeekerUsed = false;
+    $checkJsEmailCol = $pdo->query("SHOW COLUMNS FROM certification_forms LIKE 'email'");
+    $certJsHasEmail = $checkJsEmailCol->rowCount() > 0;
+    $jsPurposeCond = "(LOWER(TRIM(c.purpose)) IN ('jobseeker', 'job seeker'))";
+    if ($certJsHasEmail) {
+        $jsStmt = $pdo->prepare("SELECT COUNT(*) FROM certification_forms c WHERE $jsPurposeCond AND c.email = ?");
+        $jsStmt->execute([$email]);
+        $certificationJobSeekerUsed = ((int) $jsStmt->fetchColumn()) > 0;
+    } else {
+        $jsStmt = $pdo->prepare("
+            SELECT COUNT(*) FROM certification_forms c
+            INNER JOIN resident_information r ON CONCAT(TRIM(r.first_name), ' ', TRIM(r.last_name)) = CONCAT(TRIM(c.first_name), ' ', TRIM(c.last_name))
+            WHERE $jsPurposeCond AND r.email = ?
+        ");
+        $jsStmt->execute([$email]);
+        $certificationJobSeekerUsed = ((int) $jsStmt->fetchColumn()) > 0;
+    }
+
     // COE - Check if email column exists, if yes query directly by email, otherwise use JOIN
     $checkEmailColumn = $pdo->query("SHOW COLUMNS FROM coe_forms LIKE 'email'");
     $hasEmailColumn = $checkEmailColumn->rowCount() > 0;
@@ -329,7 +348,11 @@ try {
     }
 
     error_log("Returning active restrictions: " . json_encode($active));
-    echo json_encode(['success' => true, 'active' => $active]);
+    echo json_encode([
+        'success' => true,
+        'active' => $active,
+        'certification_jobseeker_used' => $certificationJobSeekerUsed
+    ]);
 } catch (PDOException $e) {
     error_log('DB error in check_active_requests: ' . $e->getMessage());
     http_response_code(500);

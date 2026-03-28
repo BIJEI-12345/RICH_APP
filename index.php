@@ -426,7 +426,7 @@ $userEmail = $_SESSION['user_email'] ?? '';
                     <img class="circle-image" src="Images/cricle-removebg.png" alt="Loading Circle">
                 </div>
             </div>
-                <img class="no-bg-logo" src="Images/text.png" alt="RICH Text">
+                <img class="no-bg-logo" src="Images/text-removebg.png" alt="RICH Text">
         </div>
     </div>
 

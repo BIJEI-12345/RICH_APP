@@ -280,6 +280,36 @@ function insertBarangayIdForm($data) {
     }
 }
 
+/**
+ * Returns true if this user already has a certification with purpose Job Seeker (any status).
+ */
+function certificationJobSeekerAlreadyUsed($pdo, $email, $firstName, $lastName) {
+    $purposeCond = "(LOWER(TRIM(c.purpose)) IN ('jobseeker', 'job seeker'))";
+    $checkEmailColumn = $pdo->query("SHOW COLUMNS FROM certification_forms LIKE 'email'");
+    $emailColumnExists = $checkEmailColumn->rowCount() > 0;
+
+    if ($emailColumnExists && $email) {
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM certification_forms c WHERE $purposeCond AND c.email = ?");
+        $stmt->execute([$email]);
+        return ((int) $stmt->fetchColumn()) > 0;
+    }
+
+    $fn = trim((string) ($firstName ?? ''));
+    $ln = trim((string) ($lastName ?? ''));
+    if ($fn === '' || $ln === '') {
+        return false;
+    }
+
+    $stmt = $pdo->prepare("
+        SELECT COUNT(*) FROM certification_forms c
+        WHERE $purposeCond
+        AND LOWER(TRIM(c.first_name)) = LOWER(?)
+        AND LOWER(TRIM(c.last_name)) = LOWER(?)
+    ");
+    $stmt->execute([$fn, $ln]);
+    return ((int) $stmt->fetchColumn()) > 0;
+}
+
 // Function to insert Certification form data
 function insertCertificationForm($data) {
     $pdo = getDBConnection();
@@ -305,6 +335,15 @@ function insertCertificationForm($data) {
         $purpose = $data['purpose'];
         if ($purpose === 'other' && !empty($data['other_purpose'])) {
             $purpose = $data['other_purpose'];
+        }
+
+        if (strtolower(trim((string) $purpose)) === 'jobseeker') {
+            if (certificationJobSeekerAlreadyUsed($pdo, $data['email'] ?? null, $data['first_name'] ?? '', $data['last_name'] ?? '')) {
+                return [
+                    'success' => false,
+                    'message' => 'The Job Seeker certification may be requested only once. You have already submitted this request.'
+                ];
+            }
         }
         
         // Handle valid_id - use custom value if "other" is selected

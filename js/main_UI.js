@@ -2,7 +2,6 @@
 
 // Global variables
 let currentUser = null;
-let editMode = false;
 let removeProfilePicPending = false;
 let pendingProfileSaveFormData = null;
 let pendingProfileNewEmail = null;
@@ -984,9 +983,6 @@ function logout() {
 function editProfile() {
     console.log('Opening edit profile modal');
     
-    // Reset edit mode
-    editMode = false;
-    
     // Show modal first
     const modal = document.getElementById('editProfileModal');
     modal.classList.add('active');
@@ -1140,81 +1136,15 @@ function closeEditProfileModal() {
     }
 }
 
-// Toggle edit mode
-function toggleEditMode() {
-    const modal = document.getElementById('editProfileModal');
-    const header = modal.querySelector('.modal-header h3');
-    const editBtn = document.getElementById('editProfileBtn');
-    const formActions = document.getElementById('formActions');
-    
-    if (editMode === false) {
-        // Enter edit mode
-        editMode = true;
-        header.textContent = 'Edit Profile';
-        editBtn.innerHTML = '<i class="fas fa-eye"></i><span>View</span>';
-        formActions.style.display = 'flex';
-        
-        // Enable all inputs except email
-        enableInputs();
-        updateRemoveProfilePicButtonVisibility();
-        updateProfilePhotoControlsVisibility();
-    } else {
-        // Exit edit mode
-        exitEditMode();
-    }
-}
-
-// Exit edit mode
+// Exit view-only state (profile fields stay readonly; only profile photo can be updated)
 function exitEditMode() {
-    editMode = false;
     const modal = document.getElementById('editProfileModal');
-    const header = modal.querySelector('.modal-header h3');
-    const editBtn = document.getElementById('editProfileBtn');
-    const formActions = document.getElementById('formActions');
-    
-    header.textContent = 'View Profile';
-    editBtn.innerHTML = '<i class="fas fa-edit"></i><span>Edit</span>';
-    if (formActions) formActions.style.display = 'none';
-    
-    // Disable all inputs except email (keep readonly)
+    const header = modal?.querySelector('.modal-header h3');
+    if (header) header.textContent = 'View Profile';
+
     disableInputs();
     updateRemoveProfilePicButtonVisibility();
     updateProfilePhotoControlsVisibility();
-}
-
-// Enable inputs for editing
-function enableInputs() {
-    const inputs = ['firstName', 'middleName', 'lastName', 'suffix', 'userEmail', 'age', 'birthday', 'userAddress'];
-    const selects = ['sex', 'civilStatus'];
-    
-    inputs.forEach(id => {
-        const input = document.getElementById(id);
-        if (input) {
-            input.removeAttribute('readonly');
-            
-            // Only set as required if it's not optional field
-            const optionalFields = ['middleName', 'suffix'];
-            if (!optionalFields.includes(input.id)) {
-                input.required = true;
-            } else {
-                input.required = false;
-            }
-            
-            // Remove readonly styling class
-            input.classList.remove('readonly-field');
-            if (input.placeholder === 'None') {
-                input.placeholder = input.id === 'middleName' || input.id === 'suffix' ? '' : 'Enter your ' + id.replace(/([A-Z])/g, ' $1').toLowerCase();
-            }
-        }
-    });
-    
-    selects.forEach(id => {
-        const select = document.getElementById(id);
-        if (select) {
-            select.disabled = false;
-            select.required = true;
-        }
-    });
 }
 
 // Disable inputs (view mode)
@@ -1281,7 +1211,7 @@ function cancelEmailChangeVerification() {
     pendingProfileSaveFormData = null;
     pendingProfileNewEmail = null;
     closeEmailChangeModal();
-    const saveBtn = document.querySelector('.save-btn');
+    const saveBtn = document.querySelector('#editProfileForm .save-btn');
     if (saveBtn) {
         saveBtn.classList.remove('loading');
         saveBtn.disabled = false;
@@ -1332,59 +1262,57 @@ window.closeEmailChangeModal = closeEmailChangeModal;
 window.cancelEmailChangeVerification = cancelEmailChangeVerification;
 window.submitEmailChangeCode = submitEmailChangeCode;
 
-// Cancel edit
-function cancelEdit() {
-    exitEditMode();
-    // Optionally reload the data
-    loadUserDataForEditProfile();
-}
-
 function previewProfileImage(input) {
     if (input.files && input.files[0]) {
         const reader = new FileReader();
-        
-        reader.onload = function(e) {
+
+        reader.onload = function (e) {
             const profilePreview = document.getElementById('profilePreview');
             const profilePlaceholder = document.getElementById('profilePlaceholder');
             const initialsModal = document.querySelector('.profile-initials-modal');
-            
+
             profilePreview.src = e.target.result;
             profilePreview.style.display = 'block';
             profilePlaceholder.style.display = 'none';
             if (initialsModal) initialsModal.style.display = 'none';
 
-            // New upload overrides any pending removal
             removeProfilePicPending = false;
             updateRemoveProfilePicButtonVisibility(true);
+
+            saveProfileChanges();
         };
-        
+
         reader.readAsDataURL(input.files[0]);
     }
 }
 
-function updateRemoveProfilePicButtonVisibility(forceEditing = false) {
+function updateRemoveProfilePicButtonVisibility(forceShow = false) {
     const btn = document.getElementById('removeProfilePicBtn');
     const profilePreview = document.getElementById('profilePreview');
     if (!btn || !profilePreview) return;
 
-    const isEditing = forceEditing ? true : !!editMode;
-    // Show X button in edit mode even if placeholder is visible (so it stays visible after removal)
-    btn.style.display = isEditing ? 'flex' : 'none';
+    if (forceShow) {
+        btn.style.display = 'flex';
+        return;
+    }
+    const hasPhoto =
+        profilePreview.style.display !== 'none' &&
+        profilePreview.getAttribute('src') &&
+        profilePreview.getAttribute('src').trim() !== '';
+    btn.style.display = hasPhoto ? 'flex' : 'none';
 }
 
 function updateProfilePhotoControlsVisibility() {
     const controls = document.querySelector('.profile-picture-group .upload-controls');
     if (!controls) return;
-    controls.style.display = editMode ? 'flex' : 'none';
+    controls.style.display = 'flex';
 }
 
 async function removeProfilePicture() {
     const userEmail = sessionStorage.getItem('user_email') || localStorage.getItem('user_email');
     if (!userEmail) return;
 
-    // Removal is staged; actual delete happens on "Save Changes"
-    if (!editMode) return;
-
+    // Removal is staged; actual delete happens on "Save profile photo"
     removeProfilePicPending = true;
 
     const profilePreview = document.getElementById('profilePreview');
@@ -1414,8 +1342,9 @@ async function removeProfilePicture() {
         }
     }
 
-    // Keep X visible in edit mode (placeholder state)
     updateRemoveProfilePicButtonVisibility();
+
+    saveProfileChanges();
 }
 
 // Make removeProfilePicture available for inline HTML onclick
@@ -1425,15 +1354,22 @@ async function saveProfileChanges() {
     console.log('Saving profile changes');
     
     const form = document.getElementById('editProfileForm');
-    const saveBtn = document.querySelector('.save-btn');
+    const saveBtn = document.querySelector('#editProfileForm .save-btn');
     const formData = new FormData(form);
-    
+    // Disabled <select> fields (sex, civilStatus) are not included in FormData — server requires them
+    const sexEl = document.getElementById('sex');
+    const civilEl = document.getElementById('civilStatus');
+    if (sexEl) formData.set('sex', sexEl.value);
+    if (civilEl) formData.set('civilStatus', civilEl.value);
+
     // Show loading state (full-screen overlay + button spinner)
     if (typeof showFullScreenLoading === 'function') {
         showFullScreenLoading('Saving profile...');
     }
-    saveBtn.classList.add('loading');
-    saveBtn.disabled = true;
+    if (saveBtn) {
+        saveBtn.classList.add('loading');
+        saveBtn.disabled = true;
+    }
     
     // Clear any existing messages
     const existingMessage = document.querySelector('.form-message');
@@ -1459,8 +1395,11 @@ async function saveProfileChanges() {
     // Optional fields don't need validation
     if (!firstName || !lastName || !age || !sex || !birthday || !civilStatus || !address) {
         showFormMessage('Please fill in all required fields.', 'error');
-        saveBtn.classList.remove('loading');
-        saveBtn.disabled = false;
+        if (saveBtn) {
+            saveBtn.classList.remove('loading');
+            saveBtn.disabled = false;
+        }
+        if (typeof hideFullScreenLoading === 'function') hideFullScreenLoading();
         return;
     }
     
@@ -1470,8 +1409,10 @@ async function saveProfileChanges() {
 
         if (!storedEmail) {
             showFormMessage('No user session found. Please login again.', 'error');
-            saveBtn.classList.remove('loading');
-            saveBtn.disabled = false;
+            if (saveBtn) {
+                saveBtn.classList.remove('loading');
+                saveBtn.disabled = false;
+            }
             if (typeof hideFullScreenLoading === 'function') {
                 hideFullScreenLoading();
             }
@@ -1480,8 +1421,10 @@ async function saveProfileChanges() {
 
         if (!enteredEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(enteredEmail)) {
             showFormMessage('Please enter a valid email address.', 'error');
-            saveBtn.classList.remove('loading');
-            saveBtn.disabled = false;
+            if (saveBtn) {
+                saveBtn.classList.remove('loading');
+                saveBtn.disabled = false;
+            }
             if (typeof hideFullScreenLoading === 'function') {
                 hideFullScreenLoading();
             }
@@ -1512,8 +1455,10 @@ async function saveProfileChanges() {
             const otpData = await otpRes.json();
             if (!otpData.success) {
                 showFormMessage(otpData.message || 'Failed to send verification code.', 'error');
-                saveBtn.classList.remove('loading');
-                saveBtn.disabled = false;
+                if (saveBtn) {
+                    saveBtn.classList.remove('loading');
+                    saveBtn.disabled = false;
+                }
                 if (typeof hideFullScreenLoading === 'function') {
                     hideFullScreenLoading();
                 }
@@ -1524,7 +1469,9 @@ async function saveProfileChanges() {
             pendingProfileNewEmail = enteredEmail;
             openEmailChangeModal();
             // Stop loading while user enters code
-            saveBtn.classList.remove('loading');
+            if (saveBtn) {
+                saveBtn.classList.remove('loading');
+            }
             if (typeof hideFullScreenLoading === 'function') {
                 hideFullScreenLoading();
             }
@@ -1535,8 +1482,10 @@ async function saveProfileChanges() {
     } catch (error) {
         console.error('Error saving profile:', error);
         showFormMessage('Error updating profile. Please try again.', 'error');
-        saveBtn.classList.remove('loading');
-        saveBtn.disabled = false;
+        if (saveBtn) {
+            saveBtn.classList.remove('loading');
+            saveBtn.disabled = false;
+        }
         if (typeof hideFullScreenLoading === 'function') {
             hideFullScreenLoading();
         }
@@ -1544,7 +1493,7 @@ async function saveProfileChanges() {
 }
 
 async function performProfileSave(formData) {
-    const saveBtn = document.querySelector('.save-btn');
+    const saveBtn = document.querySelector('#editProfileForm .save-btn');
     try {
         if (saveBtn) {
             saveBtn.classList.add('loading');
@@ -1621,13 +1570,11 @@ async function performProfileSave(formData) {
                 showFormMessage('Profile updated successfully!', 'success');
             }
             
-            // Exit edit mode (back to View Profile) after a short delay, keep modal open
             setTimeout(() => {
                 exitEditMode();
+                loadUserDataForEditProfile();
                 const modalBody = document.querySelector('#editProfileModal .modal-body');
-                if (modalBody) {
-                    modalBody.scrollTop = 0; // scroll to top of profile content
-                }
+                if (modalBody) modalBody.scrollTop = 0;
             }, 1500);
             
         } else {
@@ -1684,14 +1631,6 @@ function updateUserGreeting(userEmail) {
 
 // Setup edit profile event listeners
 function setupEditProfileEventListeners() {
-    const editProfileForm = document.getElementById('editProfileForm');
-    if (editProfileForm) {
-        editProfileForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            saveProfileChanges();
-        });
-    }
-
     // Auto-update age when birthday changes in Edit Profile
     const birthdayInput = document.getElementById('birthday');
     const ageInput = document.getElementById('age');
