@@ -12,6 +12,63 @@ let idTypeValidation = {
     certification: { ok: false, idTypeMatch: false, validatedFile: null, expectedIdType: null, detectedIdType: null, errorMessage: null }
 };
 
+/** Default location lines for document requests (Barangay Bigte) */
+const DOC_REQ_DEFAULT_BARANGAY = 'Bigte';
+const DOC_REQ_DEFAULT_MUNICIPALITY = 'Norzagaray';
+const DOC_REQ_DEFAULT_PROVINCE = 'Bulacan';
+
+/**
+ * One-line address for forms and reports: "Sitio, Brgy Bigte, Norzagaray, Bulacan"
+ * @param {string} sitioStreet - Sitio / street / block (first segment(s))
+ */
+function formatDocRequestAddressLine(sitioStreet, barangay, municipality, province) {
+    const brgy = (barangay && String(barangay).trim()) || DOC_REQ_DEFAULT_BARANGAY;
+    const muni = (municipality && String(municipality).trim()) || DOC_REQ_DEFAULT_MUNICIPALITY;
+    const prov = (province && String(province).trim()) || DOC_REQ_DEFAULT_PROVINCE;
+    const sitio = (sitioStreet && String(sitioStreet).trim()) || '';
+    const sitioPart = sitio || '—';
+    return `${sitioPart}, Brgy ${brgy}, ${muni}, ${prov}`;
+}
+
+/**
+ * Split resident_information.address into parts for sitio vs. barangay/municipality/province.
+ */
+function parseProfileAddressForDocRequest(raw) {
+    const out = {
+        sitio: '',
+        barangay: DOC_REQ_DEFAULT_BARANGAY,
+        municipality: DOC_REQ_DEFAULT_MUNICIPALITY,
+        province: DOC_REQ_DEFAULT_PROVINCE
+    };
+    if (!raw || !String(raw).trim()) return out;
+    const parts = String(raw).split(',').map(p => p.trim()).filter(Boolean);
+    if (parts.length === 0) return out;
+    if (parts.length === 1) {
+        out.sitio = parts[0];
+        return out;
+    }
+    const lower = parts.map(p => p.toLowerCase());
+    let i = parts.length - 1;
+    if (i >= 0 && lower[i].includes('bulacan')) {
+        out.province = parts[i];
+        i--;
+    }
+    if (i >= 0 && lower[i].includes('norzagaray')) {
+        out.municipality = parts[i];
+        i--;
+    }
+    if (i >= 0 && (lower[i].includes('bigte') || /\bbarangay\b/i.test(parts[i]) || /^\s*brgy\.?\s/i.test(parts[i]))) {
+        let b = parts[i].replace(/^\s*barangay\s+/i, '').replace(/^\s*brgy\.?\s*/i, '').trim();
+        if (!b) b = DOC_REQ_DEFAULT_BARANGAY;
+        out.barangay = b;
+        i--;
+    }
+    if (i >= 0) {
+        out.sitio = parts.slice(0, i + 1).join(', ');
+    }
+    return out;
+}
+
 // ID Validation Helper Functions
 function fileToBase64(file) {
     return new Promise((resolve, reject) => {
@@ -801,6 +858,27 @@ function populateUserToAllForms(user) {
     
     setRadioByName('gender', sex);
     setRadioByName('civilStatus', civilStatus);
+
+    const rawAddr = user.address || '';
+    const parsedAddr = parseProfileAddressForDocRequest(rawAddr);
+    const addressOneLine = formatDocRequestAddressLine(
+        parsedAddr.sitio,
+        parsedAddr.barangay,
+        parsedAddr.municipality,
+        parsedAddr.province
+    );
+
+    const streetEl = document.getElementById('streetAddress');
+    if (streetEl) streetEl.value = parsedAddr.sitio;
+
+    const certAddr = document.getElementById('certAddress');
+    if (certAddr) certAddr.value = addressOneLine;
+    const coeAddr = document.getElementById('coeAddress');
+    if (coeAddr) coeAddr.value = addressOneLine;
+    const indAddr = document.getElementById('indAddress');
+    if (indAddr) indAddr.value = addressOneLine;
+    const clearAddr = document.getElementById('clearAddress');
+    if (clearAddr) clearAddr.value = addressOneLine;
 
     // Certification form
     const certFirst = document.getElementById('certFirstName');
@@ -2258,11 +2336,11 @@ async function handleBarangayIdSubmission(e) {
 
 // Display Barangay ID Preview
 function displayBarangayIdPreview(formData) {
-    const province = formData.get('province') || 'Bulacan';
-    const municipality = formData.get('municipality') || 'Norzagaray';
-    const barangay = formData.get('barangay') || 'Bigte';
+    const province = formData.get('province') || DOC_REQ_DEFAULT_PROVINCE;
+    const municipality = formData.get('municipality') || DOC_REQ_DEFAULT_MUNICIPALITY;
+    const barangay = formData.get('barangay') || DOC_REQ_DEFAULT_BARANGAY;
     const streetAddress = formData.get('streetAddress');
-    const fullAddress = `${streetAddress}, ${barangay}, ${municipality}, ${province}`;
+    const fullAddress = formatDocRequestAddressLine(streetAddress, barangay, municipality, province);
     
     let validId = formData.get('idType');
     if (validId === 'other' && formData.get('otherIdType')) {
@@ -2349,12 +2427,12 @@ async function finalSubmitBarangayId() {
         
         // Prepare data for submission
         // Combine Province, Municipality, Barangay, and Street Address into one address field
-        const province = formData.get('province') || 'Bulacan';
-        const municipality = formData.get('municipality') || 'Norzagaray';
-        const barangay = formData.get('barangay') || 'Bigte';
+        const province = formData.get('province') || DOC_REQ_DEFAULT_PROVINCE;
+        const municipality = formData.get('municipality') || DOC_REQ_DEFAULT_MUNICIPALITY;
+        const barangay = formData.get('barangay') || DOC_REQ_DEFAULT_BARANGAY;
         const streetAddress = formData.get('streetAddress');
-        
-        const fullAddress = `${streetAddress}, ${barangay}, ${municipality}, ${province}`;
+
+        const fullAddress = formatDocRequestAddressLine(streetAddress, barangay, municipality, province);
         
         // Get user email
         const userEmail = sessionStorage.getItem('user_email') || localStorage.getItem('user_email');
@@ -2518,7 +2596,7 @@ async function handleCertificationSubmission(e) {
         isValid = false;
         const certPurposeEl = document.getElementById('certPurpose');
         if (certPurposeEl) {
-            showFieldError(certPurposeEl, 'The Job Seeker form may be requested only once.');
+            showFieldError(certPurposeEl, 'Nakakuha ka na ng Job Seeker certification. Isang beses lamang ito.');
         }
     }
     
@@ -2940,12 +3018,12 @@ async function finalSubmitCertification() {
             await Swal.fire({
                 icon: 'info',
                 title: 'Job Seeker',
-                text: 'The Job Seeker certification may be requested only once. You have already submitted this request.',
+                text: 'Nakakuha ka na ng Job Seeker certification. Isang beses lamang itong maaaring hilingin.',
                 confirmButtonText: 'OK',
                 confirmButtonColor: '#17a2b8'
             });
         } else {
-            showMessage('The Job Seeker certification may be requested only once.', 'error', 'certificationFormElement');
+            showMessage('Nakakuha ka na ng Job Seeker certification. Isang beses lamang ito.', 'error', 'certificationFormElement');
         }
         return;
     }
@@ -4034,20 +4112,19 @@ function displayBarangayIdForm(formData) {
         hour12: true
     });
     
-    // Get values from readonly input fields since they have placeholders
-    const provinceInput = document.getElementById('province');
-    const municipalityInput = document.getElementById('municipality');
-    const barangayInput = document.getElementById('barangay');
-    
+    const province = formData.get('province') || DOC_REQ_DEFAULT_PROVINCE;
+    const municipality = formData.get('municipality') || DOC_REQ_DEFAULT_MUNICIPALITY;
+    const barangay = formData.get('barangay') || DOC_REQ_DEFAULT_BARANGAY;
+    const streetAddress = formData.get('streetAddress');
+    const displayAddressLine = formatDocRequestAddressLine(streetAddress, barangay, municipality, province);
+
     // Update display elements
     document.getElementById('displayBarangayIdLastName').textContent = formData.get('lastName');
     document.getElementById('displayBarangayIdFirstName').textContent = formData.get('firstName');
     document.getElementById('displayBarangayIdMiddleName').textContent = formData.get('middleName') || '-';
     document.getElementById('displayBarangayIdBirthDate').textContent = formData.get('birthDate');
-    document.getElementById('displayBarangayIdProvince').textContent = provinceInput ? provinceInput.placeholder : '-';
-    document.getElementById('displayBarangayIdMunicipality').textContent = municipalityInput ? municipalityInput.placeholder : '-';
-    document.getElementById('displayBarangayIdBarangay').textContent = barangayInput ? barangayInput.placeholder : '-';
-    document.getElementById('displayBarangayIdStreetAddress').textContent = formData.get('streetAddress');
+    const displayBarangayIdAddressEl = document.getElementById('displayBarangayIdAddress');
+    if (displayBarangayIdAddressEl) displayBarangayIdAddressEl.textContent = displayAddressLine;
     document.getElementById('displayBarangayIdHeight').textContent = formData.get('height') + ' cm';
     document.getElementById('displayBarangayIdWeight').textContent = formData.get('weight') + ' kg';
     document.getElementById('displayBarangayIdCivilStatus').textContent = formData.get('civilStatus').charAt(0).toUpperCase() + formData.get('civilStatus').slice(1);
@@ -4544,7 +4621,30 @@ function toggleOtherInput(selectId, inputId) {
 
 // Toggle Certification Form Conditional Fields
 function toggleCertificationConditionalFields() {
-    const purpose = document.getElementById('certPurpose').value;
+    const purposeEl = document.getElementById('certPurpose');
+    let purpose = purposeEl ? purposeEl.value : '';
+    if (purpose === 'jobseeker' && window.certificationJobSeekerUsed) {
+        if (purposeEl) purposeEl.value = '';
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'info',
+                title: 'Job Seeker',
+                text: 'Nakakuha ka na ng Job Seeker certification. Isang beses lamang itong maaaring hilingin.',
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#17a2b8'
+            });
+        }
+        if (typeof toggleOtherInput === 'function') {
+            toggleOtherInput('certPurpose', 'otherCertPurpose');
+        }
+        toggleCertificationConditionalFields();
+        return;
+    }
+    purpose = purposeEl ? purposeEl.value : '';
+    const jobseekerNote = document.getElementById('certPurposeJobseekerNote');
+    if (jobseekerNote) {
+        jobseekerNote.style.display = purpose === 'jobseeker' ? 'block' : 'none';
+    }
     const citizenshipGroup = document.getElementById('certCitizenshipGroup');
     const citizenshipSelect = document.getElementById('certCitizenship');
     const residencyCitizenshipGroup = document.getElementById('certResidencyCitizenshipGroup');
@@ -6117,16 +6217,15 @@ function initializeBirthDateYearRestriction() {
     console.log('Birth date year restriction initialized');
 }
 
-/** Disable Job Seeker in certification purpose after one successful submission (server flag). */
+/** Job Seeker remains selectable; duplicate attempts show SweetAlert (see toggleCertificationConditionalFields). */
 function applyCertificationJobSeekerOptionState() {
     const sel = document.getElementById('certPurpose');
     if (!sel) return;
     const opt = sel.querySelector('option[value="jobseeker"]');
     if (!opt) return;
-    const used = !!window.certificationJobSeekerUsed;
-    opt.disabled = used;
-    opt.setAttribute('aria-disabled', used ? 'true' : 'false');
-    if (used && sel.value === 'jobseeker') {
+    opt.disabled = false;
+    opt.removeAttribute('aria-disabled');
+    if (window.certificationJobSeekerUsed && sel.value === 'jobseeker') {
         sel.value = '';
         if (typeof toggleCertificationConditionalFields === 'function') {
             toggleCertificationConditionalFields();

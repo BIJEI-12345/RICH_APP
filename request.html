@@ -156,8 +156,8 @@
                                 <input type="text" id="barangay" name="barangay" placeholder="Bigte" readonly style="background-color: #f5f5f5; color: #000000; font-weight: normal;">
                             </div>
                             <div class="form-group">
-                                <label for="streetAddress">Kalye: <span class="required-indicator">*</span></label>
-                                <input type="text" id="streetAddress" name="streetAddress" placeholder="(Blg., Bahay Blg., Kalye)" required>
+                                <label for="streetAddress">Sitio / Kalye: <span class="required-indicator">*</span></label>
+                                <input type="text" id="streetAddress" name="streetAddress" placeholder="Hal.: Sitio Maligaya, Blk 5, Kalye…" required>
                             </div>
                             <div class="form-group">
                                 <label>Status: <span class="required-indicator">*</span></label>
@@ -421,38 +421,8 @@
                                 <i class="fas fa-map-marker-alt"></i>
                             </div>
                             <div class="detail-content">
-                                <div class="detail-label">Province</div>
-                                <div class="detail-value" id="displayBarangayIdProvince">-</div>
-                            </div>
-                        </div>
-
-                        <div class="detail-item">
-                            <div class="detail-icon">
-                                <i class="fas fa-map-marker-alt"></i>
-                            </div>
-                            <div class="detail-content">
-                                <div class="detail-label">Municipality</div>
-                                <div class="detail-value" id="displayBarangayIdMunicipality">-</div>
-                            </div>
-                        </div>
-
-                        <div class="detail-item">
-                            <div class="detail-icon">
-                                <i class="fas fa-map-marker-alt"></i>
-                            </div>
-                            <div class="detail-content">
-                                <div class="detail-label">Barangay</div>
-                                <div class="detail-value" id="displayBarangayIdBarangay">-</div>
-                            </div>
-                        </div>
-
-                        <div class="detail-item">
-                            <div class="detail-icon">
-                                <i class="fas fa-map-marker-alt"></i>
-                            </div>
-                            <div class="detail-content">
-                                <div class="detail-label">Street Address</div>
-                                <div class="detail-value" id="displayBarangayIdStreetAddress">-</div>
+                                <div class="detail-label">Address</div>
+                                <div class="detail-value" id="displayBarangayIdAddress">-</div>
                             </div>
                         </div>
 
@@ -593,7 +563,7 @@
                                 <option value="jobseeker">Job Seeker</option>
                                 <option value="certification-for-dead">Certificataion for Dead</option>
                             </select>
-                            <p class="cert-purpose-jobseeker-note" style="font-size: 0.85rem; color: #5a5a5a; margin: 8px 0 0 0; line-height: 1.4;">Note: The form (Job Seeker) is generally granted only once.</p>
+                            <p id="certPurposeJobseekerNote" class="cert-purpose-jobseeker-note" style="display: none;">Note: The form (Job Seeker) is generally granted only ONCE.</p>
                         </div> 
                         <div class="form-group" id="otherCertPurposeGroup" style="display: none;">
                             <label for="otherCertPurpose">Mangyaring tukuyin ang Purpose: <span class="required-indicator">*</span></label>
@@ -610,8 +580,8 @@
                             <h2 class="step-title">Status Information</h2>
                             
                             <div class="form-group">
-                                <label for="certAddress">Kalye: <span class="required-indicator">*</span></label>
-                                <input type="text" id="certAddress" placeholder="(Blg., Bahay Blg., Kalye, Bayan, Lalawigan)" name="certAddress" required>
+                                <label for="certAddress">Address: <span class="required-indicator">*</span></label>
+                                <input type="text" id="certAddress" placeholder="Sitio, Brgy Bigte, Norzagaray, Bulacan" name="certAddress" required>
                             </div>
                             
                             <div class="form-group">
@@ -1211,7 +1181,7 @@
                         </div>
                         <div class="form-group">
                             <label for="coeAddress">Address: <span class="required-indicator">*</span></label>
-                            <input type="text" id="coeAddress" placeholder="(Blg., Bahay Blg., Kalye, Bayan, Lalawigan)" name="coeAddress" required>
+                            <input type="text" id="coeAddress" placeholder="Sitio, Brgy Bigte, Norzagaray, Bulacan" name="coeAddress" required>
                         </div>
                         <div class="form-group">
                             <label for="coeAge">Edad: <span class="required-indicator">*</span></label>
@@ -1631,7 +1601,7 @@
                         </div>
                         <div class="form-group">
                             <label for="indAddress">Address: <span class="required-indicator">*</span></label>
-                            <input type="text" id="indAddress" placeholder="(Blg., Bahay Blg., Kalye, Bayan, Lalawigan)" name="indAddress" required>
+                            <input type="text" id="indAddress" placeholder="Sitio, Brgy Bigte, Norzagaray, Bulacan" name="indAddress" required>
                         </div>
 
                             <div class="step-navigation">
@@ -2023,7 +1993,7 @@
                         </div>
                         <div class="form-group">
                             <label for="clearAddress">Address: <span class="required-indicator">*</span></label>
-                            <input type="text" id="clearAddress" placeholder="(Blg., Bahay Blg., Kalye, Bayan, Lalawigan)" name="clearAddress" required>
+                            <input type="text" id="clearAddress" placeholder="Sitio, Brgy Bigte, Norzagaray, Bulacan" name="clearAddress" required>
                         </div>
                         <div class="form-group">
                             <label for="clearPurpose">Layunin: <span class="required-indicator">*</span></label>

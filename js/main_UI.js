@@ -5,6 +5,10 @@ let currentUser = null;
 let removeProfilePicPending = false;
 let pendingProfileSaveFormData = null;
 let pendingProfileNewEmail = null;
+/** Snapshot when profile modal loads; used to detect edits to email & civil status */
+let profileEditBaseline = null;
+/** True after user taps Edit — email & civil status can be changed */
+let profileDetailsUnlocked = false;
 const CENSUS_REMIND_LATER_MINUTES = 2; // How long to hide the census reminder after "Remind Me Later" is clicked
 let censusReminderTimeoutId = null;
 
@@ -890,18 +894,6 @@ function toggleSettingsDropdown() {
     }
 }
 
-function editProfile() {
-    // Close dropdown
-    const dropdown = document.getElementById('settingsDropdown');
-    if (dropdown) {
-        dropdown.classList.remove('show');
-    }
-    
-    // Show edit profile modal or redirect to profile page
-    alert('Edit Profile functionality will be implemented soon!');
-    // TODO: Implement edit profile functionality
-}
-
 function logout() {
     // Close dropdown
     const dropdown = document.getElementById('settingsDropdown');
@@ -982,6 +974,8 @@ function logout() {
 // Edit Profile Modal Functions
 function editProfile() {
     console.log('Opening edit profile modal');
+    const dropdown = document.getElementById('settingsDropdown');
+    if (dropdown) dropdown.classList.remove('show');
     
     // Show modal first
     const modal = document.getElementById('editProfileModal');
@@ -1047,7 +1041,16 @@ async function loadUserDataForEditProfile() {
             }
             if (sexEl) sexEl.value = user.sex || '';
             if (birthdayEl) birthdayEl.value = user.birthday || '';
-            if (civilStatusEl) civilStatusEl.value = user.civil_status || '';
+            if (civilStatusEl) {
+                const rawCv = (user.civil_status || '').trim();
+                if (rawCv) {
+                    const civilMap = { single: 'Single', married: 'Married', widowed: 'Widowed', widow: 'Widowed' };
+                    const key = rawCv.toLowerCase();
+                    civilStatusEl.value = civilMap[key] || rawCv;
+                } else {
+                    civilStatusEl.value = 'Single';
+                }
+            }
             if (userAddressEl) userAddressEl.value = user.address || '';
 
             // Render uploaded valid ID image (from create account)
@@ -1067,8 +1070,10 @@ async function loadUserDataForEditProfile() {
                 }
             }
             
-            // Ensure inputs are in view mode
+            // View mode: email & civil status locked until user taps Edit
             disableInputs();
+            setProfileEditBaselineFromForm();
+            lockProfileDetails();
             
             // Load profile picture from database with initials fallback
             const profilePreview = document.getElementById('profilePreview');
@@ -1129,6 +1134,9 @@ function closeEditProfileModal() {
     const form = document.getElementById('editProfileForm');
     if (form) form.reset();
     
+    clearProfileSaveFooterMessage();
+    profileEditBaseline = null;
+    
     // Clear any error messages
     const existingMessage = document.querySelector('.form-message');
     if (existingMessage) {
@@ -1143,14 +1151,15 @@ function exitEditMode() {
     if (header) header.textContent = 'View Profile';
 
     disableInputs();
+    lockProfileDetails();
     updateRemoveProfilePicButtonVisibility();
     updateProfilePhotoControlsVisibility();
 }
 
-// Disable inputs (view mode)
+// Disable inputs (view mode). Email and civil status stay editable for Save Changes.
 function disableInputs() {
-    const inputs = ['firstName', 'middleName', 'lastName', 'suffix', 'userEmail', 'age', 'birthday', 'userAddress'];
-    const selects = ['sex', 'civilStatus'];
+    const inputs = ['firstName', 'middleName', 'lastName', 'suffix', 'age', 'birthday', 'userAddress'];
+    const selects = ['sex'];
     
     inputs.forEach(id => {
         const input = document.getElementById(id);
@@ -1177,6 +1186,114 @@ function normalizeEmail(value) {
     return (value || '').trim().toLowerCase();
 }
 
+function clearProfileSaveFooterMessage() {
+    const el = document.getElementById('profileNoChangesLabel');
+    if (el) el.style.display = 'none';
+}
+
+function showProfileNoChangesLabel() {
+    const el = document.getElementById('profileNoChangesLabel');
+    if (el) {
+        el.textContent = 'no changes to save';
+        el.style.display = 'block';
+    }
+}
+
+function wireProfileEditableFieldsOnce() {
+    const email = document.getElementById('userEmail');
+    const civil = document.getElementById('civilStatus');
+    if (email && !email.dataset.profileWire) {
+        email.dataset.profileWire = '1';
+        email.removeAttribute('readonly');
+        email.classList.remove('readonly-field');
+        email.addEventListener('input', clearProfileSaveFooterMessage);
+        email.addEventListener('change', clearProfileSaveFooterMessage);
+    }
+    if (civil && !civil.dataset.profileWire) {
+        civil.dataset.profileWire = '1';
+        civil.disabled = false;
+        civil.addEventListener('change', clearProfileSaveFooterMessage);
+    }
+}
+
+function setProfileEditBaselineFromForm() {
+    const emailEl = document.getElementById('userEmail');
+    const civilEl = document.getElementById('civilStatus');
+    profileEditBaseline = {
+        email: normalizeEmail(emailEl?.value || ''),
+        displayEmail: emailEl?.value || '',
+        civilStatus: (civilEl?.value || '').trim()
+    };
+    clearProfileSaveFooterMessage();
+}
+
+function lockProfileDetails() {
+    const email = document.getElementById('userEmail');
+    const civil = document.getElementById('civilStatus');
+    const fileInput = document.getElementById('profilePicture');
+    if (email) {
+        email.setAttribute('readonly', 'readonly');
+        email.classList.add('readonly-field');
+    }
+    if (civil) civil.disabled = true;
+    if (fileInput) fileInput.disabled = true;
+    profileDetailsUnlocked = false;
+    const editBtn = document.getElementById('profileEditDetailsBtn');
+    const footerActions = document.getElementById('profileFormFooterActions');
+    if (editBtn) editBtn.style.display = '';
+    if (footerActions) {
+        footerActions.style.display = 'none';
+        footerActions.setAttribute('aria-hidden', 'true');
+    }
+    updateProfilePhotoControlsVisibility();
+    updateRemoveProfilePicButtonVisibility();
+}
+
+function unlockProfileDetailsForEdit() {
+    const email = document.getElementById('userEmail');
+    const civil = document.getElementById('civilStatus');
+    const fileInput = document.getElementById('profilePicture');
+    if (email) {
+        email.removeAttribute('readonly');
+        email.classList.remove('readonly-field');
+    }
+    if (civil) civil.disabled = false;
+    if (fileInput) fileInput.disabled = false;
+    profileDetailsUnlocked = true;
+    const editBtn = document.getElementById('profileEditDetailsBtn');
+    const footerActions = document.getElementById('profileFormFooterActions');
+    if (editBtn) editBtn.style.display = 'none';
+    if (footerActions) {
+        footerActions.style.display = 'flex';
+        footerActions.setAttribute('aria-hidden', 'false');
+    }
+    wireProfileEditableFieldsOnce();
+    clearProfileSaveFooterMessage();
+    updateProfilePhotoControlsVisibility();
+    updateRemoveProfilePicButtonVisibility();
+}
+
+function cancelProfileDetailsEdit() {
+    if (pendingProfileSaveFormData || pendingProfileNewEmail) {
+        cancelEmailChangeVerification();
+    }
+    if (profileEditBaseline) {
+        const email = document.getElementById('userEmail');
+        const civil = document.getElementById('civilStatus');
+        if (email && profileEditBaseline.displayEmail !== undefined) {
+            email.value = profileEditBaseline.displayEmail;
+        }
+        if (civil && profileEditBaseline.civilStatus !== undefined) {
+            civil.value = profileEditBaseline.civilStatus;
+        }
+    }
+    lockProfileDetails();
+    clearProfileSaveFooterMessage();
+}
+
+window.unlockProfileDetailsForEdit = unlockProfileDetailsForEdit;
+window.cancelProfileDetailsEdit = cancelProfileDetailsEdit;
+
 function calculateAgeFromBirthday(birthdayStr) {
     if (!birthdayStr) return '';
     const birthDate = new Date(birthdayStr);
@@ -1191,6 +1308,7 @@ function calculateAgeFromBirthday(birthdayStr) {
 }
 
 function openEmailChangeModal() {
+    clearProfileSaveFooterMessage();
     const modal = document.getElementById('emailChangeModal');
     if (!modal) return;
     const codeInput = document.getElementById('emailChangeCode');
@@ -1211,7 +1329,7 @@ function cancelEmailChangeVerification() {
     pendingProfileSaveFormData = null;
     pendingProfileNewEmail = null;
     closeEmailChangeModal();
-    const saveBtn = document.querySelector('#editProfileForm .save-btn');
+    const saveBtn = document.getElementById('profileSaveChangesBtn') || document.querySelector('#editProfileForm .save-btn');
     if (saveBtn) {
         saveBtn.classList.remove('loading');
         saveBtn.disabled = false;
@@ -1263,6 +1381,7 @@ window.cancelEmailChangeVerification = cancelEmailChangeVerification;
 window.submitEmailChangeCode = submitEmailChangeCode;
 
 function previewProfileImage(input) {
+    if (!profileDetailsUnlocked) return;
     if (input.files && input.files[0]) {
         const reader = new FileReader();
 
@@ -1291,6 +1410,10 @@ function updateRemoveProfilePicButtonVisibility(forceShow = false) {
     const profilePreview = document.getElementById('profilePreview');
     if (!btn || !profilePreview) return;
 
+    if (!profileDetailsUnlocked) {
+        btn.style.display = 'none';
+        return;
+    }
     if (forceShow) {
         btn.style.display = 'flex';
         return;
@@ -1305,10 +1428,11 @@ function updateRemoveProfilePicButtonVisibility(forceShow = false) {
 function updateProfilePhotoControlsVisibility() {
     const controls = document.querySelector('.profile-picture-group .upload-controls');
     if (!controls) return;
-    controls.style.display = 'flex';
+    controls.style.display = profileDetailsUnlocked ? 'flex' : 'none';
 }
 
 async function removeProfilePicture() {
+    if (!profileDetailsUnlocked) return;
     const userEmail = sessionStorage.getItem('user_email') || localStorage.getItem('user_email');
     if (!userEmail) return;
 
@@ -1354,9 +1478,28 @@ async function saveProfileChanges() {
     console.log('Saving profile changes');
     
     const form = document.getElementById('editProfileForm');
-    const saveBtn = document.querySelector('#editProfileForm .save-btn');
+    const saveBtn = document.getElementById('profileSaveChangesBtn') || document.querySelector('#editProfileForm .save-btn');
+    
+    clearProfileSaveFooterMessage();
+    
+    // Save button with nothing to persist (email, civil status, photo remove/upload)
+    if (profileEditBaseline) {
+        const curEmail = normalizeEmail(document.getElementById('userEmail')?.value);
+        const curCivil = (document.getElementById('civilStatus')?.value || '').trim();
+        const hasNewFile = (document.getElementById('profilePicture')?.files?.length || 0) > 0;
+        if (
+            curEmail === profileEditBaseline.email &&
+            curCivil === profileEditBaseline.civilStatus &&
+            !hasNewFile &&
+            !removeProfilePicPending
+        ) {
+            showProfileNoChangesLabel();
+            return;
+        }
+    }
+    
     const formData = new FormData(form);
-    // Disabled <select> fields (sex, civilStatus) are not included in FormData — server requires them
+    // Disabled <select> fields (sex) are not included in FormData — server requires them
     const sexEl = document.getElementById('sex');
     const civilEl = document.getElementById('civilStatus');
     if (sexEl) formData.set('sex', sexEl.value);
@@ -1493,7 +1636,7 @@ async function saveProfileChanges() {
 }
 
 async function performProfileSave(formData) {
-    const saveBtn = document.querySelector('#editProfileForm .save-btn');
+    const saveBtn = document.getElementById('profileSaveChangesBtn') || document.querySelector('#editProfileForm .save-btn');
     try {
         if (saveBtn) {
             saveBtn.classList.add('loading');
@@ -1535,39 +1678,25 @@ async function performProfileSave(formData) {
             removeProfilePicPending = false;
             updateRemoveProfilePicButtonVisibility();
             
-            // Decide toast text based on whether there were actual changes
             const msg = (data.message || '').toLowerCase();
             const noChanges =
                 msg.includes('no changes') ||
                 msg.includes('no change') ||
                 msg.includes('no changes detected');
 
-            const toastTitle = noChanges ? 'No changes found' : 'Profile Updated Successfully';
-            const toastText = noChanges
-                ? 'There were no changes to save.'
-                : 'Your changes have been saved.';
-
-            // Show success notification with SweetAlert2 in upper center
-            if (typeof Swal !== 'undefined') {
+            if (noChanges) {
+                showProfileNoChangesLabel();
+            } else if (typeof Swal !== 'undefined') {
                 Swal.fire({
-                    iconHtml: noChanges
-                        ? '<i class="fas fa-info-circle"></i>'
-                        : '<i class="fas fa-check-circle"></i>',
-                    customClass: {
-                        // Reuse same green circle styling for both check and info icons
-                        icon: 'swal2-icon--fa-check'
-                    },
-                    title: toastTitle,
-                    text: toastText,
-                    timer: 5000,
-                    showConfirmButton: false,
-                    toast: true,
-                    position: 'top',
-                    width: '400px'
+                    icon: 'success',
+                    title: 'Updated successfully',
+                    text: 'Your profile has been updated.',
+                    confirmButtonColor: '#17a2b8',
+                    timer: 3500,
+                    timerProgressBar: true
                 });
             } else {
-                // Fallback if SweetAlert2 is not loaded
-                showFormMessage('Profile updated successfully!', 'success');
+                showFormMessage('Updated successfully', 'success');
             }
             
             setTimeout(() => {
@@ -1575,7 +1704,7 @@ async function performProfileSave(formData) {
                 loadUserDataForEditProfile();
                 const modalBody = document.querySelector('#editProfileModal .modal-body');
                 if (modalBody) modalBody.scrollTop = 0;
-            }, 1500);
+            }, noChanges ? 0 : 500);
             
         } else {
             showFormMessage(data.message || 'Error updating profile. Please try again.', 'error');

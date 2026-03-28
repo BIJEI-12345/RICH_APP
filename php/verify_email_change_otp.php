@@ -1,5 +1,5 @@
 <?php
-// Verify OTP for email change and update email in resident_information
+// Verify OTP for email change — reads from otp_verifications (same table as send_email_change_otp)
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
@@ -56,32 +56,20 @@ try {
         exit;
     }
 
-    // Ensure table exists
-    $pdo->exec("
-        CREATE TABLE IF NOT EXISTS email_change_otps (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            old_email VARCHAR(255) NOT NULL,
-            new_email VARCHAR(255) NOT NULL,
-            verification_code VARCHAR(6) NOT NULL,
-            expires_at TIMESTAMP NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_old_email (old_email),
-            INDEX idx_new_email (new_email)
-        )
-    ");
-
     $pdo->beginTransaction();
 
-    // Verify OTP
     $stmt = $pdo->prepare("
         SELECT id
-        FROM email_change_otps
-        WHERE old_email = ? AND new_email = ? AND verification_code = ? AND expires_at > NOW()
+        FROM otp_verifications
+        WHERE email = ?
+          AND verification_code = ?
+          AND expires_at > NOW()
         ORDER BY created_at DESC
         LIMIT 1
     ");
-    $stmt->execute([$oldEmail, $newEmail, $code]);
+    $stmt->execute([$newEmail, $code]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
     if (!$row) {
         $pdo->rollBack();
         http_response_code(400);
@@ -89,8 +77,7 @@ try {
         exit;
     }
 
-    // Ensure old email exists and new email still not used
-    $stmt = $pdo->prepare("SELECT id FROM resident_information WHERE email = ? AND email_verified = 1");
+    $stmt = $pdo->prepare('SELECT id FROM resident_information WHERE email = ? AND email_verified = 1');
     $stmt->execute([$oldEmail]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$user) {
@@ -100,7 +87,7 @@ try {
         exit;
     }
 
-    $stmt = $pdo->prepare("SELECT id FROM resident_information WHERE email = ? LIMIT 1");
+    $stmt = $pdo->prepare('SELECT id FROM resident_information WHERE email = ? LIMIT 1');
     $stmt->execute([$newEmail]);
     if ($stmt->fetch()) {
         $pdo->rollBack();
@@ -109,12 +96,10 @@ try {
         exit;
     }
 
-    // Update user email
-    $stmt = $pdo->prepare("UPDATE resident_information SET email = ?, updated_at = NOW() WHERE email = ? AND email_verified = 1");
+    $stmt = $pdo->prepare('UPDATE resident_information SET email = ?, updated_at = NOW() WHERE email = ? AND email_verified = 1');
     $stmt->execute([$newEmail, $oldEmail]);
 
-    // Delete OTP record
-    $stmt = $pdo->prepare("DELETE FROM email_change_otps WHERE id = ?");
+    $stmt = $pdo->prepare('DELETE FROM otp_verifications WHERE id = ?');
     $stmt->execute([$row['id']]);
 
     $pdo->commit();
@@ -124,9 +109,7 @@ try {
     if (isset($pdo) && $pdo->inTransaction()) {
         $pdo->rollBack();
     }
-    error_log("verify_email_change_otp DB error: " . $e->getMessage());
+    error_log('verify_email_change_otp DB error: ' . $e->getMessage());
     http_response_code(500);
     echo json_encode(['success' => false, 'message' => 'Verification failed']);
 }
-?>
-

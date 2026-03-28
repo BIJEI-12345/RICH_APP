@@ -1,5 +1,5 @@
 <?php
-// Send OTP for email change verification
+// Send OTP for email change verification — stores in otp_verifications (same as other OTP flows)
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
@@ -55,7 +55,6 @@ try {
         exit;
     }
 
-    // Ensure user exists with old email
     $stmt = $pdo->prepare("SELECT first_name, last_name, email_verified FROM resident_information WHERE email = ? AND email_verified = 1");
     $stmt->execute([$oldEmail]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -65,7 +64,6 @@ try {
         exit;
     }
 
-    // Ensure new email not already in use
     $stmt = $pdo->prepare("SELECT id FROM resident_information WHERE email = ? LIMIT 1");
     $stmt->execute([$newEmail]);
     if ($stmt->fetch()) {
@@ -74,56 +72,83 @@ try {
         exit;
     }
 
-    // Create email change otp table if missing
     $pdo->exec("
-        CREATE TABLE IF NOT EXISTS email_change_otps (
+        CREATE TABLE IF NOT EXISTS otp_verifications (
             id INT AUTO_INCREMENT PRIMARY KEY,
-            old_email VARCHAR(255) NOT NULL,
-            new_email VARCHAR(255) NOT NULL,
-            verification_code VARCHAR(6) NOT NULL,
+            email VARCHAR(255) NOT NULL,
+            verification_code VARCHAR(16) NOT NULL,
             expires_at TIMESTAMP NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_old_email (old_email),
-            INDEX idx_new_email (new_email)
-        )
+            INDEX idx_otp_email (email),
+            INDEX idx_otp_expires (expires_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     ");
 
-    // Generate OTP and store (3 min)
     $code = str_pad(random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
 
-    // Delete any previous pending records for this old/new combo
-    $stmt = $pdo->prepare("DELETE FROM email_change_otps WHERE old_email = ? OR new_email = ?");
-    $stmt->execute([$oldEmail, $newEmail]);
+    // OTP is for the NEW address (where we send the email)
+    $stmt = $pdo->prepare('DELETE FROM otp_verifications WHERE email = ?');
+    $stmt->execute([$newEmail]);
 
-    $stmt = $pdo->prepare("
-        INSERT INTO email_change_otps (old_email, new_email, verification_code, expires_at, created_at)
-        VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL 3 MINUTE), NOW())
-    ");
-    $stmt->execute([$oldEmail, $newEmail, $code]);
+    $stmt = $pdo->prepare('
+        INSERT INTO otp_verifications (email, verification_code, expires_at, created_at)
+        VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 3 MINUTE), NOW())
+    ');
+    $stmt->execute([$newEmail, $code]);
 
-    // Send email to new address
-    require_once __DIR__ . '/EmailSender.php';
-    $sender = new EmailSender();
     $fullName = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''));
-    $emailResult = $sender->sendOTPEmail($newEmail, $code, $fullName ?: 'Resident');
+    if ($fullName === '') {
+        $fullName = 'Resident';
+    }
 
-    // Always log code for testing
-    error_log("=== EMAIL CHANGE OTP CODE FOR TESTING ===");
-    error_log("Old Email: " . $oldEmail);
-    error_log("New Email: " . $newEmail);
-    error_log("OTP Code: " . $code);
-    error_log("========================================");
+    $emailResult = null;
+    try {
+        require_once __DIR__ . '/EmailSender.php';
+        $sender = new EmailSender();
+        $emailResult = $sender->sendEmailChangeOTPEmail($newEmail, $code, $fullName);
+    } catch (Exception $e) {
+        error_log('send_email_change_otp EmailSender: ' . $e->getMessage());
+        $emailResult = [
+            'success' => false,
+            'message' => 'Email could not be sent: ' . $e->getMessage(),
+            'error' => $e->getMessage(),
+        ];
+    }
 
-    // Even if email fails, keep it as success (code stored + logged)
+    $sent = $emailResult && !empty($emailResult['success']);
+
+    // If SMTP failed or is not configured, try PHP mail() (works on some XAMPP setups when sendmail is set)
+    if (!$sent && function_exists('mail')) {
+        $from = $_ENV['SMTP_FROM_EMAIL'] ?? getenv('SMTP_FROM_EMAIL') ?: 'noreply@localhost';
+        $subject = 'RICH APP — OTP to change your email';
+        $plain = "Hello {$fullName},\r\n\r\nThis OTP to change your email in RICH APP.\r\n\r\nYour 6-digit code: {$code}\r\n\r\nThe OTP will expire in 3 minutes.\r\n";
+        $headers = 'From: ' . $from . "\r\nMIME-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\n";
+        if (@mail($newEmail, $subject, $plain, $headers)) {
+            $sent = true;
+            $emailResult = [
+                'success' => true,
+                'message' => 'Verification code sent to your new email',
+            ];
+            error_log('send_email_change_otp: delivered via PHP mail() to ' . $newEmail);
+        }
+    }
+
+    $errMsg = $emailResult['error'] ?? ($emailResult['message'] ?? 'Unknown error');
+
     echo json_encode([
         'success' => true,
-        'message' => $emailResult['success'] ? 'Verification code sent to your new email' : 'Code generated. Please check server logs for the code.',
-        'otp_code' => $code // for testing
+        'message' => $sent
+            ? ($emailResult['message'] ?? 'Verification code sent to your new email')
+            : ('OTP saved. Email not delivered — configure SMTP in .env or enable sendmail (' . $errMsg . '). Check server logs for the code.'),
+        'email_sent' => $sent,
+        'otp_code' => $code,
     ]);
+
+    if (!$sent) {
+        error_log('send_email_change_otp: all delivery methods failed for new email; OTP in otp_verifications. ' . $errMsg);
+    }
 } catch (PDOException $e) {
-    error_log("send_email_change_otp DB error: " . $e->getMessage());
+    error_log('send_email_change_otp DB error: ' . $e->getMessage());
     http_response_code(500);
     echo json_encode(['success' => false, 'message' => 'Failed to send verification code']);
 }
-?>
-

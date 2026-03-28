@@ -14,6 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 // Database connection - Load from centralized config
 require_once __DIR__ . '/env_loader.php';
+require_once __DIR__ . '/jobseeker_claimed_lib.php';
 
 // Function to insert indigency form data
 function insertIndigencyForm($data) {
@@ -291,13 +292,16 @@ function certificationJobSeekerAlreadyUsed($pdo, $email, $firstName, $lastName) 
     if ($emailColumnExists && $email) {
         $stmt = $pdo->prepare("SELECT COUNT(*) FROM certification_forms c WHERE $purposeCond AND c.email = ?");
         $stmt->execute([$email]);
-        return ((int) $stmt->fetchColumn()) > 0;
+        if ((int) $stmt->fetchColumn() > 0) {
+            return true;
+        }
+        return jobseeker_claimed_matches_user($pdo, $email, $firstName, $lastName);
     }
 
     $fn = trim((string) ($firstName ?? ''));
     $ln = trim((string) ($lastName ?? ''));
     if ($fn === '' || $ln === '') {
-        return false;
+        return jobseeker_claimed_matches_user($pdo, $email, $firstName, $lastName);
     }
 
     $stmt = $pdo->prepare("
@@ -307,7 +311,11 @@ function certificationJobSeekerAlreadyUsed($pdo, $email, $firstName, $lastName) 
         AND LOWER(TRIM(c.last_name)) = LOWER(?)
     ");
     $stmt->execute([$fn, $ln]);
-    return ((int) $stmt->fetchColumn()) > 0;
+    if ((int) $stmt->fetchColumn() > 0) {
+        return true;
+    }
+
+    return jobseeker_claimed_matches_user($pdo, $email, $firstName, $lastName);
 }
 
 // Function to insert Certification form data
@@ -636,15 +644,16 @@ function insertCertificationForm($data) {
                 'message' => 'Certification form submitted successfully',
                 'form_id' => $formId
             ];
-        } else {
-            error_log("Certification form: Failed to insert - execute returned false");
-            return ['success' => false, 'message' => 'Failed to insert certification form'];
         }
+        error_log("Certification form: Failed to insert - execute returned false");
+        return ['success' => false, 'message' => 'Failed to insert certification form'];
         
     } catch (PDOException $e) {
         error_log("Failed to insert certification form: " . $e->getMessage());
         error_log("SQL Error Code: " . $e->getCode());
-        error_log("SQL Error Info: " . json_encode($stmt->errorInfo()));
+        if (isset($stmt) && $stmt instanceof PDOStatement) {
+            error_log("SQL Error Info: " . json_encode($stmt->errorInfo()));
+        }
         return ['success' => false, 'message' => 'Failed to insert certification form: ' . $e->getMessage()];
     }
 }

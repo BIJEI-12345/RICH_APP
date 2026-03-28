@@ -1518,6 +1518,15 @@ body {
     box-sizing: border-box;
 }
 
+/* Job Seeker purpose note — same teal as .next-btn */
+.cert-purpose-jobseeker-note {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: rgb(23, 162, 184);
+    margin: 8px 0 0 0;
+    line-height: 1.4;
+}
+
 .next-btn {
     background: linear-gradient(135deg, rgb(23, 162, 184) 0%, rgb(19, 132, 150) 100%);
     color: white;

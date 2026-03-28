@@ -59,6 +59,7 @@ try {
 
     // Database connection - Load from centralized config
     require_once __DIR__ . '/env_loader.php';
+    require_once __DIR__ . '/jobseeker_claimed_lib.php';
     $pdo = getDBConnection();
     if (!$pdo) {
         echo json_encode(['success' => false, 'message' => 'Database connection failed']);
@@ -173,6 +174,15 @@ try {
         ");
         $jsStmt->execute([$email]);
         $certificationJobSeekerUsed = ((int) $jsStmt->fetchColumn()) > 0;
+    }
+
+    if (!$certificationJobSeekerUsed) {
+        $certificationJobSeekerUsed = jobseeker_claimed_matches_user(
+            $pdo,
+            $email,
+            $user['first_name'] ?? '',
+            $user['last_name'] ?? ''
+        );
     }
 
     // COE - Check if email column exists, if yes query directly by email, otherwise use JOIN
