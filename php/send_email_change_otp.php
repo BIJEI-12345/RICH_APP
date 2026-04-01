@@ -55,12 +55,12 @@ try {
         exit;
     }
 
-    $stmt = $pdo->prepare("SELECT first_name, last_name, email_verified FROM resident_information WHERE email = ? AND email_verified = 1");
+    $stmt = $pdo->prepare("SELECT first_name, last_name FROM resident_information WHERE email = ? LIMIT 1");
     $stmt->execute([$oldEmail]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$user) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'User not found or email not verified']);
+        echo json_encode(['success' => false, 'message' => 'Current account email not found']);
         exit;
     }
 
@@ -135,20 +135,27 @@ try {
 
     $errMsg = $emailResult['error'] ?? ($emailResult['message'] ?? 'Unknown error');
 
+    if (!$sent) {
+        // OTP is already stored; return success so user can continue verification flow.
+        error_log('send_email_change_otp: all delivery methods failed for new email; OTP in otp_verifications. ' . $errMsg);
+        echo json_encode([
+            'success' => true,
+            'message' => 'OTP generated but email delivery failed. Check SMTP/sendmail configuration.',
+            'email_sent' => false,
+            'delivery_error' => $errMsg,
+            'otp_code' => $code,
+        ]);
+        exit;
+    }
+
     echo json_encode([
         'success' => true,
-        'message' => $sent
-            ? ($emailResult['message'] ?? 'Verification code sent to your new email')
-            : ('OTP saved. Email not delivered — configure SMTP in .env or enable sendmail (' . $errMsg . '). Check server logs for the code.'),
-        'email_sent' => $sent,
+        'message' => $emailResult['message'] ?? 'Verification code sent to your new email',
+        'email_sent' => true,
         'otp_code' => $code,
     ]);
-
-    if (!$sent) {
-        error_log('send_email_change_otp: all delivery methods failed for new email; OTP in otp_verifications. ' . $errMsg);
-    }
-} catch (PDOException $e) {
-    error_log('send_email_change_otp DB error: ' . $e->getMessage());
+} catch (Throwable $e) {
+    error_log('send_email_change_otp fatal error: ' . $e->getMessage());
     http_response_code(500);
     echo json_encode(['success' => false, 'message' => 'Failed to send verification code']);
 }

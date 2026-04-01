@@ -2269,6 +2269,28 @@ async function handleBarangayIdSubmission(e) {
         scrollToFirstError();
         return;
     }
+
+    const barangayAddressForCheck = formatDocRequestAddressLine(
+        formData.get('streetAddress'),
+        formData.get('barangay') || DOC_REQ_DEFAULT_BARANGAY,
+        formData.get('municipality') || DOC_REQ_DEFAULT_MUNICIPALITY,
+        formData.get('province') || DOC_REQ_DEFAULT_PROVINCE
+    );
+    const barangayNameCheck = await validateRequesterNameAndAddressAgainstCensus(
+        formData.get('firstName'),
+        formData.get('lastName'),
+        barangayAddressForCheck
+    );
+    if (!barangayNameCheck.allowed) {
+        await Swal.fire({
+            icon: 'error',
+            title: 'Census Verification Failed',
+            text: barangayNameCheck.message,
+            confirmButtonText: 'OK',
+            confirmButtonColor: '#dc3545'
+        });
+        return;
+    }
     
     // Show loading state
     const submitBtn = form.querySelector('.submit-btn');
@@ -2557,6 +2579,36 @@ function fileToBase64ForSubmission(file) {
     });
 }
 
+// Validate that the requester name matches this account's census_form record
+async function validateRequesterNameAndAddressAgainstCensus(firstName, lastName, address) {
+    const email = sessionStorage.getItem('user_email') || localStorage.getItem('user_email') || '';
+    if (!email) {
+        return { allowed: false, message: 'Please login first before requesting documents.' };
+    }
+
+    try {
+        const response = await fetch('php/request.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'validate_requester_census',
+                email,
+                first_name: (firstName || '').trim(),
+                last_name: (lastName || '').trim(),
+                address: (address || '').trim()
+            })
+        });
+        const data = await response.json();
+        return {
+            allowed: !!(data && data.success && data.allowed),
+            message: data?.message || 'Unable to validate your census record.'
+        };
+    } catch (error) {
+        console.error('validateRequesterNameAndAddressAgainstCensus error:', error);
+        return { allowed: false, message: 'Unable to validate your census record right now. Please try again.' };
+    }
+}
+
 // Handle Certification Form Submission
 async function handleCertificationSubmission(e) {
     e.preventDefault();
@@ -2812,6 +2864,22 @@ async function handleCertificationSubmission(e) {
         }
         
         scrollToFirstError();
+        return;
+    }
+
+    const certNameCheck = await validateRequesterNameAndAddressAgainstCensus(
+        formData.get('certFirstName'),
+        formData.get('certLastName'),
+        formData.get('certAddress')
+    );
+    if (!certNameCheck.allowed) {
+        await Swal.fire({
+            icon: 'error',
+            title: 'Census Verification Failed',
+            text: certNameCheck.message,
+            confirmButtonText: 'OK',
+            confirmButtonColor: '#dc3545'
+        });
         return;
     }
     
@@ -3245,6 +3313,22 @@ async function handleCoeSubmission(e) {
         scrollToFirstError();
         return;
     }
+
+    const coeNameCheck = await validateRequesterNameAndAddressAgainstCensus(
+        formData.get('coeFirstName'),
+        formData.get('coeLastName'),
+        formData.get('coeAddress')
+    );
+    if (!coeNameCheck.allowed) {
+        await Swal.fire({
+            icon: 'error',
+            title: 'Census Verification Failed',
+            text: coeNameCheck.message,
+            confirmButtonText: 'OK',
+            confirmButtonColor: '#dc3545'
+        });
+        return;
+    }
     
     // Show loading state
     const submitBtn = form.querySelector('.submit-btn');
@@ -3490,6 +3574,22 @@ async function handleIndigencySubmission(e) {
     // If validation failed, scroll to the first error field
     if (!isValid) {
         scrollToFirstError();
+        return;
+    }
+
+    const indNameCheck = await validateRequesterNameAndAddressAgainstCensus(
+        formData.get('indFirstName'),
+        formData.get('indLastName'),
+        formData.get('indAddress')
+    );
+    if (!indNameCheck.allowed) {
+        await Swal.fire({
+            icon: 'error',
+            title: 'Census Verification Failed',
+            text: indNameCheck.message,
+            confirmButtonText: 'OK',
+            confirmButtonColor: '#dc3545'
+        });
         return;
     }
     
@@ -3768,6 +3868,22 @@ async function handleClearanceSubmission(e) {
     // If validation failed, scroll to the first error field
     if (!isValid) {
         scrollToFirstError();
+        return;
+    }
+
+    const clearNameCheck = await validateRequesterNameAndAddressAgainstCensus(
+        formData.get('clearFirstName'),
+        formData.get('clearLastName'),
+        formData.get('clearAddress')
+    );
+    if (!clearNameCheck.allowed) {
+        await Swal.fire({
+            icon: 'error',
+            title: 'Census Verification Failed',
+            text: clearNameCheck.message,
+            confirmButtonText: 'OK',
+            confirmButtonColor: '#dc3545'
+        });
         return;
     }
 

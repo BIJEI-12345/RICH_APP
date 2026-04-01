@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setupConcernForm();
     autoPopulateReporter();
     setupContactValidation();
+    refreshConcernSubmissionEligibility();
     
     // Check if reporter name is already filled (for page refreshes)
     const reporterField = document.getElementById('cfReporter');
@@ -12,6 +13,38 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
 });
+
+async function refreshConcernSubmissionEligibility() {
+    const form = document.getElementById('concernFormElement');
+    const submitBtn = form?.querySelector('.submit-btn');
+    if (!form || !submitBtn) return;
+
+    const userEmail = sessionStorage.getItem('user_email') || localStorage.getItem('user_email') || '';
+    if (!userEmail) return;
+
+    try {
+        const response = await fetch('php/concerns.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'check_submission_eligibility',
+                user_email: userEmail
+            })
+        });
+        const result = await response.json();
+        if (result.success && result.allowed === false) {
+            submitBtn.disabled = true;
+            submitBtn.classList.add('disabled-doc');
+            submitBtn.setAttribute('data-disabled-reason', result.message || 'Unable to submit concern right now.');
+        } else {
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('disabled-doc');
+            submitBtn.removeAttribute('data-disabled-reason');
+        }
+    } catch (e) {
+        console.error('Failed to check concern submission eligibility:', e);
+    }
+}
 
 function setupConcernForm() {
     const form = document.getElementById('concernFormElement');
@@ -87,7 +120,7 @@ async function autoPopulateReporter() {
 
 // Handle concern form submission
 async function handleConcernSubmission(e) {
-        e.preventDefault();
+    e.preventDefault();
 
     const form = e.target;
         const formData = new FormData(form);
@@ -123,7 +156,20 @@ async function handleConcernSubmission(e) {
     
     try {
         // Get user email from session/local storage
-        const userEmail = sessionStorage.getItem('user_email') || localStorage.getItem('user_email') || 'test@example.com';
+        const userEmail = sessionStorage.getItem('user_email') || localStorage.getItem('user_email') || '';
+        if (!userEmail) {
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+            if (typeof Swal !== 'undefined') {
+                await Swal.fire({
+                    icon: 'warning',
+                    title: 'Login required',
+                    text: 'Please login first before submitting a concern.',
+                    confirmButtonColor: '#3085d6'
+                });
+            }
+            return;
+        }
         
         // Handle image upload (optional)
         let imageData = null;
@@ -181,21 +227,36 @@ async function handleConcernSubmission(e) {
                 block: 'start' 
             });
         } else {
-            // For debugging: Show summary even if database insert fails
-            console.log('Database insert failed, but showing summary for debugging');
-            displayConcern(formData, 'DEBUG');
-            
-            // Hide form and show report display
-            document.querySelector('.form-container').style.display = 'none';
-            document.getElementById('cfReportDisplay').style.display = 'block';
-            
-            // Scroll to report display
-            document.getElementById('cfReportDisplay').scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'start' 
-            });
-            
-            // Database error occurred but form was processed
+            if (result.blocked) {
+                const reason = result.message || 'Unable to submit while your concerns are still processing.';
+                if (typeof Swal !== 'undefined') {
+                    await Swal.fire({
+                        icon: 'info',
+                        title: 'Request in Progress',
+                        text: reason,
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: '#3085d6',
+                        customClass: {
+                            popup: 'swal2-blocked-request-popup'
+                        }
+                    });
+                } else {
+                    showMessage(reason, 'error');
+                }
+            } else {
+                const errMsg = result.message || 'Failed to submit concern. Please try again.';
+                if (typeof Swal !== 'undefined') {
+                    await Swal.fire({
+                        icon: 'error',
+                        title: 'Submission failed',
+                        text: errMsg,
+                        confirmButtonColor: '#3085d6'
+                    });
+                } else {
+                    showMessage(errMsg, 'error');
+                }
+            }
+            await refreshConcernSubmissionEligibility();
         }
         
     } catch (error) {
@@ -205,7 +266,16 @@ async function handleConcernSubmission(e) {
         submitBtn.textContent = originalText;
         submitBtn.disabled = false;
         
-        // Network error occurred
+        if (typeof Swal !== 'undefined') {
+            await Swal.fire({
+                icon: 'error',
+                title: 'Network error',
+                text: 'Please check your connection and try again.',
+                confirmButtonColor: '#3085d6'
+            });
+        } else {
+            showMessage('Network error. Please check your connection and try again.', 'error');
+        }
     }
 }
 
@@ -444,6 +514,7 @@ function cfSubmitAnother() {
     // Show form and hide display
     document.querySelector('.form-container').style.display = 'block';
     document.getElementById('cfReportDisplay').style.display = 'none';
+    refreshConcernSubmissionEligibility();
 }
 
 function goToHome() {

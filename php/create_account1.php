@@ -262,9 +262,9 @@ if (!empty($middleName) && !preg_match($namePattern, $middleName)) {
 }
 
 // Validate age
-if ($age < 18 || $age > 100) {
+if ($age < 15 || $age > 100) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Age must be between 18 and 100']);
+    echo json_encode(['success' => false, 'message' => 'Age must be between 15 and 100']);
     exit;
 }
 
@@ -279,6 +279,22 @@ if (!in_array($sex, ['Male', 'Female'])) {
 if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $birthday)) {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'Invalid birthday format']);
+    exit;
+}
+
+// Validate that age from birthday is at least 15 (server-side protection)
+try {
+    $birthDateObj = new DateTime($birthday);
+    $todayDateObj = new DateTime('today');
+    $calculatedAge = (int)$birthDateObj->diff($todayDateObj)->y;
+    if ($calculatedAge < 15) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'You must be at least 15 years old to create an account']);
+        exit;
+    }
+} catch (Exception $e) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Invalid birthday value']);
     exit;
 }
 

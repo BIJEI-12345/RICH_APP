@@ -174,6 +174,9 @@ class EmailSender {
             $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
             $mail->Port       = $this->smtpPort;
             $mail->CharSet    = 'UTF-8';
+            // Prevent long UI hangs when SMTP host is unreachable/misconfigured
+            $mail->Timeout    = 12;
+            $mail->SMTPTimeout = 12;
             
             // Additional SMTP options for better reliability
             $mail->SMTPOptions = array(

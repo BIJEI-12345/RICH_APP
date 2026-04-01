@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // New validation functions
     function validateAge(age) {
         const ageNum = parseInt(age);
-        return ageNum >= 18 && ageNum <= 100;
+        return ageNum >= 15 && ageNum <= 100;
     }
 
     function validateBirthday(birthday) {
@@ -70,9 +70,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const monthDiff = today.getMonth() - birthDate.getMonth();
         
         if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-            return age - 1 >= 18;
+            return age - 1 >= 15;
         }
-        return age >= 18;
+        return age >= 15;
     }
 
     function validateAddress(street, houseNumber, sitio) {
@@ -201,11 +201,29 @@ document.addEventListener('DOMContentLoaded', function() {
         if (birthdayInput && birthdayInput.value) {
             birthdayInput.classList.add('has-selection');
             calculateAge(birthdayInput.value);
+            const ageNum = parseInt(ageInput.value || '0', 10);
+            if (!Number.isNaN(ageNum) && ageNum > 0 && ageNum < 15) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Age Restriction',
+                    text: 'You must be at least 15 years old to create an account.',
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#dc3545'
+                });
+                birthdayInput.value = '';
+                ageInput.value = '';
+                birthdayInput.classList.remove('has-selection');
+            }
         } else if (birthdayInput) {
             birthdayInput.classList.remove('has-selection');
             ageInput.value = '';
         }
     }
+    // Set max birthday date to ensure minimum age of 15
+    const today = new Date();
+    const maxBirthdayDate = new Date(today.getFullYear() - 15, today.getMonth(), today.getDate());
+    birthdayInput.max = maxBirthdayDate.toISOString().split('T')[0];
+
     birthdayInput.addEventListener('change', updateBirthdayColor);
     birthdayInput.addEventListener('input', updateBirthdayColor);
     // Initialize on load
@@ -838,7 +856,7 @@ document.addEventListener('DOMContentLoaded', function() {
             showError(ageInput, 'Please enter your birth date to calculate age');
             isValid = false;
         } else if (!validateAge(ageInput.value)) {
-            showError(ageInput, 'You must be at least 18 years old');
+            showError(ageInput, 'You must be at least 15 years old');
             isValid = false;
         }
 
@@ -853,7 +871,7 @@ document.addEventListener('DOMContentLoaded', function() {
             showError(birthdayInput, 'Birthday is required');
             isValid = false;
         } else if (!validateBirthday(birthdayInput.value)) {
-            showError(birthdayInput, 'Please enter a valid birthday (must be 18+ years old)');
+            showError(birthdayInput, 'Please enter a valid birthday (must be 15+ years old)');
             isValid = false;
         }
 

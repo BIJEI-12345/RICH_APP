@@ -77,7 +77,7 @@ try {
         exit;
     }
 
-    $stmt = $pdo->prepare('SELECT id FROM resident_information WHERE email = ? AND email_verified = 1');
+    $stmt = $pdo->prepare('SELECT id FROM resident_information WHERE email = ? LIMIT 1');
     $stmt->execute([$oldEmail]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$user) {
@@ -96,7 +96,7 @@ try {
         exit;
     }
 
-    $stmt = $pdo->prepare('UPDATE resident_information SET email = ?, updated_at = NOW() WHERE email = ? AND email_verified = 1');
+    $stmt = $pdo->prepare('UPDATE resident_information SET email = ?, updated_at = NOW() WHERE email = ?');
     $stmt->execute([$newEmail, $oldEmail]);
 
     $stmt = $pdo->prepare('DELETE FROM otp_verifications WHERE id = ?');

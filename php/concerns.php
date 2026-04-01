@@ -15,6 +15,10 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 // Database connection - Load from centralized config
 require_once __DIR__ . '/env_loader.php';
 
+// Concern submission limits per account
+const MAX_TOTAL_CONCERNS_PER_ACCOUNT = 5;
+const MAX_UNRESOLVED_CONCERNS_PER_ACCOUNT = 5;
+
 // Function to get user name from email
 function getUserNameFromEmail($email) {
     $pdo = getDBConnection();
@@ -34,6 +38,97 @@ function getUserNameFromEmail($email) {
     } catch (PDOException $e) {
         error_log("Failed to get user name: " . $e->getMessage());
         return 'Unknown User';
+    }
+}
+
+// Count concerns and check submission eligibility
+function getConcernSubmissionEligibility($email) {
+    $pdo = getDBConnection();
+    if (!$pdo) {
+        return [
+            'allowed' => false,
+            'reason' => 'db_error',
+            'message' => 'Database connection failed'
+        ];
+    }
+
+    if (!$email) {
+        return [
+            'allowed' => false,
+            'reason' => 'missing_email',
+            'message' => 'User email is required'
+        ];
+    }
+
+    try {
+        $checkEmailColumn = $pdo->query("SHOW COLUMNS FROM concerns LIKE 'email'");
+        $hasEmailColumn = $checkEmailColumn->rowCount() > 0;
+
+        if ($hasEmailColumn) {
+            $countSql = "
+                SELECT
+                    COUNT(*) AS total_count,
+                    SUM(
+                        CASE
+                            WHEN status IS NULL OR status = '' THEN 1
+                            WHEN LOWER(status) IN ('new', 'pending', 'processing', 'on process', 'in process', 'open') THEN 1
+                            ELSE 0
+                        END
+                    ) AS unresolved_count
+                FROM concerns
+                WHERE email = ?
+            ";
+            $stmt = $pdo->prepare($countSql);
+            $stmt->execute([$email]);
+        } else {
+            $reporterName = getUserNameFromEmail($email);
+            $countSql = "
+                SELECT
+                    COUNT(*) AS total_count,
+                    SUM(
+                        CASE
+                            WHEN status IS NULL OR status = '' THEN 1
+                            WHEN LOWER(status) IN ('new', 'pending', 'processing', 'on process', 'in process', 'open') THEN 1
+                            ELSE 0
+                        END
+                    ) AS unresolved_count
+                FROM concerns
+                WHERE reporter_name = ?
+            ";
+            $stmt = $pdo->prepare($countSql);
+            $stmt->execute([$reporterName]);
+        }
+
+        $counts = $stmt->fetch(PDO::FETCH_ASSOC) ?: ['total_count' => 0, 'unresolved_count' => 0];
+        $totalCount = (int)($counts['total_count'] ?? 0);
+        $unresolvedCount = (int)($counts['unresolved_count'] ?? 0);
+
+        if ($unresolvedCount >= MAX_UNRESOLVED_CONCERNS_PER_ACCOUNT) {
+            return [
+                'allowed' => false,
+                'reason' => 'unresolved_limit',
+                'message' => 'You already have 5 active concerns (New/Processing). Please wait until at least one concern is resolved before submitting again.',
+                'total_count' => $totalCount,
+                'unresolved_count' => $unresolvedCount,
+                'max_total' => MAX_TOTAL_CONCERNS_PER_ACCOUNT,
+                'max_unresolved' => MAX_UNRESOLVED_CONCERNS_PER_ACCOUNT
+            ];
+        }
+
+        return [
+            'allowed' => true,
+            'total_count' => $totalCount,
+            'unresolved_count' => $unresolvedCount,
+            'max_total' => MAX_TOTAL_CONCERNS_PER_ACCOUNT,
+            'max_unresolved' => MAX_UNRESOLVED_CONCERNS_PER_ACCOUNT
+        ];
+    } catch (PDOException $e) {
+        error_log("Concern eligibility check failed: " . $e->getMessage());
+        return [
+            'allowed' => false,
+            'reason' => 'db_error',
+            'message' => 'Unable to validate concern submission limits'
+        ];
     }
 }
 
@@ -59,7 +154,28 @@ function insertConcern($data) {
         }
         
         // Auto-populate reporter_name from email
-        $userEmail = $data['user_email'] ?? '';
+        $userEmail = trim((string)($data['user_email'] ?? ''));
+        if (!$userEmail) {
+            return ['success' => false, 'message' => 'User email is required'];
+        }
+
+        // Enforce per-account submission limits before insert
+        $eligibility = getConcernSubmissionEligibility($userEmail);
+        if (empty($eligibility['allowed'])) {
+            return [
+                'success' => false,
+                'blocked' => true,
+                'reason' => $eligibility['reason'] ?? 'blocked',
+                'message' => $eligibility['message'] ?? 'Concern submission is currently restricted.',
+                'limit_info' => [
+                    'total_count' => (int)($eligibility['total_count'] ?? 0),
+                    'unresolved_count' => (int)($eligibility['unresolved_count'] ?? 0),
+                    'max_total' => (int)($eligibility['max_total'] ?? MAX_TOTAL_CONCERNS_PER_ACCOUNT),
+                    'max_unresolved' => (int)($eligibility['max_unresolved'] ?? MAX_UNRESOLVED_CONCERNS_PER_ACCOUNT),
+                ]
+            ];
+        }
+
         $reporterName = getUserNameFromEmail($userEmail);
         
         // Validate contact number length (max 11 digits)
@@ -164,6 +280,25 @@ try {
         echo json_encode([
             'success' => true,
             'reporter_name' => $reporterName
+        ]);
+        exit;
+    }
+
+    // Check if this is a concern eligibility request
+    if (isset($input['action']) && $input['action'] === 'check_submission_eligibility') {
+        $userEmail = trim((string)($input['user_email'] ?? ''));
+        $eligibility = getConcernSubmissionEligibility($userEmail);
+        echo json_encode([
+            'success' => true,
+            'allowed' => !empty($eligibility['allowed']),
+            'reason' => $eligibility['reason'] ?? null,
+            'message' => $eligibility['message'] ?? null,
+            'limit_info' => [
+                'total_count' => (int)($eligibility['total_count'] ?? 0),
+                'unresolved_count' => (int)($eligibility['unresolved_count'] ?? 0),
+                'max_total' => (int)($eligibility['max_total'] ?? MAX_TOTAL_CONCERNS_PER_ACCOUNT),
+                'max_unresolved' => (int)($eligibility['max_unresolved'] ?? MAX_UNRESOLVED_CONCERNS_PER_ACCOUNT),
+            ]
         ]);
         exit;
     }

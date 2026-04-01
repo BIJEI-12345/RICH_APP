@@ -653,6 +653,15 @@ body {
     cursor: not-allowed;
 }
 
+.input-group.age .age-note {
+    margin-top: 6px;
+    padding-left: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.4;
+    color: #374151;
+}
+
 .input-group.sex {
     flex: 1;
     min-width: 100px;

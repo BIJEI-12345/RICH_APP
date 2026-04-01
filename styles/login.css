@@ -516,10 +516,10 @@ body {
 .create-btn {
     width: 100%;
     padding: 16px;
-    background: #ffffff;
-    color: linear-gradient(135deg, #007bff 0%, #0056b3 100%)    ;
-    border: 1px solid #2563eb;
-    border-radius: 12px;
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: #ffffff;
+    border: none;
+    border-radius: 20px;
     font-size: 16px;
     font-weight: 600;
     cursor: pointer;
@@ -527,7 +527,7 @@ body {
 }
 
 .create-btn:hover {
-    background: #2563eb;
+    background: linear-gradient(135deg, #007bff 0%, #0057b3bc 100%);
     color: #ffffff;
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(37, 100, 235, 0.436);

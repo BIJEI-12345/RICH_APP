@@ -16,6 +16,93 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 require_once __DIR__ . '/env_loader.php';
 require_once __DIR__ . '/jobseeker_claimed_lib.php';
 
+// Validate that requesting name matches census_form record for this account
+function validateRequesterAgainstCensus($email, $firstName, $lastName, $address = '') {
+    $pdo = getDBConnection();
+    if (!$pdo) {
+        return ['success' => false, 'allowed' => false, 'message' => 'Database connection failed'];
+    }
+
+    $email = trim((string)$email);
+    $firstName = trim((string)$firstName);
+    $lastName = trim((string)$lastName);
+
+    if ($email === '' || $firstName === '' || $lastName === '') {
+        return ['success' => false, 'allowed' => false, 'message' => 'Email, first name, and last name are required'];
+    }
+
+    try {
+        $stmt = $pdo->prepare("SELECT id FROM resident_information WHERE email = ? LIMIT 1");
+        $stmt->execute([$email]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$user) {
+            return ['success' => false, 'allowed' => false, 'message' => 'User account not found'];
+        }
+        $residentId = (int)$user['id'];
+
+        $tableCheck = $pdo->query("SHOW TABLES LIKE 'census_form'");
+        if ($tableCheck->rowCount() === 0) {
+            return ['success' => false, 'allowed' => false, 'message' => 'Census table not found'];
+        }
+
+        $stmt = $pdo->prepare("SELECT first_name, last_name FROM census_form WHERE census_id = ? LIMIT 1");
+        $stmt->execute([$residentId]);
+        $census = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$census) {
+            return [
+                'success' => true,
+                'allowed' => false,
+                'message' => 'No census record found for this account. Please complete your census first.'
+            ];
+        }
+
+        $censusFirst = trim((string)($census['first_name'] ?? ''));
+        $censusLast = trim((string)($census['last_name'] ?? ''));
+        $censusAddress = trim((string)($census['complete_address'] ?? ''));
+
+        $isMatch = (strcasecmp($firstName, $censusFirst) === 0) && (strcasecmp($lastName, $censusLast) === 0);
+        if (!$isMatch) {
+            return [
+                'success' => true,
+                'allowed' => false,
+                'message' => 'The requester name does not match your census record. Please use your censused name.'
+            ];
+        }
+
+        // If address is provided by the form, require it to match the census address too.
+        $submittedAddress = trim((string)$address);
+        if ($submittedAddress !== '') {
+            $normalizeAddress = function($value) {
+                $value = mb_strtolower(trim((string)$value), 'UTF-8');
+                // Normalize punctuation/spaces so "Brgy Bigte" and "Brgy. Bigte" compare better
+                $value = preg_replace('/[^a-z0-9]+/u', '', $value);
+                return $value ?? '';
+            };
+
+            $submittedKey = $normalizeAddress($submittedAddress);
+            $censusKey = $normalizeAddress($censusAddress);
+
+            $addressMatch = ($submittedKey !== '' && $censusKey !== '') &&
+                ($submittedKey === $censusKey ||
+                 strpos($censusKey, $submittedKey) !== false ||
+                 strpos($submittedKey, $censusKey) !== false);
+
+            if (!$addressMatch) {
+                return [
+                    'success' => true,
+                    'allowed' => false,
+                    'message' => 'The requester address does not match your census record. Please use your censused address.'
+                ];
+            }
+        }
+
+        return ['success' => true, 'allowed' => true];
+    } catch (PDOException $e) {
+        error_log("validateRequesterAgainstCensus failed: " . $e->getMessage());
+        return ['success' => false, 'allowed' => false, 'message' => 'Failed to validate requester against census'];
+    }
+}
+
 // Function to insert indigency form data
 function insertIndigencyForm($data) {
     $pdo = getDBConnection();
@@ -920,6 +1007,19 @@ try {
         exit;
     }
     
+    // Check form type
+    $action = $input['action'] ?? '';
+    if ($action === 'validate_requester_census') {
+        $result = validateRequesterAgainstCensus(
+            $input['email'] ?? '',
+            $input['first_name'] ?? '',
+            $input['last_name'] ?? '',
+            $input['address'] ?? ''
+        );
+        echo json_encode($result);
+        exit;
+    }
+
     // Check form type
     $formType = $input['form_type'] ?? '';
     

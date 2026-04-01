@@ -266,6 +266,77 @@ function setupEventListeners() {
 }
 
 // Setup document request buttons navigation
+async function ensureCensusBeforeDocumentRequests() {
+    // Reuse server-side census status; if not completed, show modal / alert and block.
+    if (!currentUser) {
+        console.log('No currentUser set; blocking document requests until login.');
+        if (typeof Swal !== 'undefined') {
+            await Swal.fire({
+                icon: 'warning',
+                title: 'Login required',
+                text: 'Please login first before requesting documents.',
+                confirmButtonColor: '#3085d6'
+            });
+        }
+        return false;
+    }
+
+    const userEmail = sessionStorage.getItem('user_email') || localStorage.getItem('user_email');
+    if (!userEmail) {
+        if (typeof Swal !== 'undefined') {
+            await Swal.fire({
+                icon: 'warning',
+                title: 'Login required',
+                text: 'Please login first before requesting documents.',
+                confirmButtonColor: '#3085d6'
+            });
+        }
+        return false;
+    }
+
+    try {
+        const response = await fetch('php/check_census.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: userEmail })
+        });
+        const data = await response.json();
+        console.log('ensureCensusBeforeDocumentRequests response:', data);
+
+        if (data.success && data.emailExists === true && data.hasCompletedCensus) {
+            // OK: census completed for this account
+            return true;
+        }
+
+        // Not completed → show census modal + info alert; block navigation
+        if (typeof Swal !== 'undefined') {
+            await Swal.fire({
+                icon: 'info',
+                title: 'Complete Census First',
+                text: 'Please fill out the Barangay Census form before requesting documents.',
+                confirmButtonText: 'Open Census Form',
+                confirmButtonColor: '#3085d6'
+            });
+        }
+        showCensusModal();
+        return false;
+    } catch (e) {
+        console.error('Failed to verify census status before document request:', e);
+        // On error, be safe and require census
+        if (typeof Swal !== 'undefined') {
+            await Swal.fire({
+                icon: 'info',
+                title: 'Complete Census First',
+                text: 'Please fill out the Barangay Census form before requesting documents.',
+                confirmButtonText: 'Open Census Form',
+                confirmButtonColor: '#3085d6'
+            });
+        }
+        showCensusModal();
+        return false;
+    }
+}
+
 function setupDocumentRequestButtons() {
     // Map document types to their corresponding request types
     const documentTypeMap = {
@@ -277,9 +348,12 @@ function setupDocumentRequestButtons() {
     // Add click event listeners to all "Request Now" buttons
     const requestButtons = document.querySelectorAll('.request-btn');
     requestButtons.forEach(button => {
-        button.addEventListener('click', function(e) {
+        button.addEventListener('click', async function(e) {
             e.preventDefault();
             
+            const ok = await ensureCensusBeforeDocumentRequests();
+            if (!ok) return;
+
             // Find the document title from the card
             const card = button.closest('.request-card');
             const documentTitle = card.querySelector('h4').textContent;
@@ -1505,10 +1579,7 @@ async function saveProfileChanges() {
     if (sexEl) formData.set('sex', sexEl.value);
     if (civilEl) formData.set('civilStatus', civilEl.value);
 
-    // Show loading state (full-screen overlay + button spinner)
-    if (typeof showFullScreenLoading === 'function') {
-        showFullScreenLoading('Saving profile...');
-    }
+    // Show button loading immediately; full-screen loading will be shown only on final save
     if (saveBtn) {
         saveBtn.classList.add('loading');
         saveBtn.disabled = true;
@@ -1542,7 +1613,6 @@ async function saveProfileChanges() {
             saveBtn.classList.remove('loading');
             saveBtn.disabled = false;
         }
-        if (typeof hideFullScreenLoading === 'function') hideFullScreenLoading();
         return;
     }
     
@@ -1556,9 +1626,6 @@ async function saveProfileChanges() {
                 saveBtn.classList.remove('loading');
                 saveBtn.disabled = false;
             }
-            if (typeof hideFullScreenLoading === 'function') {
-                hideFullScreenLoading();
-            }
             return;
         }
 
@@ -1567,9 +1634,6 @@ async function saveProfileChanges() {
             if (saveBtn) {
                 saveBtn.classList.remove('loading');
                 saveBtn.disabled = false;
-            }
-            if (typeof hideFullScreenLoading === 'function') {
-                hideFullScreenLoading();
             }
             return;
         }
@@ -1590,12 +1654,41 @@ async function saveProfileChanges() {
         
         // If email changed, send OTP first and wait for verification
         if (enteredEmail !== storedEmail) {
-            const otpRes = await fetch('php/send_email_change_otp.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ oldEmail: storedEmail, newEmail: enteredEmail })
-            });
-            const otpData = await otpRes.json();
+            let otpData = null;
+            let otpTimeoutId = null;
+            try {
+                if (typeof showFullScreenLoading === 'function') {
+                    showFullScreenLoading('Sending the OTP code to your new email...');
+                }
+                const otpController = new AbortController();
+                const otpTimeoutMs = 15000;
+                otpTimeoutId = setTimeout(() => otpController.abort(), otpTimeoutMs);
+                const otpRes = await fetch('php/send_email_change_otp.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ oldEmail: storedEmail, newEmail: enteredEmail }),
+                    signal: otpController.signal
+                });
+                clearTimeout(otpTimeoutId);
+                otpData = await otpRes.json();
+            } catch (otpError) {
+                const timeoutMsg = otpError?.name === 'AbortError'
+                    ? 'OTP request timed out. Check SMTP/sendmail settings, then try again.'
+                    : 'Failed to send verification code. Please try again.';
+                showFormMessage(timeoutMsg, 'error');
+                if (saveBtn) {
+                    saveBtn.classList.remove('loading');
+                    saveBtn.disabled = false;
+                }
+                if (typeof hideFullScreenLoading === 'function') {
+                    hideFullScreenLoading();
+                }
+                return;
+            } finally {
+                if (otpTimeoutId) {
+                    clearTimeout(otpTimeoutId);
+                }
+            }
             if (!otpData.success) {
                 showFormMessage(otpData.message || 'Failed to send verification code.', 'error');
                 if (saveBtn) {
@@ -1610,13 +1703,36 @@ async function saveProfileChanges() {
 
             pendingProfileSaveFormData = formData;
             pendingProfileNewEmail = enteredEmail;
+            if (typeof hideFullScreenLoading === 'function') {
+                hideFullScreenLoading();
+            }
+            if (typeof Swal !== 'undefined') {
+                if (otpData.email_sent === false) {
+                    await Swal.fire({
+                        icon: 'warning',
+                        title: 'OTP Generated',
+                        text: `OTP was created for ${enteredEmail}, but email delivery failed. Please check server SMTP/sendmail settings.`,
+                        confirmButtonText: 'Continue',
+                        confirmButtonColor: '#2563eb'
+                    });
+                } else {
+                    await Swal.fire({
+                        icon: 'success',
+                        iconHtml: '<i class="fas fa-check"></i>',
+                        customClass: {
+                            icon: 'swal2-icon--static-check'
+                        },
+                        title: 'OTP Sent',
+                        text: `A 6-digit verification code was sent to ${enteredEmail}.`,
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: '#2563eb'
+                    });
+                }
+            }
             openEmailChangeModal();
             // Stop loading while user enters code
             if (saveBtn) {
                 saveBtn.classList.remove('loading');
-            }
-            if (typeof hideFullScreenLoading === 'function') {
-                hideFullScreenLoading();
             }
             return;
         }
@@ -1638,6 +1754,9 @@ async function saveProfileChanges() {
 async function performProfileSave(formData) {
     const saveBtn = document.getElementById('profileSaveChangesBtn') || document.querySelector('#editProfileForm .save-btn');
     try {
+        if (typeof showFullScreenLoading === 'function') {
+            showFullScreenLoading('Saving profile...');
+        }
         if (saveBtn) {
             saveBtn.classList.add('loading');
             saveBtn.disabled = true;
