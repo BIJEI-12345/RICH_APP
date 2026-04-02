@@ -19,6 +19,9 @@ function getPhilippineTime() {
     return philippineTime.toISOString();
 }
 
+// Set by processCapturedImage / Kodular; used when there is no file on #emergencyImageUpload
+window.emergencyAppImageDataUrl = null;
+
 // Setup emergency form
 function setupEmergencyForm() {
     const form = document.getElementById('emergencyFormElement');
@@ -177,6 +180,12 @@ function setupEmergencyTypeHandler() {
 // Open camera for emergency photo
 window.openEmergencyCamera = function() {
     console.log('Opening camera for emergency photo...');
+
+    // Kodular / MIT App Inventor WebView: native app handles camera
+    if (typeof window.AppInventor !== 'undefined' && window.AppInventor.setWebViewString) {
+        window.AppInventor.setWebViewString('TAKE_PHOTO');
+        return;
+    }
     
     const emergencyImageUpload = document.getElementById('emergencyImageUpload');
     if (!emergencyImageUpload) {
@@ -336,10 +345,88 @@ window.openEmergencyFileUpload = function() {
     }
 };
 
+/**
+ * Called from Kodular/App Inventor after taking a photo (Run JavaScript).
+ * @param {string} imagePath - file path, content:// URI, https URL, or data:image/...;base64,...
+ * @param {string} [base64Optional] - raw base64 (no prefix) so submit works when path is not readable in WebView
+ */
+window.processCapturedImage = function(imagePath, base64Optional) {
+    const imgPreview = document.getElementById('emergencyImagePreview');
+    const removeBtn = document.getElementById('emergencyRemoveImageBtn');
+    const container = imgPreview ? imgPreview.closest('.image-preview-container') : null;
+
+    if (base64Optional && typeof base64Optional === 'string' && base64Optional.length > 0) {
+        window.emergencyAppImageDataUrl = base64Optional.indexOf('data:') === 0
+            ? base64Optional
+            : ('data:image/jpeg;base64,' + base64Optional);
+        if (imgPreview) {
+            imgPreview.src = window.emergencyAppImageDataUrl;
+            imgPreview.style.display = 'block';
+        }
+        if (container) container.classList.remove('empty');
+        if (removeBtn) {
+            removeBtn.style.display = 'flex';
+            removeBtn.style.visibility = 'visible';
+            removeBtn.style.position = 'absolute';
+            removeBtn.style.top = '8px';
+            removeBtn.style.right = '8px';
+        }
+        console.log('Emergency image set from app (base64)');
+        return;
+    }
+
+    if (!imagePath || typeof imagePath !== 'string') {
+        console.warn('processCapturedImage: missing imagePath');
+        return;
+    }
+
+    if (/^data:image\//i.test(imagePath)) {
+        window.emergencyAppImageDataUrl = imagePath;
+        if (imgPreview) {
+            imgPreview.src = imagePath;
+            imgPreview.style.display = 'block';
+        }
+        if (container) container.classList.remove('empty');
+        if (removeBtn) {
+            removeBtn.style.display = 'flex';
+            removeBtn.style.visibility = 'visible';
+            removeBtn.style.position = 'absolute';
+            removeBtn.style.top = '8px';
+            removeBtn.style.right = '8px';
+        }
+        console.log('Emergency image set from app (data URL)');
+        return;
+    }
+
+    window.emergencyAppImageDataUrl = null;
+
+    let src = imagePath;
+    if (src && !/^https?:\/\//i.test(src) && !/^data:/i.test(src) && !/^file:\/\//i.test(src) && !/^content:/i.test(src)) {
+        src = 'file://' + imagePath.replace(/^\/+/, '/');
+    }
+
+    if (imgPreview) {
+        imgPreview.src = src;
+        imgPreview.style.display = 'block';
+    }
+    if (container) container.classList.remove('empty');
+    if (removeBtn) {
+        removeBtn.style.display = 'flex';
+        removeBtn.style.visibility = 'visible';
+        removeBtn.style.position = 'absolute';
+        removeBtn.style.top = '8px';
+        removeBtn.style.right = '8px';
+    }
+    console.log('Image received from app: ' + imagePath);
+};
+
 // Preview image function (same as concerns.js)
 function previewImage(input, previewId) {
     const img = document.getElementById(previewId);
     const file = input.files[0];
+    if (file && previewId === 'emergencyImagePreview') {
+        window.emergencyAppImageDataUrl = null;
+    }
     const container = img ? img.closest('.image-preview-container') : null;
     if (!img) return;
     if (file) {
@@ -391,6 +478,8 @@ window.removeEmergencyImage = function() {
     if (emergencyImageUpload) {
         emergencyImageUpload.value = '';
     }
+
+    window.emergencyAppImageDataUrl = null;
     
     if (emergencyImagePreview) {
         emergencyImagePreview.src = '';
@@ -584,6 +673,9 @@ async function handleEmergencySubmission(e) {
                 reader.onload = (e) => resolve(e.target.result.split(',')[1]); // Remove data:image/...;base64, prefix
                 reader.readAsDataURL(file);
             });
+        } else if (window.emergencyAppImageDataUrl) {
+            const comma = window.emergencyAppImageDataUrl.indexOf(',');
+            imageData = comma >= 0 ? window.emergencyAppImageDataUrl.slice(comma + 1) : null;
         }
         
         // Prepare data for submission
@@ -697,7 +789,7 @@ function displayEmergencyReport(formData, reportId = null) {
     const displayImage = document.getElementById('displayEmergencyImage');
     
     let imageFile = null;
-    if (emergencyImageUpload.files.length > 0) {
+    if (emergencyImageUpload && emergencyImageUpload.files.length > 0) {
         imageFile = emergencyImageUpload.files[0];
     }
     
@@ -709,6 +801,10 @@ function displayEmergencyReport(formData, reportId = null) {
             imageCard.style.display = 'block';
         };
         reader.readAsDataURL(imageFile);
+    } else if (window.emergencyAppImageDataUrl) {
+        displayImage.src = window.emergencyAppImageDataUrl;
+        displayImage.alt = 'Emergency Image';
+        imageCard.style.display = 'block';
     } else {
         imageCard.style.display = 'none';
     }
@@ -723,6 +819,7 @@ function goBackToForm() {
     document.getElementById('emergencyFormElement').reset();
     
     // Reset image preview
+    window.emergencyAppImageDataUrl = null;
     const emergencyImagePreview = document.getElementById('emergencyImagePreview');
     if (emergencyImagePreview) {
         emergencyImagePreview.style.display = 'none';
