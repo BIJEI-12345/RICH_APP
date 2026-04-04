@@ -40,8 +40,202 @@ document.addEventListener('DOMContentLoaded', function() {
     const previewImg = document.getElementById('previewImg');
     const imagePreview = document.getElementById('imagePreview');
     const uploadArea = document.getElementById('uploadArea');
+    let uploadAreaDefaultHtml = '';
     const createBtn = document.querySelector('.create-btn');
-    
+
+    /** Same strings as HTML option value / php/gemini_verify.php expected_id_type */
+    const ALLOWED_VALID_ID_TYPES = new Set([
+        'National ID', "Driver's License", 'Passport', 'SSS ID', 'Umid ID', 'GSIS ID', 'TIN ID',
+        'Barangay ID', 'PhilHealth ID', 'Postal ID', 'Senior Citizen ID'
+    ]);
+
+    function mapValidIdLabelToExpectedType(label) {
+        if (!label || !String(label).trim()) return null;
+        return ALLOWED_VALID_ID_TYPES.has(label) ? label : null;
+    }
+
+    function accountFileIdentifier(file) {
+        if (!file) return null;
+        return file.name + '_' + file.size + '_' + file.lastModified;
+    }
+
+    let idTypeValidationAccount = {
+        ok: false,
+        idTypeMatch: false,
+        validatedFile: null,
+        expectedIdType: null,
+        detectedIdType: null,
+        errorMessage: null,
+        skippedNoApiMapping: false
+    };
+
+    function getIDTypeMismatchError() {
+        return 'The uploaded image is invalid. Please upload a valid ID and select correct ID type.';
+    }
+
+    /** Match server-side bigte_ocr_helpers.php — Tesseract often misreads B as 8 */
+    function hasBigteInOcrText(text) {
+        if (!text || typeof text !== 'string') return false;
+        const hay = text.toLowerCase();
+        if (hay.includes('bigte')) return true;
+        const oneLine = text.replace(/\s+/g, ' ');
+        if (/\b[8b]igte\b/i.test(oneLine)) return true;
+        if (/\bupper\s*,?\s*[b8]igte/i.test(oneLine)) return true;
+        if (/\btirahan.*[b8]igte/i.test(oneLine)) return true;
+        return false;
+    }
+
+    /** Client fallback when gemini_verify.php fails — same rules as js/request.js performIDTypeMatching */
+    function performIdTypeMatchFromText(fullText, expectedIdType) {
+        const lowerText = fullText.toLowerCase();
+        let detectedIdType = 'unknown';
+        let idTypeMatch = false;
+
+        const idTypeMap = {
+            'National ID': {
+                keywords: ['philsys', 'philid', 'national id', 'pambansang', 'pagkakakilanlan', 'philippine identification', 'identification card', 'psn']
+            },
+            "Driver's License": {
+                keywords: ['driver', 'license', 'drivers license', 'driving license', 'lto', 'land transportation office', 'non-professional', 'professional']
+            },
+            'Passport': {
+                keywords: ['passport', 'department of foreign affairs', 'dfa', 'passport no']
+            },
+            'SSS ID': {
+                keywords: ['sss', 'social security', 'social security system', 'sss id', 'sss number']
+            },
+            'Umid ID': {
+                keywords: ['umid', 'unified multipurpose', 'unified multi-purpose', 'umid card']
+            },
+            'GSIS ID': {
+                keywords: ['gsis', 'government service insurance']
+            },
+            'TIN ID': {
+                keywords: ['tin', 'bureau of internal revenue', 'bir', 'tax identification']
+            },
+            'Barangay ID': {
+                keywords: ['barangay', 'brgy', 'barangay clearance', 'barangay certificate']
+            },
+            'PhilHealth ID': {
+                keywords: ['philhealth', 'phil health', 'national health insurance', 'nhip']
+            },
+            'Postal ID': {
+                keywords: ['postal', 'philpost', 'philippine postal', 'postal identification']
+            },
+            'Senior Citizen ID': {
+                keywords: ['senior citizen', 'oscad', 'senior citizen id']
+            }
+        };
+
+        if (/\bpassport\b/i.test(fullText) || /\bdfa\b/i.test(fullText) || /department of foreign affairs/i.test(fullText)) {
+            detectedIdType = 'Passport';
+        } else if ((/\bdriver\b/i.test(fullText) || /\blto\b/i.test(fullText)) && /\blicense\b/i.test(fullText)) {
+            detectedIdType = "Driver's License";
+        } else if (
+            /\bphilsys\b/i.test(fullText) ||
+            /\bphil\s*id\b/i.test(fullText) ||
+            /pambansang\s+pagkakakilanlan/i.test(fullText) ||
+            /philippine\s+identification/i.test(fullText) ||
+            (/\bnational\s+id\b/i.test(fullText) && /philippine|phil/i.test(fullText))
+        ) {
+            detectedIdType = 'National ID';
+        } else if (/\bumid\b/i.test(fullText) || /unified\s+multipurpose/i.test(fullText)) {
+            detectedIdType = 'Umid ID';
+        } else if (/\bgsis\b/i.test(fullText) || /government\s+service\s+insurance/i.test(fullText)) {
+            detectedIdType = 'GSIS ID';
+        } else if (/\btin\b/i.test(fullText) && (/\bbir\b/i.test(fullText) || /bureau\s+of\s+internal\s+revenue/i.test(fullText) || /tax\s+identification/i.test(fullText))) {
+            detectedIdType = 'TIN ID';
+        } else if (/\bphilhealth\b/i.test(fullText) || /\bphil health\b/i.test(fullText) || /\bnational health insurance\b/i.test(fullText)) {
+            detectedIdType = 'PhilHealth ID';
+        } else if (/\bpostal\b/i.test(fullText) || /\bphilpost\b/i.test(fullText)) {
+            detectedIdType = 'Postal ID';
+        } else if (/\bsenior citizen\b/i.test(fullText) || /\boscad\b/i.test(fullText)) {
+            detectedIdType = 'Senior Citizen ID';
+        } else if (/\bbarangay\b/i.test(fullText) || /\bbrgy\.?\b/i.test(fullText)) {
+            detectedIdType = 'Barangay ID';
+        } else if (/\bsss\b/i.test(fullText) || /\bsocial security\b/i.test(fullText)) {
+            detectedIdType = 'SSS ID';
+        }
+
+        if (expectedIdType === 'other' || !expectedIdType) {
+            return { idTypeMatch: true, detectedIdType };
+        }
+
+        if (detectedIdType === expectedIdType) {
+            idTypeMatch = true;
+        } else if (idTypeMap[expectedIdType]) {
+            const keywords = idTypeMap[expectedIdType].keywords;
+            for (const keyword of keywords) {
+                if (lowerText.includes(keyword.toLowerCase())) {
+                    idTypeMatch = true;
+                    break;
+                }
+            }
+        }
+
+        return { idTypeMatch, detectedIdType };
+    }
+
+    async function applyIdTypeValidationFromGeminiResult(result, file) {
+        const fid = accountFileIdentifier(file);
+        const expectedKey = mapValidIdLabelToExpectedType(validIdSelect.value);
+
+        if (!expectedKey) {
+            idTypeValidationAccount = {
+                ok: true,
+                idTypeMatch: true,
+                validatedFile: fid,
+                expectedIdType: null,
+                detectedIdType: null,
+                errorMessage: null,
+                skippedNoApiMapping: true
+            };
+            clearError(idImageInput);
+            previewImg.style.border = '';
+            return;
+        }
+
+        if (result.idTypeMatch === undefined) {
+            idTypeValidationAccount = {
+                ok: false,
+                idTypeMatch: true,
+                validatedFile: fid,
+                expectedIdType: expectedKey,
+                detectedIdType: null,
+                errorMessage: null,
+                skippedNoApiMapping: true
+            };
+            return;
+        }
+
+        const errMsg = result.idTypeMatch ? null : getIDTypeMismatchError();
+        idTypeValidationAccount = {
+            ok: true,
+            idTypeMatch: result.idTypeMatch,
+            validatedFile: fid,
+            expectedIdType: expectedKey,
+            detectedIdType: result.detectedIdType || null,
+            errorMessage: errMsg,
+            skippedNoApiMapping: false
+        };
+
+        if (!result.idTypeMatch) {
+            showError(idImageInput, errMsg);
+            previewImg.style.border = '3px solid #dc3545';
+            await Swal.fire({
+                icon: 'error',
+                title: 'ID Type Mismatch',
+                text: errMsg,
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#dc3545',
+                width: '500px'
+            });
+        } else {
+            clearError(idImageInput);
+            previewImg.style.border = '';
+        }
+    }
+
     // Form validation functions
     function validateName(name) {
         return /^[a-zA-Z\s'-]+$/.test(name) && name.trim().length >= 2;
@@ -398,6 +592,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ID Upload functionality
     function initializeIDUpload() {
+        uploadAreaDefaultHtml = uploadArea.innerHTML;
         // Upload area click handler
         uploadArea.addEventListener('click', function() {
             idImageInput.click();
@@ -434,68 +629,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let idOcrValidation = { ok: false, hasBigte: false, name: { first:'', middle:'', last:'' }, fullText: '' };
 
-    // Auto-crop image using Cloud Vision API with PHP GD fallback
-    async function autoCropImage(imageBase64) {
-        try {
-            // Create abort controller for timeout (fallback for browsers without AbortSignal.timeout)
-            let abortController = null;
-            let timeoutId = null;
-            
-            if (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) {
-                // Modern browsers with AbortSignal.timeout
-                abortController = { signal: AbortSignal.timeout(35000) };
-            } else {
-                // Fallback for older browsers
-                abortController = new AbortController();
-                timeoutId = setTimeout(() => abortController.abort(), 35000);
-            }
-
-            const response = await fetch('php/vision_crop.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    image_base64: imageBase64
-                }),
-                signal: abortController.signal
-            });
-            
-            // Clear timeout if it was set manually
-            if (timeoutId) {
-                clearTimeout(timeoutId);
-            }
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const result = await response.json();
-            
-            if (result.success && result.cropped_image_base64) {
-                // Log which method was used
-                if (result.method === 'cloud_vision') {
-                    console.log('✓ Image auto-cropped using Cloud Vision API');
-                } else if (result.method === 'php_gd') {
-                    console.log('✓ Image auto-cropped using PHP GD (fallback)');
-                } else {
-                    console.log('ℹ Using original image (no crop needed)');
-                }
-                return result.cropped_image_base64;
-            } else {
-                console.warn('Auto-crop failed, using original image:', result.message);
-                return imageBase64;
-            }
-        } catch (error) {
-            if (error.name === 'TimeoutError' || error.name === 'AbortError') {
-                console.warn('Auto-crop timeout, using original image');
-            } else {
-                console.error('Auto-crop error:', error);
-            }
-            return imageBase64; // Return original on error
-        }
-    }
-
     async function handleImageUpload(file) {
         if (!validateIDImage(file)) {
             showError(idImageInput, 'Please upload a valid image file (JPG, PNG) under 5MB');
@@ -515,22 +648,20 @@ document.addEventListener('DOMContentLoaded', function() {
             let imageDataUrl = e.target.result;
             
             try {
-                // Step 1: Auto-crop the image (works for both camera and gallery)
-                uploadAreaElement.innerHTML = '<div class="loading-spinner"><p>Auto-cropping ID...</p></div>';
-                imageDataUrl = await autoCropImage(imageDataUrl);
-                
-                // Step 2: Show preview with processed image
+                // Use full image (no auto-crop). Vision CROP_HINTS often tight-crops IDs and cuts off
+                // address/text needed for Bigte + ID-type OCR (e.g. PhilID bottom fields).
+                uploadAreaElement.innerHTML = '<div class="loading-spinner"><p>Validating ID...</p></div>';
+
+                // Step 1: Show preview with original image
                 previewImg.src = imageDataUrl;
                 imagePreview.style.display = 'block';
                 uploadArea.style.display = 'none';
                 
-                // Step 3: Update the file input with processed image
+                // Step 2: Update the file input from the same image data
                 try {
                     const response = await fetch(imageDataUrl);
                     const blob = await response.blob();
                     const processedFile = new File([blob], file.name, { type: file.type || 'image/jpeg' });
-                    
-                    // Create a new FileList with the processed file
                     const dataTransfer = new DataTransfer();
                     dataTransfer.items.add(processedFile);
                     idImageInput.files = dataTransfer.files;
@@ -538,11 +669,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.warn('Failed to update file input, but continuing:', fileUpdateError);
                 }
                 
-                // Step 4: Validate ID via Gemini API
-                uploadAreaElement.innerHTML = '<div class="loading-spinner"><p>Validating ID...</p></div>';
+                // Step 3: gemini_verify.php — one OCR; client applies ID type first, then Bigte state
                 const fileToValidate = idImageInput.files[0] || file;
-                const result = await validateIDAddressWithGemini(fileToValidate);
-                
+                const expectedKey = mapValidIdLabelToExpectedType(validIdSelect.value);
+                const result = await validateIDAddressWithGemini(fileToValidate, { expectedIdType: expectedKey });
+
+                await applyIdTypeValidationFromGeminiResult(result, fileToValidate);
+
                 if (!result.ok) {
                     console.log('Vision API not available, skipping validation');
                     idOcrValidation = { ok: false, hasBigte: false, name: { first:'', middle:'', last:'' } };
@@ -553,6 +686,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.log('✓ ID validated - Bigte found in address');
                     idOcrValidation = { ok: true, hasBigte: true, name: result.name, fullText: result.fullText || '' };
                 }
+
+                if (uploadAreaDefaultHtml) {
+                    uploadAreaElement.innerHTML = uploadAreaDefaultHtml;
+                }
             } catch (error) {
                 console.error('Image processing error:', error);
                 // Show original image if processing fails
@@ -560,49 +697,81 @@ document.addEventListener('DOMContentLoaded', function() {
                 imagePreview.style.display = 'block';
                 uploadArea.style.display = 'none';
                 idOcrValidation = { ok: false, hasBigte: false, name: { first:'', middle:'', last:'' }, fullText: '' };
+                if (uploadAreaDefaultHtml) {
+                    uploadAreaElement.innerHTML = uploadAreaDefaultHtml;
+                }
             }
         };
         reader.readAsDataURL(file);
     }
 
-    // Validate address on the ID image using Gemini backend
-    async function validateIDAddressWithGemini(file) {
-        // Convert file to base64
+    /**
+     * php/gemini_verify.php — one Vision OCR; server evaluates ID type then Bigte. Client should apply ID type UI before Bigte.
+     */
+    async function validateIDAddressWithGemini(file, options = {}) {
+        const expectedIdType = options.expectedIdType || null;
         const base64Image = await fileToBase64(file);
 
+        function enrichWithIdTypeFallback(base) {
+            if (!expectedIdType) {
+                return { ...base, skippedNoApiMapping: true };
+            }
+            const m = performIdTypeMatchFromText(base.fullText || '', expectedIdType);
+            return {
+                ...base,
+                idTypeMatch: m.idTypeMatch,
+                detectedIdType: m.detectedIdType,
+                idTypeFromClientFallback: true
+            };
+        }
+
         try {
+            const body = { image_base64: base64Image };
+            if (expectedIdType) {
+                body.expected_id_type = expectedIdType;
+            }
             const response = await fetch('php/gemini_verify.php', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ image_base64: base64Image })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
             });
 
-            // Response is always 200 with success flag
-
-            // Try parse JSON safely; backend should always return JSON but guard anyway
             let data;
             const text = await response.text();
             try {
                 data = JSON.parse(text);
             } catch (e) {
-                // Silent fallback to Tesseract - no error shown
                 const fallback = await ocrWithTesseract(base64Image);
-                return fallback;
+                return enrichWithIdTypeFallback(fallback);
             }
             if (!data.success || !data.ok) {
-                // Silent fallback to Tesseract for any error
                 const fallback = await ocrWithTesseract(base64Image);
-                return fallback;
+                return enrichWithIdTypeFallback(fallback);
             }
 
-            // Success - return Google Vision API result
-            return { ok: true, hasBigte: !!data.hasMatch, name: { first: data.firstName || '', middle: data.middleName || '', last: data.lastName || '' }, fullText: data.fullText || '' };
+            const out = {
+                ok: true,
+                hasBigte: !!data.hasMatch,
+                name: {
+                    first: data.firstName || '',
+                    middle: data.middleName || '',
+                    last: data.lastName || ''
+                },
+                fullText: data.fullText || ''
+            };
+
+            if (expectedIdType) {
+                out.idTypeMatch = !!data.idTypeMatch;
+                out.detectedIdType = data.detectedIdType;
+                out.idTypeFromApi = true;
+            } else {
+                out.skippedNoApiMapping = true;
+            }
+
+            return out;
         } catch (error) {
-            // Silent fallback on any error
             const fallback = await ocrWithTesseract(base64Image);
-            return fallback;
+            return enrichWithIdTypeFallback(fallback);
         }
     }
 
@@ -623,8 +792,7 @@ document.addEventListener('DOMContentLoaded', function() {
             await ensureTesseractLoaded();
             const { data } = await window.Tesseract.recognize(base64Image, 'eng');
             const text = (data && data.text) ? data.text : '';
-            const hay = text.toLowerCase();
-            const hasBigte = hay.includes('bigte');
+            const hasBigte = hasBigteInOcrText(text);
             // Name extraction simple heuristic (best-effort)
             const name = { first: '', middle: '', last: '' };
             // Try to capture tokens following common labels
@@ -661,7 +829,22 @@ document.addEventListener('DOMContentLoaded', function() {
         idImageInput.value = '';
         imagePreview.style.display = 'none';
         uploadArea.style.display = 'block';
+        if (uploadAreaDefaultHtml) {
+            uploadArea.innerHTML = uploadAreaDefaultHtml;
+        }
+        previewImg.src = '';
+        previewImg.style.border = '';
+        previewImg.style.opacity = '1';
         clearError(idImageInput);
+        idTypeValidationAccount = {
+            ok: false,
+            idTypeMatch: false,
+            validatedFile: null,
+            expectedIdType: null,
+            detectedIdType: null,
+            errorMessage: null,
+            skippedNoApiMapping: false
+        };
     }
 
     // Camera and Gallery functions
@@ -774,14 +957,24 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize ID upload
     initializeIDUpload();
 
-    // Test validId select functionality
     if (validIdSelect) {
-        validIdSelect.addEventListener('change', function() {
-            console.log('ValidId changed to:', this.value, 'Index:', this.selectedIndex);
-        });
-        
-        validIdSelect.addEventListener('click', function() {
-            console.log('ValidId clicked, current value:', this.value);
+        validIdSelect.addEventListener('change', async function() {
+            if (imagePreview.style.display !== 'none' && previewImg.src && idImageInput.files && idImageInput.files[0]) {
+                const f = idImageInput.files[0];
+                const key = mapValidIdLabelToExpectedType(validIdSelect.value);
+                const res = await validateIDAddressWithGemini(f, { expectedIdType: key });
+                await applyIdTypeValidationFromGeminiResult(res, f);
+                if (!res.ok) {
+                    idOcrValidation = { ok: false, hasBigte: false, name: { first: '', middle: '', last: '' }, fullText: '' };
+                } else {
+                    idOcrValidation = {
+                        ok: true,
+                        hasBigte: res.hasBigte,
+                        name: res.name,
+                        fullText: res.fullText || ''
+                    };
+                }
+            }
         });
     }
 
@@ -932,6 +1125,22 @@ document.addEventListener('DOMContentLoaded', function() {
             isValid = false;
         }
 
+        const expectedKeyForm = mapValidIdLabelToExpectedType(validIdSelect.value);
+        if (expectedKeyForm && idImageInput.files && idImageInput.files[0]) {
+            const fid = accountFileIdentifier(idImageInput.files[0]);
+            if (
+                idTypeValidationAccount.validatedFile === fid &&
+                !idTypeValidationAccount.skippedNoApiMapping &&
+                !idTypeValidationAccount.idTypeMatch
+            ) {
+                isValid = false;
+                showError(
+                    idImageInput,
+                    idTypeValidationAccount.errorMessage || getIDTypeMismatchError()
+                );
+            }
+        }
+
         return isValid;
     }
 
@@ -942,6 +1151,43 @@ document.addEventListener('DOMContentLoaded', function() {
         // Validate personal info form
         if (!validatePersonalInfoForm()) {
             return;
+        }
+
+        const expectedKeySubmit = mapValidIdLabelToExpectedType(validIdSelect.value);
+        if (expectedKeySubmit && idImageInput.files && idImageInput.files[0] && previewImg && previewImg.src) {
+            const currentFile = idImageInput.files[0];
+            const fid = accountFileIdentifier(currentFile);
+            if (idTypeValidationAccount.validatedFile !== fid) {
+                const res = await validateIDAddressWithGemini(currentFile, { expectedIdType: expectedKeySubmit });
+                await applyIdTypeValidationFromGeminiResult(res, currentFile);
+                if (!res.ok) {
+                    idOcrValidation = { ok: false, hasBigte: false, name: { first: '', middle: '', last: '' }, fullText: '' };
+                } else {
+                    idOcrValidation = {
+                        ok: true,
+                        hasBigte: res.hasBigte,
+                        name: res.name,
+                        fullText: res.fullText || ''
+                    };
+                }
+            }
+            if (
+                !idTypeValidationAccount.skippedNoApiMapping &&
+                idTypeValidationAccount.validatedFile === fid &&
+                !idTypeValidationAccount.idTypeMatch
+            ) {
+                const msg = idTypeValidationAccount.errorMessage || getIDTypeMismatchError();
+                await Swal.fire({
+                    icon: 'error',
+                    title: 'ID Type Mismatch',
+                    text: msg,
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#dc3545',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false
+                });
+                return;
+            }
         }
         
         // Show loading state

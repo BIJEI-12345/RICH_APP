@@ -202,21 +202,7 @@ async function fallbackToTesseractForIDType(imageElement, expectedIdType) {
         const tesseractResult = await ocrWithTesseract(imageElement);
         if (tesseractResult.ok && tesseractResult.fullText) {
             const idTypeMatchResult = performIDTypeMatching(tesseractResult.fullText, expectedIdType);
-            
-            // Get expected name from idTypeMap (defined in performIDTypeMatching)
-            const idTypeMap = {
-                'driver-license': { name: "Driver's License" },
-                'passport': { name: 'Passport' },
-                'sss-id': { name: 'SSS ID' },
-                'philhealth-id': { name: 'PhilHealth ID' },
-                'postal-id': { name: 'Postal ID' },
-                'voter-id': { name: "Voter's ID" },
-                'senior-citizen-id': { name: 'Senior Citizen ID' },
-                'pwd-id': { name: 'PWD ID' },
-                'barangay-id': { name: 'Barangay ID' },
-                'company-id': { name: 'Company ID' }
-            };
-            const expectedName = idTypeMap[expectedIdType]?.name || expectedIdType;
+            const expectedName = expectedIdType;
             
             return {
                 ok: true,
@@ -381,6 +367,17 @@ async function validateIDTypeMatch(file, inputElement) {
     }
 }
 
+/** Tolerant "Bigte" detection for OCR (aligns with php/bigte_ocr_helpers.php) */
+function ocrTextHasBigte(text) {
+    if (!text || typeof text !== 'string') return false;
+    if (text.toLowerCase().includes('bigte')) return true;
+    const oneLine = text.replace(/\s+/g, ' ');
+    if (/\b[8b]igte\b/i.test(oneLine)) return true;
+    if (/\bupper\s*,?\s*[b8]igte/i.test(oneLine)) return true;
+    if (/\btirahan.*[b8]igte/i.test(oneLine)) return true;
+    return false;
+}
+
 // Lightweight fallback OCR using Tesseract.js from CDN
 function ensureTesseractLoaded() {
     return new Promise((resolve, reject) => {
@@ -419,8 +416,7 @@ async function ocrWithTesseract(fileOrBase64) {
         
         const { data } = await window.Tesseract.recognize(imageSource, 'eng');
         const text = (data && data.text) ? data.text : '';
-        const hay = text.toLowerCase();
-        const hasBigte = hay.includes('bigte');
+        const hasBigte = ocrTextHasBigte(text);
         const name = { first: '', middle: '', last: '' };
         const lines = text.split(/\n+/).map(s => s.trim()).filter(Boolean);
         for (const ln of lines) {
@@ -442,84 +438,85 @@ async function ocrWithTesseract(fileOrBase64) {
     }
 }
 
-// Perform ID type matching using extracted text (for Tesseract fallback)
+// Perform ID type matching using extracted text (for Tesseract fallback); keys match HTML option values / php/id_type_match_helpers.php
 function performIDTypeMatching(fullText, expectedIdType) {
     const lowerText = fullText.toLowerCase();
     let detectedIdType = 'unknown';
     let idTypeMatch = false;
-    
-    // ID type mapping
+
     const idTypeMap = {
-        'driver-license': {
-            name: "Driver's License",
-            keywords: ['driver', 'license', 'drivers license', 'driving license', 'lto', 'land transportation office']
+        'National ID': {
+            keywords: ['philsys', 'philid', 'national id', 'pambansang', 'pagkakakilanlan', 'philippine identification', 'identification card', 'psn']
         },
-        'passport': {
-            name: 'Passport',
-            keywords: ['passport', 'department of foreign affairs', 'dfa']
+        "Driver's License": {
+            keywords: ['driver', 'license', 'drivers license', 'driving license', 'lto', 'land transportation office', 'non-professional', 'professional']
         },
-        'sss-id': {
-            name: 'SSS ID',
-            keywords: ['sss', 'social security', 'social security system']
+        'Passport': {
+            keywords: ['passport', 'department of foreign affairs', 'dfa', 'passport no']
         },
-        'philhealth-id': {
-            name: 'PhilHealth ID',
-            keywords: ['philhealth', 'phil health', 'national health insurance']
+        'SSS ID': {
+            keywords: ['sss', 'social security', 'social security system', 'sss id', 'sss number']
         },
-        'postal-id': {
-            name: 'Postal ID',
-            keywords: ['postal', 'philpost', 'philippine postal']
+        'Umid ID': {
+            keywords: ['umid', 'unified multipurpose', 'unified multi-purpose', 'umid card']
         },
-        'voter-id': {
-            name: "Voter's ID",
-            keywords: ['voter', 'voters', 'comelec', 'commission on elections']
+        'GSIS ID': {
+            keywords: ['gsis', 'government service insurance']
         },
-        'senior-citizen-id': {
-            name: 'Senior Citizen ID',
-            keywords: ['senior citizen', 'oscad']
+        'TIN ID': {
+            keywords: ['tin', 'bureau of internal revenue', 'bir', 'tax identification']
         },
-        'pwd-id': {
-            name: 'PWD ID',
-            keywords: ['pwd', 'person with disability']
+        'Barangay ID': {
+            keywords: ['barangay', 'brgy', 'barangay clearance', 'barangay certificate']
         },
-        'barangay-id': {
-            name: 'Barangay ID',
-            keywords: ['barangay']
+        'PhilHealth ID': {
+            keywords: ['philhealth', 'phil health', 'national health insurance', 'nhip']
         },
-        'company-id': {
-            name: 'Company ID',
-            keywords: ['company', 'employee', 'staff']
+        'Postal ID': {
+            keywords: ['postal', 'philpost', 'philippine postal', 'postal identification']
+        },
+        'Senior Citizen ID': {
+            keywords: ['senior citizen', 'oscad', 'senior citizen id']
         }
     };
-    
-    // Detect ID type
-    if (/\bpassport\b/i.test(fullText) || /\bdfa\b/i.test(fullText)) {
-        detectedIdType = 'passport';
-    } else if (/\bdriver\b/i.test(fullText) && /\blicense\b/i.test(fullText)) {
-        detectedIdType = 'driver-license';
-    } else if (/\bsss\b/i.test(fullText)) {
-        detectedIdType = 'sss-id';
-    } else if (/\bphilhealth\b/i.test(fullText)) {
-        detectedIdType = 'philhealth-id';
-    } else if (/\bpostal\b/i.test(fullText)) {
-        detectedIdType = 'postal-id';
-    } else if (/\bvoter\b/i.test(fullText) || /\bcomelec\b/i.test(fullText)) {
-        detectedIdType = 'voter-id';
-    } else if (/\bsenior citizen\b/i.test(fullText)) {
-        detectedIdType = 'senior-citizen-id';
-    } else if (/\bpwd\b/i.test(fullText)) {
-        detectedIdType = 'pwd-id';
-    } else if (/\bbarangay\b/i.test(fullText)) {
-        detectedIdType = 'barangay-id';
-    } else if (/\bcompany\b/i.test(fullText) || /\bemployee\b/i.test(fullText)) {
-        detectedIdType = 'company-id';
+
+    if (/\bpassport\b/i.test(fullText) || /\bdfa\b/i.test(fullText) || /department of foreign affairs/i.test(fullText)) {
+        detectedIdType = 'Passport';
+    } else if ((/\bdriver\b/i.test(fullText) || /\blto\b/i.test(fullText)) && /\blicense\b/i.test(fullText)) {
+        detectedIdType = "Driver's License";
+    } else if (
+        /\bphilsys\b/i.test(fullText) ||
+        /\bphil\s*id\b/i.test(fullText) ||
+        /pambansang\s+pagkakakilanlan/i.test(fullText) ||
+        /philippine\s+identification/i.test(fullText) ||
+        (/\bnational\s+id\b/i.test(fullText) && /philippine|phil/i.test(fullText))
+    ) {
+        detectedIdType = 'National ID';
+    } else if (/\bumid\b/i.test(fullText) || /unified\s+multipurpose/i.test(fullText)) {
+        detectedIdType = 'Umid ID';
+    } else if (/\bgsis\b/i.test(fullText) || /government\s+service\s+insurance/i.test(fullText)) {
+        detectedIdType = 'GSIS ID';
+    } else if (/\btin\b/i.test(fullText) && (/\bbir\b/i.test(fullText) || /bureau\s+of\s+internal\s+revenue/i.test(fullText) || /tax\s+identification/i.test(fullText))) {
+        detectedIdType = 'TIN ID';
+    } else if (/\bphilhealth\b/i.test(fullText) || /\bphil health\b/i.test(fullText) || /\bnational health insurance\b/i.test(fullText)) {
+        detectedIdType = 'PhilHealth ID';
+    } else if (/\bpostal\b/i.test(fullText) || /\bphilpost\b/i.test(fullText)) {
+        detectedIdType = 'Postal ID';
+    } else if (/\bsenior citizen\b/i.test(fullText) || /\boscad\b/i.test(fullText)) {
+        detectedIdType = 'Senior Citizen ID';
+    } else if (/\bbarangay\b/i.test(fullText) || /\bbrgy\.?\b/i.test(fullText)) {
+        detectedIdType = 'Barangay ID';
+    } else if (/\bsss\b/i.test(fullText) || /\bsocial security\b/i.test(fullText)) {
+        detectedIdType = 'SSS ID';
     }
-    
-    // Check if detected matches expected
+
+    if (expectedIdType === 'other' || !expectedIdType) {
+        return { idTypeMatch: true, detectedIdType };
+    }
+
     if (detectedIdType === expectedIdType) {
         idTypeMatch = true;
     } else if (idTypeMap[expectedIdType]) {
-        // Check keywords
         const keywords = idTypeMap[expectedIdType].keywords;
         for (const keyword of keywords) {
             if (lowerText.includes(keyword.toLowerCase())) {
@@ -528,7 +525,7 @@ function performIDTypeMatching(fullText, expectedIdType) {
             }
         }
     }
-    
+
     return { idTypeMatch, detectedIdType };
 }
 
@@ -4592,7 +4589,7 @@ function validate1x1Photo(file, input) {
             
             if (!isSquare) {
                 // Show warning but don't prevent upload
-                const warningMessage = `Ang uploaded image ay hindi tama, marapat na mag submit ng valid na 1x1 image.`;
+                const warningMessage = `Ang uploaded image ay hindi tama, marapat na mag submit ng valid na 1x1 image at puting background.`;
                 showFieldError(input, warningMessage);
             } else {
                 // Clear any previous errors if image is valid

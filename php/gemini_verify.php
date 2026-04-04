@@ -1,7 +1,7 @@
 <?php
-// Google Vision API-based ID address verification
-// Input JSON: { image_base64: "data:image/...;base64,XXXX" }
-// Output JSON: { success: bool, ok: bool, hasMatch: bool, addressText: string, fullText?: string, message?: string }
+// Google Vision API — one OCR pass; logic order: ID type match (if expected_id_type), then Barangay Bigte
+// Input JSON: { image_base64: "...", expected_id_type?: "National ID" | "Driver's License" | ... (HTML value) }
+// Output JSON: hasMatch (Bigte), fullText, names; if expected_id_type: idTypeMatch, detectedIdType, ...
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
@@ -23,10 +23,6 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// Load environment variables
-require_once __DIR__ . '/env_loader.php';
-
-// Load environment variables
 require_once __DIR__ . '/env_loader.php';
 
 try {
@@ -36,6 +32,14 @@ try {
         echo json_encode(['success' => false, 'ok' => false, 'message' => 'image_base64 is required']);
         exit;
     }
+
+    $VISION_URL = getGoogleVisionApiUrl();
+    if (!$VISION_URL) {
+        echo json_encode(['success' => false, 'ok' => false, 'message' => 'API configuration error: GOOGLE_VISION_API_KEY is not set in .env file']);
+        exit;
+    }
+
+    $expectedIdTypeRequest = isset($payload['expected_id_type']) ? trim((string) $payload['expected_id_type']) : '';
 
     $imageBase64 = $payload['image_base64'];
     if (strpos($imageBase64, ',') !== false) {
@@ -143,34 +147,40 @@ try {
         $fullText = $textAnnotations[0]['description'] ?? '';
     }
 
-    // Extract address and name fields from the text
+    require_once __DIR__ . '/bigte_ocr_helpers.php';
+
     $address = '';
     $firstName = '';
     $middleName = '';
     $lastName = '';
-    
-    // Check if "Bigte" is in the text (case-insensitive)
-    $hasBigte = stripos($fullText, 'bigte') !== false;
-    
-    // Try to extract address - look for lines containing "Bigte" or address-like patterns
+
+    // 1) ID type vs selected type (same fullText) — before Bigte check
+    $idMatch = null;
+    if ($expectedIdTypeRequest !== '') {
+        require_once __DIR__ . '/id_type_match_helpers.php';
+        $idMatch = compute_id_type_match_from_fulltext($fullText, $expectedIdTypeRequest);
+    }
+
+    // 2) Barangay Bigte in OCR text
+    $hasBigte = bigte_present_in_ocr_text($fullText);
+
+    // Extract address line (Bigte / address patterns)
     $lines = explode("\n", $fullText);
     foreach ($lines as $line) {
         $line = trim($line);
-        if (stripos($line, 'bigte') !== false || 
+        if (bigte_present_in_ocr_text($line) ||
             stripos($line, 'address') !== false ||
             preg_match('/\d+\s+[A-Za-z\s]+(?:Street|St|Avenue|Ave|Road|Rd|Barangay|Brgy)/i', $line)) {
             $address = $line;
             break;
         }
     }
-    
-    // Try to extract name fields - look for common name patterns
-    // This is a simple extraction - can be improved with better pattern matching
+
     $namePatterns = [
-        '/\b([A-Z][a-z]+)\s+([A-Z][a-z]+)\s+([A-Z][a-z]+)\b/', // First Middle Last
-        '/\b([A-Z][a-z]+)\s+([A-Z][a-z]+)\b/', // First Last
+        '/\b([A-Z][a-z]+)\s+([A-Z][a-z]+)\s+([A-Z][a-z]+)\b/',
+        '/\b([A-Z][a-z]+)\s+([A-Z][a-z]+)\b/',
     ];
-    
+
     foreach ($namePatterns as $pattern) {
         if (preg_match($pattern, $fullText, $matches)) {
             if (count($matches) >= 4) {
@@ -185,7 +195,7 @@ try {
         }
     }
 
-    echo json_encode([
+    $response = [
         'success' => true,
         'ok' => true,
         'hasMatch' => $hasBigte,
@@ -194,7 +204,18 @@ try {
         'firstName' => $firstName,
         'middleName' => $middleName,
         'lastName' => $lastName
-    ]);
+    ];
+
+    if ($idMatch !== null) {
+        $response['idTypeMatch'] = $idMatch['idTypeMatch'];
+        $response['detectedIdType'] = $idMatch['detectedIdType'];
+        $response['expectedIdType'] = $expectedIdTypeRequest;
+        $response['expectedName'] = $idMatch['expectedName'];
+        $response['idTypeConfidence'] = $idMatch['confidence'];
+        $response['matchReason'] = $idMatch['matchReason'];
+    }
+
+    echo json_encode($response);
 } catch (Throwable $e) {
     echo json_encode(['success' => false, 'ok' => false, 'message' => $e->getMessage()]);
 }
