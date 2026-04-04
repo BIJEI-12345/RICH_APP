@@ -42,6 +42,33 @@ document.addEventListener('DOMContentLoaded', function() {
     const uploadArea = document.getElementById('uploadArea');
     let uploadAreaDefaultHtml = '';
     const createBtn = document.querySelector('.create-btn');
+    const regStepPersonal = document.getElementById('regStepPersonal');
+    const regStepId = document.getElementById('regStepId');
+    const regStepAccount = document.getElementById('regStepAccount');
+    const btnRegStepContinue = document.getElementById('btnRegStepContinue');
+    const idValidationOverlay = document.getElementById('idValidationOverlay');
+    const idValidationOverlayText = document.getElementById('idValidationOverlayText');
+
+    function showIdValidationLoading(message) {
+        if (idValidationOverlayText && typeof message === 'string' && message.trim()) {
+            idValidationOverlayText.textContent = message.trim();
+        } else if (idValidationOverlayText) {
+            idValidationOverlayText.textContent = 'Validating ID...';
+        }
+        if (idValidationOverlay) {
+            idValidationOverlay.classList.add('id-validation-overlay--visible');
+            idValidationOverlay.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+        }
+    }
+
+    function hideIdValidationLoading() {
+        if (idValidationOverlay) {
+            idValidationOverlay.classList.remove('id-validation-overlay--visible');
+            idValidationOverlay.setAttribute('aria-hidden', 'true');
+        }
+        document.body.style.overflow = '';
+    }
 
     /** Same strings as HTML option value / php/gemini_verify.php expected_id_type */
     const ALLOWED_VALID_ID_TYPES = new Set([
@@ -650,7 +677,7 @@ document.addEventListener('DOMContentLoaded', function() {
             try {
                 // Use full image (no auto-crop). Vision CROP_HINTS often tight-crops IDs and cuts off
                 // address/text needed for Bigte + ID-type OCR (e.g. PhilID bottom fields).
-                uploadAreaElement.innerHTML = '<div class="loading-spinner"><p>Validating ID...</p></div>';
+                // Full-screen overlay for validation is shown inside validateIDAddressWithGemini
 
                 // Step 1: Show preview with original image
                 previewImg.src = imageDataUrl;
@@ -690,6 +717,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (uploadAreaDefaultHtml) {
                     uploadAreaElement.innerHTML = uploadAreaDefaultHtml;
                 }
+
+                tryShowRegistrationAccountStep();
             } catch (error) {
                 console.error('Image processing error:', error);
                 // Show original image if processing fails
@@ -700,6 +729,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (uploadAreaDefaultHtml) {
                     uploadAreaElement.innerHTML = uploadAreaDefaultHtml;
                 }
+                hideRegistrationAccountStep();
             }
         };
         reader.readAsDataURL(file);
@@ -710,7 +740,16 @@ document.addEventListener('DOMContentLoaded', function() {
      */
     async function validateIDAddressWithGemini(file, options = {}) {
         const expectedIdType = options.expectedIdType || null;
-        const base64Image = await fileToBase64(file);
+        const loadingMsg = options.loadingMessage;
+        showIdValidationLoading(loadingMsg);
+
+        let base64Image;
+        try {
+            base64Image = await fileToBase64(file);
+        } catch (e) {
+            hideIdValidationLoading();
+            throw e;
+        }
 
         function enrichWithIdTypeFallback(base) {
             if (!expectedIdType) {
@@ -772,6 +811,8 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             const fallback = await ocrWithTesseract(base64Image);
             return enrichWithIdTypeFallback(fallback);
+        } finally {
+            hideIdValidationLoading();
         }
     }
 
@@ -845,6 +886,8 @@ document.addEventListener('DOMContentLoaded', function() {
             errorMessage: null,
             skippedNoApiMapping: false
         };
+        idOcrValidation = { ok: false, hasBigte: false, name: { first: '', middle: '', last: '' }, fullText: '' };
+        hideRegistrationAccountStep();
     }
 
     // Camera and Gallery functions
@@ -974,14 +1017,43 @@ document.addEventListener('DOMContentLoaded', function() {
                         fullText: res.fullText || ''
                     };
                 }
+                tryShowRegistrationAccountStep();
             }
         });
     }
 
+    if (btnRegStepContinue && regStepPersonal && regStepId) {
+        btnRegStepContinue.addEventListener('click', function () {
+            if (!validatePersonalInfoFieldsOnly()) {
+                return;
+            }
+            regStepPersonal.hidden = true;
+            regStepId.hidden = false;
+            setRegistrationProgress('id');
+            if (pageTitle) pageTitle.textContent = 'Verify your ID';
+            regStepId.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    }
 
-    // Validate personal info form
-    function validatePersonalInfoForm() {
-        // Clear all previous errors
+    function setRegistrationProgress(phase) {
+        if (!step1) return;
+        [step1, step3, step4].forEach(function (el) {
+            if (el) el.classList.remove('active');
+        });
+        if (phase === 'personal') {
+            step1.classList.add('active');
+        } else if (phase === 'id') {
+            step1.classList.add('active');
+            if (step3) step3.classList.add('active');
+        } else if (phase === 'account') {
+            step1.classList.add('active');
+            if (step3) step3.classList.add('active');
+            if (step4) step4.classList.add('active');
+        }
+    }
+
+    /** Personal + address only (step 1) — used by Continue and full form validation */
+    function validatePersonalInfoFieldsOnly() {
         clearError(firstNameInput);
         clearError(middleNameInput);
         clearError(lastNameInput);
@@ -994,12 +1066,9 @@ document.addEventListener('DOMContentLoaded', function() {
         clearError(sitioSelect);
         clearError(streetInput);
         clearError(houseNumberInput);
-        clearError(validIdSelect);
-        clearError(idImageInput);
-        
+
         let isValid = true;
-        
-        // Validate first name
+
         if (!validateRequired(firstNameInput.value)) {
             showError(firstNameInput, 'First name is required');
             isValid = false;
@@ -1007,16 +1076,14 @@ document.addEventListener('DOMContentLoaded', function() {
             showError(firstNameInput, 'Please enter a valid first name');
             isValid = false;
         }
-        
-        // Validate middle name (only if not disabled)
+
         if (!middleNameInput.disabled && middleNameInput.value.trim()) {
             if (!validateName(middleNameInput.value)) {
                 showError(middleNameInput, 'Please enter a valid middle name');
                 isValid = false;
             }
         }
-        
-        // Validate last name
+
         if (!validateRequired(lastNameInput.value)) {
             showError(lastNameInput, 'Last name is required');
             isValid = false;
@@ -1024,8 +1091,7 @@ document.addEventListener('DOMContentLoaded', function() {
             showError(lastNameInput, 'Please enter a valid last name');
             isValid = false;
         }
-        
-        // Validate email
+
         if (!validateRequired(emailInput.value)) {
             showError(emailInput, 'Email address is required');
             isValid = false;
@@ -1034,7 +1100,6 @@ document.addEventListener('DOMContentLoaded', function() {
             isValid = false;
         }
 
-        // Validate contact number
         if (!validateRequired(contactNumberInput.value)) {
             showError(contactNumberInput, 'Contact number is required');
             isValid = false;
@@ -1043,8 +1108,6 @@ document.addEventListener('DOMContentLoaded', function() {
             isValid = false;
         }
 
-        // Validate new fields
-        // Age validation (auto-calculated from birth date)
         if (!validateRequired(ageInput.value)) {
             showError(ageInput, 'Please enter your birth date to calculate age');
             isValid = false;
@@ -1053,13 +1116,11 @@ document.addEventListener('DOMContentLoaded', function() {
             isValid = false;
         }
 
-        // Sex validation
         if (!validateRequired(sexSelect.value)) {
             showError(sexSelect, 'Please select your sex');
             isValid = false;
         }
 
-        // Birthday validation
         if (!validateRequired(birthdayInput.value)) {
             showError(birthdayInput, 'Birthday is required');
             isValid = false;
@@ -1068,34 +1129,101 @@ document.addEventListener('DOMContentLoaded', function() {
             isValid = false;
         }
 
-        // Status validation
         if (!validateRequired(statusSelect.value)) {
             showError(statusSelect, 'Please select your civil status');
             isValid = false;
         }
 
-        // Address validation
         if (!validateRequired(sitioSelect.value)) {
             showError(sitioSelect, 'Please select a sitio');
             isValid = false;
         }
-        
+
         if (!validateRequired(streetInput.value)) {
             showError(streetInput, 'Street is required');
             isValid = false;
         }
-        
+
         if (!validateRequired(houseNumberInput.value)) {
             showError(houseNumberInput, 'House number is required');
             isValid = false;
         }
-        
+
         if (!validateAddress(streetInput.value, houseNumberInput.value, sitioSelect.value)) {
             if (!sitioSelect.classList.contains('error') && !streetInput.classList.contains('error') && !houseNumberInput.classList.contains('error')) {
                 showError(sitioSelect, 'Please complete all address fields');
             }
             isValid = false;
         }
+
+        return isValid;
+    }
+
+    function isUploadedIdFullyValid() {
+        if (!validateRequired(validIdSelect.value)) return false;
+        if (!validateIDImage(idImageInput.files[0])) return false;
+        if (!idOcrValidation.ok) return false;
+        if (!idOcrValidation.hasBigte) return false;
+        const expectedKeyForm = mapValidIdLabelToExpectedType(validIdSelect.value);
+        if (expectedKeyForm && idImageInput.files && idImageInput.files[0]) {
+            const fid = accountFileIdentifier(idImageInput.files[0]);
+            if (
+                idTypeValidationAccount.validatedFile === fid &&
+                !idTypeValidationAccount.skippedNoApiMapping &&
+                !idTypeValidationAccount.idTypeMatch
+            ) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    function tryShowRegistrationAccountStep() {
+        if (!regStepAccount || !regStepId) return;
+        if (regStepId.hasAttribute('hidden')) return;
+        if (isUploadedIdFullyValid()) {
+            regStepAccount.hidden = false;
+            regStepAccount.setAttribute('aria-hidden', 'false');
+            setRegistrationProgress('account');
+            if (pageTitle) pageTitle.textContent = 'Create your account';
+            regStepAccount.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        } else {
+            regStepAccount.hidden = true;
+            regStepAccount.setAttribute('aria-hidden', 'true');
+            if (pageTitle) pageTitle.textContent = 'Verify your ID';
+            setRegistrationProgress('id');
+        }
+    }
+
+    function hideRegistrationAccountStep() {
+        if (regStepAccount) {
+            regStepAccount.hidden = true;
+            regStepAccount.setAttribute('aria-hidden', 'true');
+        }
+        if (pageTitle) {
+            if (regStepId && !regStepId.hasAttribute('hidden')) {
+                pageTitle.textContent = 'Verify your ID';
+            } else {
+                pageTitle.textContent = "Let's Get Started!";
+            }
+        }
+        if (regStepId && !regStepId.hasAttribute('hidden')) {
+            setRegistrationProgress('id');
+        } else {
+            setRegistrationProgress('personal');
+        }
+    }
+
+    // Validate personal info form
+    function validatePersonalInfoForm() {
+        if (!validatePersonalInfoFieldsOnly()) {
+            return false;
+        }
+
+        clearError(validIdSelect);
+        clearError(idImageInput);
+
+        let isValid = true;
 
         // Valid ID validation
         if (!validateRequired(validIdSelect.value)) {
@@ -1147,7 +1275,26 @@ document.addEventListener('DOMContentLoaded', function() {
     // Form submission
     personalInfoForm.addEventListener('submit', async function(e) {
         e.preventDefault();
-        
+
+        if (regStepAccount && regStepAccount.hasAttribute('hidden')) {
+            if (regStepPersonal && !regStepPersonal.hasAttribute('hidden')) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Continue',
+                    text: 'Please tap Continue to go to ID verification.',
+                    confirmButtonColor: '#2563eb'
+                });
+            } else {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Verify your ID',
+                    text: 'Upload a valid ID that shows Barangay Bigte. The Create account section appears when your ID is verified.',
+                    confirmButtonColor: '#2563eb'
+                });
+            }
+            return;
+        }
+
         // Validate personal info form
         if (!validatePersonalInfoForm()) {
             return;
@@ -1188,6 +1335,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
                 return;
             }
+        }
+
+        tryShowRegistrationAccountStep();
+        if (!isUploadedIdFullyValid()) {
+            await Swal.fire({
+                icon: 'error',
+                title: 'ID verification',
+                text: 'Your ID must show Barangay Bigte and match the selected ID type before you can continue.',
+                confirmButtonColor: '#dc3545'
+            });
+            return;
         }
         
         // Show loading state
@@ -1408,6 +1566,8 @@ document.addEventListener('DOMContentLoaded', function() {
             this.value = this.value.trim().toLowerCase();
         }
     });
+
+    setRegistrationProgress('personal');
 });
 
 // Add smooth transitions for input groups

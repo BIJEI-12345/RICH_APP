@@ -43,8 +43,10 @@
                 <h2 class="page-title" id="pageTitle">Let's Get Started!</h2>
             </div>
 
-            <!-- Personal Information Form -->
+            <!-- Personal Information Form (step 1 → ID step → account step when ID valid) -->
             <form id="personalInfoForm" class="registration-form form-section active">
+                <!-- Step 1: Personal details & address -->
+                <div id="regStepPersonal" class="registration-step">
                 <div class="form-row">
                     <div class="input-group first-name">
                         <label class="field-heading" for="firstName">First Name</label>
@@ -204,6 +206,13 @@
                     </div>
                 </div>
 
+                <div class="form-row registration-step-nav">
+                    <button type="button" class="next-step-btn" id="btnRegStepContinue">Continue</button>
+                </div>
+                </div>
+
+                <!-- Step 2: Valid ID & upload -->
+                <div id="regStepId" class="registration-step" hidden>
                 <!-- Valid ID Type Row -->
                 <div class="form-row">
                     <div class="input-group valid-id">
@@ -264,7 +273,10 @@
                         <button type="button" class="remove-image" onclick="removeImage()">×</button>
                     </div>
                 </div>
+                </div>
 
+                <!-- Step 3: Create account (shown after ID validates successfully) -->
+                <div id="regStepAccount" class="registration-step" hidden>
                 <!-- Terms and Conditions 
                 <div class="terms-section">
                     <p class="terms-text">
@@ -288,7 +300,17 @@
                         <button type="button" class="login-btn" onclick="goToLogin()">Login here</button>
                     </div>
                 </div>
+                </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Full-screen loading while ID is being verified (Vision API / fallback OCR) -->
+    <div id="idValidationOverlay" class="id-validation-overlay" aria-hidden="true" role="status" aria-live="polite" aria-busy="true" aria-label="Validating ID">
+        <div class="id-validation-overlay__panel">
+            <div class="id-validation-overlay__spinner" aria-hidden="true"></div>
+            <p id="idValidationOverlayText" class="id-validation-overlay__text">Validating ID...</p>
+            <p class="id-validation-overlay__sub">This may take a few seconds</p>
         </div>
     </div>
 
