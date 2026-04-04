@@ -287,8 +287,8 @@ document.addEventListener('DOMContentLoaded', function() {
             return false;
         }
         
-        // Check file size (5MB max)
-        const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+        // Check file size (10MB max)
+        const maxSize = 10 * 1024 * 1024; // 10MB in bytes
         if (file.size > maxSize) {
             return false;
         }
@@ -631,7 +631,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     async function handleImageUpload(file) {
         if (!validateIDImage(file)) {
-            showError(idImageInput, 'Please upload a valid image file (JPG, PNG) under 5MB');
+            showError(idImageInput, 'Please upload a valid image file (JPG, PNG) under 10MB');
             return;
         }
 
@@ -1105,7 +1105,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // ID Image validation
         if (!validateIDImage(idImageInput.files[0])) {
-            showError(idImageInput, 'Please upload a valid ID image (JPG, PNG under 5MB)');
+            showError(idImageInput, 'Please upload a valid ID image (JPG, PNG under 10MB)');
             isValid = false;
         }
         

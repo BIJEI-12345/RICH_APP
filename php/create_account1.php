@@ -157,7 +157,7 @@ if (isset($_FILES['idImage']) && $_FILES['idImage']['error'] !== UPLOAD_ERR_NO_F
     
     // Validate image file
     $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
-    $maxSize = 5 * 1024 * 1024; // 5MB
+    $maxSize = 10 * 1024 * 1024; // 10MB
     
     // Check file type
     if (!in_array($imageFile['type'], $allowedTypes)) {
@@ -179,7 +179,7 @@ if (isset($_FILES['idImage']) && $_FILES['idImage']['error'] !== UPLOAD_ERR_NO_F
         http_response_code(400);
         echo json_encode([
             'success' => false, 
-            'message' => 'Image file too large. Maximum size is 5MB. Your file: ' . round($imageFile['size'] / 1024 / 1024, 2) . 'MB'
+            'message' => 'Image file too large. Maximum size is 10MB. Your file: ' . round($imageFile['size'] / 1024 / 1024, 2) . 'MB'
         ]);
         ob_end_flush();
         exit;
