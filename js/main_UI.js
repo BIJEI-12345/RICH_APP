@@ -9,7 +9,7 @@ let pendingProfileNewEmail = null;
 let profileEditBaseline = null;
 /** True after user taps Edit — email & civil status can be changed */
 let profileDetailsUnlocked = false;
-const CENSUS_REMIND_LATER_MINUTES = 2; // How long to hide the census reminder after "Remind Me Later" is clicked
+const CENSUS_REMIND_LATER_MINUTES = 5; // How long to hide the census reminder after "Remind Me Later" is clicked
 let censusReminderTimeoutId = null;
 
 function clearCensusReminderTimer() {
@@ -27,6 +27,60 @@ function scheduleCensusReminder(delayMs) {
         localStorage.removeItem('census_remind_later');
         checkCensusStatus();
     }, safeDelay);
+}
+
+/** Keeps header "Census" button available until the form is successfully submitted */
+const LS_CENSUS_REOPEN_SHORTCUT = 'census_reopen_shortcut';
+
+function showCensusReopenButton() {
+    const btn = document.getElementById('censusReopenBtn');
+    if (btn) {
+        btn.classList.add('census-reopen-btn--visible');
+        btn.setAttribute('aria-hidden', 'false');
+    }
+}
+
+/** Pause after toast before icon appears (ms) */
+const CENSUS_REOPEN_BTN_ENTRANCE_DELAY_MS = 400;
+
+/** Show census header icon with entrance animation (use after Remind-me-later toast closes) */
+function showCensusReopenButtonAnimated() {
+    setTimeout(function() {
+        const btn = document.getElementById('censusReopenBtn');
+        if (!btn || localStorage.getItem(LS_CENSUS_REOPEN_SHORTCUT) !== '1') {
+            return;
+        }
+        btn.classList.remove('census-reopen-btn--pop');
+        btn.classList.add('census-reopen-btn--visible');
+        btn.setAttribute('aria-hidden', 'false');
+        void btn.offsetWidth;
+        btn.classList.add('census-reopen-btn--pop');
+        function onAnimEnd() {
+            btn.removeEventListener('animationend', onAnimEnd);
+            btn.classList.remove('census-reopen-btn--pop');
+        }
+        btn.addEventListener('animationend', onAnimEnd, { once: true });
+    }, CENSUS_REOPEN_BTN_ENTRANCE_DELAY_MS);
+}
+
+function hideCensusReopenButton() {
+    const btn = document.getElementById('censusReopenBtn');
+    if (btn) {
+        btn.classList.remove('census-reopen-btn--visible', 'census-reopen-btn--pop');
+        btn.setAttribute('aria-hidden', 'true');
+    }
+}
+
+function syncCensusReopenButtonAfterModalClose() {
+    if (localStorage.getItem(LS_CENSUS_REOPEN_SHORTCUT) === '1') {
+        showCensusReopenButton();
+    }
+}
+
+function openCensusFromHeaderButton() {
+    localStorage.removeItem('census_remind_later');
+    clearCensusReminderTimer();
+    showCensusModal();
 }
 
 // Initialize the application
@@ -1970,7 +2024,9 @@ async function checkCensusStatus() {
         if (minutesPassed < CENSUS_REMIND_LATER_MINUTES) {
             const remainingMs = (CENSUS_REMIND_LATER_MINUTES - minutesPassed) * 60 * 1000;
             console.log(`User asked to be reminded later, skipping census modal for ${CENSUS_REMIND_LATER_MINUTES} minutes`);
+            localStorage.setItem(LS_CENSUS_REOPEN_SHORTCUT, '1');
             scheduleCensusReminder(remainingMs);
+            showCensusReopenButton();
             return;
         } else {
             // Reminder window passed, clear the reminder
@@ -1997,6 +2053,8 @@ async function checkCensusStatus() {
         
         // Check if user is already censused (last name + house number match found)
         if (data.success && data.isAlreadyCensused === true) {
+            localStorage.removeItem(LS_CENSUS_REOPEN_SHORTCUT);
+            hideCensusReopenButton();
             // User's last name + house number matches existing census record
             // Check if user has already dismissed this alert
             const userEmail = sessionStorage.getItem('user_email') || localStorage.getItem('user_email') || 'guest';
@@ -2040,6 +2098,8 @@ async function checkCensusStatus() {
                 console.log('Email exists but census not completed - showing census form');
                 showCensusModal();
             } else if (data.emailExists === true && data.hasCompletedCensus) {
+                localStorage.removeItem(LS_CENSUS_REOPEN_SHORTCUT);
+                hideCensusReopenButton();
                 // Census already completed - do nothing
                 console.log('Census already completed - not showing modal');
             }
@@ -2110,6 +2170,8 @@ function showCensusModal() {
 
         // Show one-time information alert about the census and data security
         showCensusInfoAlertIfNeeded();
+
+        hideCensusReopenButton();
     } else {
         console.error('❌ Census modal element (id="censusModal") not found in DOM!');
         console.error('Make sure the census modal HTML exists in main_UI.html');
@@ -2162,7 +2224,8 @@ function showCensusInfoAlertIfNeeded() {
 }
 
 // Close census modal
-function closeCensusModal() {
+function closeCensusModal(options) {
+    const deferReopenBtn = options && options.deferReopenButton;
     const modal = document.getElementById('censusModal');
     if (modal) {
         modal.classList.remove('active');
@@ -2182,6 +2245,10 @@ function closeCensusModal() {
         
         // Reset counter
         householdMemberCounter = 0;
+
+        if (!deferReopenBtn) {
+            syncCensusReopenButtonAfterModalClose();
+        }
     }
 }
 
@@ -2475,6 +2542,9 @@ async function handleCensusSubmission(e) {
         form.reportValidity();
         return;
     }
+
+    hideCensusReopenButton();
+    localStorage.removeItem(LS_CENSUS_REOPEN_SHORTCUT);
     
     // Show loading state
     submitBtn.disabled = true;
@@ -2571,9 +2641,10 @@ async function handleCensusSubmission(e) {
             
             // Close modal after a short delay
             setTimeout(() => {
-                closeCensusModal();
-                // Clear any "remind later" setting (temporary client-side preference only)
                 localStorage.removeItem('census_remind_later');
+                localStorage.removeItem(LS_CENSUS_REOPEN_SHORTCUT);
+                hideCensusReopenButton();
+                closeCensusModal();
             }, 1500);
         } else {
             // Show error message
@@ -2607,23 +2678,24 @@ async function handleCensusSubmission(e) {
 
 // Remind me later function
 function remindMeLater() {
-    // Store current timestamp
     localStorage.setItem('census_remind_later', Date.now().toString());
+    localStorage.setItem(LS_CENSUS_REOPEN_SHORTCUT, '1');
     scheduleCensusReminder(CENSUS_REMIND_LATER_MINUTES * 60 * 1000);
-    
-    // Close modal
-    closeCensusModal();
-    
-    // Show confirmation
+    closeCensusModal({ deferReopenButton: true });
+
     if (typeof Swal !== 'undefined') {
         Swal.fire({
             icon: 'info',
             title: 'Reminder Set',
             text: `We will remind you again in ${CENSUS_REMIND_LATER_MINUTES} minutes.`,
-            timer: 2000,
+            timer: 2500,
             showConfirmButton: false,
             toast: true,
             position: 'top'
+        }).then(function() {
+            showCensusReopenButtonAnimated();
         });
+    } else {
+        showCensusReopenButtonAnimated();
     }
 }

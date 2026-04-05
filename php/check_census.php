@@ -43,6 +43,7 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 
 // Database connection - Load from centralized config
 require_once __DIR__ . '/env_loader.php';
+require_once __DIR__ . '/census_address_helpers.php';
 
 try {
     $pdo = getDBConnection();
@@ -95,17 +96,8 @@ try {
         exit;
     }
     
-    $userLastName = trim($userInfo['last_name']);
-    $userAddress = trim($userInfo['address']);
-    
-    // Extract house number from user's address (first part before comma)
-    $userHouseNumber = '';
-    if (!empty($userAddress)) {
-        $addressParts = explode(',', $userAddress);
-        if (count($addressParts) > 0) {
-            $userHouseNumber = trim($addressParts[0]);
-        }
-    }
+    $userLastName = trim($userInfo['last_name'] ?? '');
+    $userAddress = trim($userInfo['address'] ?? '');
     
     // Check if census_form table exists (singular, not plural)
     $tableExists = false;
@@ -125,32 +117,27 @@ try {
         
         $hasCompletedCensus = $census !== false;
         
-        // Check if user's last name + house number matches any existing census record
-        // This checks if someone else with same last name + house number already completed census
-        // Exclude the user's own census record (if they have one)
+        // Same last name + resident address matches census_form.complete_address (fuzzy), another household row
+        // Exclude the user's own census row (census_id != this user)
         $isAlreadyCensused = false;
-        if (!empty($userLastName) && !empty($userHouseNumber)) {
-            // Get all census records (excluding user's own record) and check if any match last name + house number
+        if ($userLastName !== '' && $userAddress !== '') {
             $stmt = $pdo->prepare("SELECT id, last_name, complete_address FROM census_form WHERE census_id != ?");
             $stmt->execute([$userId]);
             $allCensusRecords = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
+
             foreach ($allCensusRecords as $record) {
-                $censusLastName = trim($record['last_name']);
-                $censusAddress = trim($record['complete_address']);
-                
-                // Extract house number from census address
-                $censusHouseNumber = '';
-                if (!empty($censusAddress)) {
-                    $censusAddressParts = explode(',', $censusAddress);
-                    if (count($censusAddressParts) > 0) {
-                        $censusHouseNumber = trim($censusAddressParts[0]);
-                    }
+                $censusLastName = trim((string)($record['last_name'] ?? ''));
+                $censusComplete = trim((string)($record['complete_address'] ?? ''));
+
+                if ($censusComplete === '') {
+                    continue;
                 }
-                
-                // Check if last name and house number match (case-insensitive)
-                if (strcasecmp($userLastName, $censusLastName) === 0 && 
-                    strcasecmp($userHouseNumber, $censusHouseNumber) === 0) {
+
+                if (strcasecmp($userLastName, $censusLastName) !== 0) {
+                    continue;
+                }
+
+                if (censusAddressesLikelyMatch($userAddress, $censusComplete)) {
                     $isAlreadyCensused = true;
                     break;
                 }

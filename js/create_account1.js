@@ -665,9 +665,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Clear any existing errors
         clearError(idImageInput);
 
-        // Show loading state
         const uploadAreaElement = document.getElementById('uploadArea');
-        uploadAreaElement.innerHTML = '<div class="loading-spinner"><p>Processing image...</p></div>';
 
         // Convert image to base64
         const reader = new FileReader();
@@ -699,7 +697,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Step 3: gemini_verify.php — one OCR; client applies ID type first, then Bigte state
                 const fileToValidate = idImageInput.files[0] || file;
                 const expectedKey = mapValidIdLabelToExpectedType(validIdSelect.value);
-                const result = await validateIDAddressWithGemini(fileToValidate, { expectedIdType: expectedKey });
+                const result = await validateIDAddressWithGemini(fileToValidate, {
+                    expectedIdType: expectedKey,
+                    imageBase64: imageDataUrl
+                });
 
                 await applyIdTypeValidationFromGeminiResult(result, fileToValidate);
 
@@ -737,19 +738,30 @@ document.addEventListener('DOMContentLoaded', function() {
 
     /**
      * php/gemini_verify.php — one Vision OCR; server evaluates ID type then Bigte. Client should apply ID type UI before Bigte.
+     * @param {object} options — optional imageBase64 (data URL) to skip re-reading the file (faster).
      */
     async function validateIDAddressWithGemini(file, options = {}) {
         const expectedIdType = options.expectedIdType || null;
         const loadingMsg = options.loadingMessage;
-        showIdValidationLoading(loadingMsg);
 
         let base64Image;
-        try {
-            base64Image = await fileToBase64(file);
-        } catch (e) {
-            hideIdValidationLoading();
-            throw e;
+        if (options.imageBase64 && typeof options.imageBase64 === 'string') {
+            base64Image = options.imageBase64;
+        } else {
+            try {
+                base64Image = await fileToBase64(file);
+            } catch (e) {
+                throw e;
+            }
         }
+
+        // Let preview paint, then show overlay only for the Vision request (shorter perceived wait)
+        await new Promise(function(resolve) {
+            requestAnimationFrame(function() {
+                requestAnimationFrame(resolve);
+            });
+        });
+        showIdValidationLoading(loadingMsg);
 
         function enrichWithIdTypeFallback(base) {
             if (!expectedIdType) {
@@ -1005,7 +1017,10 @@ document.addEventListener('DOMContentLoaded', function() {
             if (imagePreview.style.display !== 'none' && previewImg.src && idImageInput.files && idImageInput.files[0]) {
                 const f = idImageInput.files[0];
                 const key = mapValidIdLabelToExpectedType(validIdSelect.value);
-                const res = await validateIDAddressWithGemini(f, { expectedIdType: key });
+                const res = await validateIDAddressWithGemini(f, {
+                    expectedIdType: key,
+                    imageBase64: previewImg.src && previewImg.src.indexOf('data:') === 0 ? previewImg.src : undefined
+                });
                 await applyIdTypeValidationFromGeminiResult(res, f);
                 if (!res.ok) {
                     idOcrValidation = { ok: false, hasBigte: false, name: { first: '', middle: '', last: '' }, fullText: '' };
@@ -1305,7 +1320,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const currentFile = idImageInput.files[0];
             const fid = accountFileIdentifier(currentFile);
             if (idTypeValidationAccount.validatedFile !== fid) {
-                const res = await validateIDAddressWithGemini(currentFile, { expectedIdType: expectedKeySubmit });
+                const res = await validateIDAddressWithGemini(currentFile, {
+                    expectedIdType: expectedKeySubmit,
+                    imageBase64: previewImg.src && previewImg.src.indexOf('data:') === 0 ? previewImg.src : undefined
+                });
                 await applyIdTypeValidationFromGeminiResult(res, currentFile);
                 if (!res.ok) {
                     idOcrValidation = { ok: false, hasBigte: false, name: { first: '', middle: '', last: '' }, fullText: '' };
