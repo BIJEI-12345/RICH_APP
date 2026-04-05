@@ -17,7 +17,7 @@ require_once __DIR__ . '/env_loader.php';
 require_once __DIR__ . '/jobseeker_claimed_lib.php';
 require_once __DIR__ . '/census_address_helpers.php';
 
-// Validate that requesting name matches census_form record for this account
+// Validate that requesting name matches census_form (head: census_id = your resident id; members: same household shares head's census_id on each row).
 function validateRequesterAgainstCensus($email, $firstName, $lastName, $address = '') {
     $pdo = getDBConnection();
     if (!$pdo) {
@@ -33,36 +33,71 @@ function validateRequesterAgainstCensus($email, $firstName, $lastName, $address 
     }
 
     try {
-        $stmt = $pdo->prepare("SELECT id FROM resident_information WHERE email = ? LIMIT 1");
+        $stmt = $pdo->prepare("SELECT id, address FROM resident_information WHERE email = ? LIMIT 1");
         $stmt->execute([$email]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!$user) {
             return ['success' => false, 'allowed' => false, 'message' => 'User account not found'];
         }
         $residentId = (int)$user['id'];
+        $residentAddress = trim((string)($user['address'] ?? ''));
 
         $tableCheck = $pdo->query("SHOW TABLES LIKE 'census_form'");
         if ($tableCheck->rowCount() === 0) {
             return ['success' => false, 'allowed' => false, 'message' => 'Census table not found'];
         }
 
-        // Match the row for this person (same household can have multiple census_form rows).
+        $submittedAddress = trim((string)$address);
+        $addressForCompare = $submittedAddress !== '' ? $submittedAddress : $residentAddress;
+
+        // 1) Direct: row for this resident as census_id (submitter / head with own account).
         $stmt = $pdo->prepare(
             'SELECT first_name, last_name, complete_address FROM census_form WHERE census_id = ? '
             . 'AND LOWER(TRIM(first_name)) = LOWER(TRIM(?)) AND LOWER(TRIM(last_name)) = LOWER(TRIM(?)) LIMIT 1'
         );
         $stmt->execute([$residentId, $firstName, $lastName]);
         $census = $stmt->fetch(PDO::FETCH_ASSOC);
-        if (!$census) {
-            $stmt = $pdo->prepare('SELECT id FROM census_form WHERE census_id = ? LIMIT 1');
-            $stmt->execute([$residentId]);
-            if ($stmt->fetch(PDO::FETCH_ASSOC)) {
-                return [
-                    'success' => true,
-                    'allowed' => false,
-                    'message' => 'The requester name does not match your census record. Please use your censused name.'
-                ];
+
+        if ($census) {
+            $censusAddress = trim((string)($census['complete_address'] ?? ''));
+            if ($censusAddress === '') {
+                $censusAddress = $residentAddress;
             }
+            if ($submittedAddress !== '') {
+                if ($censusAddress === '') {
+                    return ['success' => true, 'allowed' => true];
+                }
+                if (!censusAddressesLikelyMatch($submittedAddress, $censusAddress)) {
+                    return [
+                        'success' => true,
+                        'allowed' => false,
+                        'message' => 'The requester address does not match your census record. Please use your censused address.'
+                    ];
+                }
+            }
+            return ['success' => true, 'allowed' => true];
+        }
+
+        // This account has census rows but names don't match (e.g. head typo on the request form).
+        $stmt = $pdo->prepare('SELECT id FROM census_form WHERE census_id = ? LIMIT 1');
+        $stmt->execute([$residentId]);
+        if ($stmt->fetch(PDO::FETCH_ASSOC)) {
+            return [
+                'success' => true,
+                'allowed' => false,
+                'message' => 'The requester name does not match your census record. Please use your censused name.'
+            ];
+        }
+
+        // 2) Household member: rows use head's census_id, not this user's id — match name + address across census_form.
+        $stmt = $pdo->prepare(
+            'SELECT complete_address FROM census_form WHERE '
+            . 'LOWER(TRIM(first_name)) = LOWER(TRIM(?)) AND LOWER(TRIM(last_name)) = LOWER(TRIM(?))'
+        );
+        $stmt->execute([$firstName, $lastName]);
+        $nameRows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        if (empty($nameRows)) {
             return [
                 'success' => true,
                 'allowed' => false,
@@ -70,30 +105,26 @@ function validateRequesterAgainstCensus($email, $firstName, $lastName, $address 
             ];
         }
 
-        $censusAddress = trim((string)($census['complete_address'] ?? ''));
-        if ($censusAddress === '') {
-            $stmt = $pdo->prepare('SELECT address FROM resident_information WHERE id = ? LIMIT 1');
-            $stmt->execute([$residentId]);
-            $row = $stmt->fetch(PDO::FETCH_ASSOC);
-            $censusAddress = trim((string)($row['address'] ?? ''));
+        if ($addressForCompare === '') {
+            return [
+                'success' => true,
+                'allowed' => false,
+                'message' => 'Enter an address that matches your census record so we can verify your household.'
+            ];
         }
 
-        $submittedAddress = trim((string)$address);
-        if ($submittedAddress !== '') {
-            // Nothing to compare against — allow (cannot falsely reject).
-            if ($censusAddress === '') {
+        foreach ($nameRows as $row) {
+            $censusAddress = trim((string)($row['complete_address'] ?? ''));
+            if ($censusAddress !== '' && censusAddressesLikelyMatch($addressForCompare, $censusAddress)) {
                 return ['success' => true, 'allowed' => true];
             }
-            if (!censusAddressesLikelyMatch($submittedAddress, $censusAddress)) {
-                return [
-                    'success' => true,
-                    'allowed' => false,
-                    'message' => 'The requester address does not match your census record. Please use your censused address.'
-                ];
-            }
         }
 
-        return ['success' => true, 'allowed' => true];
+        return [
+            'success' => true,
+            'allowed' => false,
+            'message' => 'The requester address does not match your census record. Please use your censused address.'
+        ];
     } catch (PDOException $e) {
         error_log("validateRequesterAgainstCensus failed: " . $e->getMessage());
         return ['success' => false, 'allowed' => false, 'message' => 'Failed to validate requester against census'];
