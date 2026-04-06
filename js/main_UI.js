@@ -11,6 +11,8 @@ let profileEditBaseline = null;
 let profileDetailsUnlocked = false;
 const CENSUS_REMIND_LATER_MINUTES = 5; // How long to hide the census reminder after "Remind Me Later" is clicked
 let censusReminderTimeoutId = null;
+/** Census form waiting for data-privacy consent before submit */
+let censusSubmitPendingForm = null;
 
 function clearCensusReminderTimer() {
     if (censusReminderTimeoutId) {
@@ -2000,41 +2002,42 @@ function wireMemberBirthdayToAge(memberIndex) {
     sync();
 }
 
+/** Show or hide "Censused" under the header profile name (see #profileCensusBadge). */
+function setProfileCensusedLabel(show) {
+    const el = document.getElementById('profileCensusBadge');
+    if (!el) return;
+    if (show) {
+        el.removeAttribute('hidden');
+        el.setAttribute('aria-hidden', 'false');
+    } else {
+        el.setAttribute('hidden', '');
+        el.setAttribute('aria-hidden', 'true');
+    }
+}
+
 // Check if user has completed census
 async function checkCensusStatus() {
     // First check if user is actually loaded and exists in database
     if (!currentUser) {
         console.log('No valid user found, blocking census form');
+        setProfileCensusedLabel(false);
         return;
     }
     
     const userEmail = sessionStorage.getItem('user_email') || localStorage.getItem('user_email');
     if (!userEmail) {
         console.log('No user email found, skipping census check');
+        setProfileCensusedLabel(false);
         return;
     }
 
-    // Check if user clicked "Remind Me Later" (temporary client-side preference only)
-    const remindLaterTime = localStorage.getItem('census_remind_later');
-    if (remindLaterTime) {
-        const remindTime = parseInt(remindLaterTime, 10);
-        const now = Date.now();
-        const minutesPassed = (now - remindTime) / (1000 * 60);
-        
-        if (minutesPassed < CENSUS_REMIND_LATER_MINUTES) {
-            const remainingMs = (CENSUS_REMIND_LATER_MINUTES - minutesPassed) * 60 * 1000;
-            console.log(`User asked to be reminded later, skipping census modal for ${CENSUS_REMIND_LATER_MINUTES} minutes`);
-            localStorage.setItem(LS_CENSUS_REOPEN_SHORTCUT, '1');
-            scheduleCensusReminder(remainingMs);
-            showCensusReopenButton();
-            return;
-        } else {
-            // Reminder window passed, clear the reminder
-            localStorage.removeItem('census_remind_later');
-        }
+    const urlParams = new URLSearchParams(window.location.search);
+    const forceOpenCensus = urlParams.get('openCensus') === '1';
+    if (forceOpenCensus) {
+        localStorage.removeItem('census_remind_later');
     }
 
-    // Check with server - purely cloud-based, no localStorage for completion status
+    let data;
     try {
         const response = await fetch('php/check_census.php', {
             method: 'POST',
@@ -2043,88 +2046,79 @@ async function checkCensusStatus() {
             },
             body: JSON.stringify({ email: userEmail })
         });
-        
+
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
-        const data = await response.json();
+
+        data = await response.json();
         console.log('Census check response:', data);
-        
-        // Check if user is already censused (last name + house number match found)
-        if (data.success && data.isAlreadyCensused === true) {
-            localStorage.removeItem(LS_CENSUS_REOPEN_SHORTCUT);
-            hideCensusReopenButton();
-            // User's last name + house number matches existing census record
-            // Check if user has already dismissed this alert
-            const userEmail = sessionStorage.getItem('user_email') || localStorage.getItem('user_email') || 'guest';
-            const storageKey = `already_censused_dismissed_${userEmail}`;
-            
-            // Only show alert if it hasn't been dismissed before
-            if (localStorage.getItem(storageKey) !== '1') {
-                console.log('User is already censused (last name + house number match found) - showing alert');
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire({
-                        icon: 'info',
-                        title: 'Already Censused',
-                        text: 'You are already censused',
-                        confirmButtonText: 'OK',
-                        confirmButtonColor: '#3085d6',
-                        allowOutsideClick: true,
-                        allowEscapeKey: true
-                    }).then(() => {
-                        // Save to localStorage that user has dismissed this alert
-                        localStorage.setItem(storageKey, '1');
-                    });
-                } else {
-                    alert('You are already censused');
-                    localStorage.setItem(storageKey, '1');
-                }
-            } else {
-                console.log('Already censused alert already dismissed by user, skipping...');
-            }
-            return;
-        }
-        
-        // Show modal if email is NOT in resident_information table OR census not completed
-        // But only if currentUser exists (user is actually logged in and exists in database)
-        if (data.success && currentUser) {
-            if (data.emailExists === false) {
-                // Email not in resident_information table - show modal immediately
-                console.log('Email not found in resident_information table - showing census form');
-                showCensusModal();
-            } else if (data.emailExists === true && !data.hasCompletedCensus) {
-                // Email exists but census not completed - show modal
-                console.log('Email exists but census not completed - showing census form');
-                showCensusModal();
-            } else if (data.emailExists === true && data.hasCompletedCensus) {
-                localStorage.removeItem(LS_CENSUS_REOPEN_SHORTCUT);
-                hideCensusReopenButton();
-                // Census already completed - do nothing
-                console.log('Census already completed - not showing modal');
-            }
-        } else {
-            // On error or unclear response, only show modal if user is logged in
-            // Check if error is due to user not found
-            if (data.message && data.message.includes('User not found')) {
-                console.log('User not found, blocking census form');
-                return;
-            }
-            // For other errors, only show if user is logged in
-            const userEmail = sessionStorage.getItem('user_email') || localStorage.getItem('user_email');
-            if (userEmail) {
-                console.log('Unclear response or error - showing census form');
-                showCensusModal();
-            }
-        }
     } catch (error) {
-        // Only show modal if user is logged in
-        const userEmail = sessionStorage.getItem('user_email') || localStorage.getItem('user_email');
-        if (userEmail) {
+        setProfileCensusedLabel(false);
+        const email = sessionStorage.getItem('user_email') || localStorage.getItem('user_email');
+        if (email) {
             console.log('Error checking census status, showing census form');
             showCensusModal();
         } else {
             console.log('Error checking census status and no user logged in, blocking census form');
+        }
+        return;
+    }
+
+    const censused =
+        !!(data.success && data.emailExists === true && data.hasCompletedCensus);
+    setProfileCensusedLabel(censused);
+
+    // "Remind me later" skips the modal only if census is not done yet
+    const remindLaterTime = localStorage.getItem('census_remind_later');
+    if (remindLaterTime && !forceOpenCensus) {
+        const remindTime = parseInt(remindLaterTime, 10);
+        const now = Date.now();
+        const minutesPassed = (now - remindTime) / (1000 * 60);
+
+        if (minutesPassed < CENSUS_REMIND_LATER_MINUTES) {
+            if (censused) {
+                localStorage.removeItem('census_remind_later');
+                localStorage.removeItem(LS_CENSUS_REOPEN_SHORTCUT);
+                hideCensusReopenButton();
+            } else {
+                const remainingMs = (CENSUS_REMIND_LATER_MINUTES - minutesPassed) * 60 * 1000;
+                console.log(`User asked to be reminded later, skipping census modal for ${CENSUS_REMIND_LATER_MINUTES} minutes`);
+                localStorage.setItem(LS_CENSUS_REOPEN_SHORTCUT, '1');
+                scheduleCensusReminder(remainingMs);
+                showCensusReopenButton();
+                return;
+            }
+        } else {
+            localStorage.removeItem('census_remind_later');
+        }
+    }
+
+    // Note: isAlreadyCensused (last name + address match to another household row) must NOT
+    // skip the census modal when hasCompletedCensus is false — document requests still require
+    // a matching census_form row for this account or name+address validation.
+
+    if (data.success && currentUser) {
+        if (data.emailExists === false) {
+            console.log('Email not found in resident_information table - showing census form');
+            showCensusModal();
+        } else if (data.emailExists === true && !data.hasCompletedCensus) {
+            console.log('Email exists but census not completed - showing census form');
+            showCensusModal();
+        } else if (data.emailExists === true && data.hasCompletedCensus) {
+            localStorage.removeItem(LS_CENSUS_REOPEN_SHORTCUT);
+            hideCensusReopenButton();
+            console.log('Census already completed - not showing modal');
+        }
+    } else {
+        if (data.message && data.message.includes('User not found')) {
+            console.log('User not found, blocking census form');
+            return;
+        }
+        const email = sessionStorage.getItem('user_email') || localStorage.getItem('user_email');
+        if (email) {
+            console.log('Unclear response or error - showing census form');
+            showCensusModal();
         }
     }
 }
@@ -2223,9 +2217,80 @@ function showCensusInfoAlertIfNeeded() {
     });
 }
 
+function closeCensusConsentOverlay() {
+    const overlay = document.getElementById('censusConsentOverlay');
+    if (overlay) {
+        overlay.classList.remove('active');
+        overlay.setAttribute('aria-hidden', 'true');
+    }
+    const cb = document.getElementById('censusConsentCheckbox');
+    if (cb) cb.checked = false;
+    censusSubmitPendingForm = null;
+}
+
+function openCensusConsentOverlay() {
+    const overlay = document.getElementById('censusConsentOverlay');
+    if (!overlay) return;
+    const cb = document.getElementById('censusConsentCheckbox');
+    if (cb) cb.checked = false;
+    overlay.classList.add('active');
+    overlay.setAttribute('aria-hidden', 'false');
+}
+
+function bindCensusConsentControls() {
+    const cancelBtn = document.getElementById('censusConsentCancelBtn');
+    const agreeBtn = document.getElementById('censusConsentAgreeBtn');
+    const overlay = document.getElementById('censusConsentOverlay');
+    if (cancelBtn && !cancelBtn.dataset.bound) {
+        cancelBtn.dataset.bound = '1';
+        cancelBtn.addEventListener('click', function () {
+            closeCensusConsentOverlay();
+        });
+    }
+    if (agreeBtn && !agreeBtn.dataset.bound) {
+        agreeBtn.dataset.bound = '1';
+        agreeBtn.addEventListener('click', function () {
+            const cb = document.getElementById('censusConsentCheckbox');
+            if (!cb || !cb.checked) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Consent required',
+                        text: 'Please check the box to confirm you agree to the terms and conditions.',
+                        confirmButtonText: 'OK',
+                        didOpen: () => {
+                            const c = Swal.getContainer();
+                            if (c) {
+                                c.style.zIndex = '2600';
+                            }
+                        }
+                    });
+                } else {
+                    alert('Please check the box to confirm you agree to the terms and conditions.');
+                }
+                return;
+            }
+            const form = censusSubmitPendingForm;
+            closeCensusConsentOverlay();
+            if (form) {
+                executeCensusSubmission(form);
+            }
+        });
+    }
+    if (overlay && !overlay.dataset.backdropBound) {
+        overlay.dataset.backdropBound = '1';
+        overlay.addEventListener('click', function (e) {
+            if (e.target === overlay) {
+                closeCensusConsentOverlay();
+            }
+        });
+    }
+}
+
 // Close census modal
 function closeCensusModal(options) {
     const deferReopenBtn = options && options.deferReopenButton;
+    closeCensusConsentOverlay();
     const modal = document.getElementById('censusModal');
     if (modal) {
         modal.classList.remove('active');
@@ -2380,6 +2445,8 @@ function setupCensusFormListeners() {
         syncCensusHeadAgeFromBirthday();
     }
 
+    bindCensusConsentControls();
+
     // Initialize with at least one household member field
     const container = document.getElementById('householdMembersContainer');
     if (container && container.children.length === 0) {
@@ -2529,24 +2596,27 @@ function updateMemberNumbers() {
     });
 }
 
-// Handle census form submission
-async function handleCensusSubmission(e) {
+// Step 1: validate census form, then show data privacy consent before network submit
+function handleCensusSubmission(e) {
     e.preventDefault();
-    
     const form = e.target;
-    const submitBtn = form.querySelector('.census-submit');
-    const originalText = submitBtn.innerHTML;
-    
-    // Validate form
     if (!form.checkValidity()) {
         form.reportValidity();
         return;
     }
+    censusSubmitPendingForm = form;
+    openCensusConsentOverlay();
+}
+
+// Step 2: after user checks consent and clicks I Agree
+async function executeCensusSubmission(form) {
+    const submitBtn = form.querySelector('.census-submit');
+    if (!submitBtn) return;
+    const originalText = submitBtn.innerHTML;
 
     hideCensusReopenButton();
     localStorage.removeItem(LS_CENSUS_REOPEN_SHORTCUT);
-    
-    // Show loading state
+
     submitBtn.disabled = true;
     submitBtn.classList.add('loading');
     submitBtn.innerHTML = '';
@@ -2622,7 +2692,8 @@ async function handleCensusSubmission(e) {
         
         if (result.success) {
             clearCensusReminderTimer();
-            
+            setProfileCensusedLabel(true);
+
             // Census completion is now tracked in database, no localStorage needed
             // The server will handle saving to resident_information and census_forms tables
             

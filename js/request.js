@@ -17,6 +17,49 @@ const DOC_REQ_DEFAULT_BARANGAY = 'Bigte';
 const DOC_REQ_DEFAULT_MUNICIPALITY = 'Norzagaray';
 const DOC_REQ_DEFAULT_PROVINCE = 'Bulacan';
 
+/** Indigency "Para Kay": catalog matches php/request.php indigencyParaKayCatalog(); OTHER uses free-text (otherIndParaKay) */
+const IND_PARA_KAY_BY_CODE = {
+    GOVERNOR: { name: 'Igg. DANIEL FERNANDO', en: 'GOVERNOR', tl: 'Punong Lalawigan', hallAddress: 'Malolos, Bulacan' },
+    CONGRESSMAN: { name: 'Igg. ADOR PLEYTO', en: 'CONGRESSMAN', tl: 'Kinatawan', hallAddress: 'Santa Maria, Bulacan' },
+    MAYOR: { name: 'Igg. MARIA ELENA GERMAR', en: 'MAYOR', tl: 'Punong Bayan', hallAddress: 'Norzagaray Bulacan' },
+    NONE: { name: 'NONE', en: 'NONE', tl: 'Wala', hallAddress: null }
+};
+
+function getIndParaKayDetails(code) {
+    if (!code) return null;
+    return IND_PARA_KAY_BY_CODE[code] || null;
+}
+
+/** Preview / report: official name — Tagalog (English), or Others + specification */
+function formatIndParaKayDisplay(code, otherSpecify) {
+    if (code === 'OTHER') {
+        const spec = otherSpecify != null ? String(otherSpecify).trim() : '';
+        return spec ? `Others: ${spec}` : 'Others';
+    }
+    const d = getIndParaKayDetails(code);
+    if (!d) return '-';
+    return `${d.name} — ${d.tl} (${d.en})`;
+}
+
+/** Show specification field when Para Kay = Others */
+function toggleIndParaKayOther() {
+    const selectEl = document.getElementById('indParaKay');
+    const group = document.getElementById('otherIndParaKayGroup');
+    const input = document.getElementById('otherIndParaKay');
+    if (!selectEl || !group || !input) return;
+    if (selectEl.value === 'OTHER') {
+        group.style.display = 'block';
+        input.required = true;
+    } else {
+        group.style.display = 'none';
+        input.required = false;
+        input.value = '';
+        if (typeof clearFieldError === 'function') {
+            clearFieldError(input);
+        }
+    }
+}
+
 /**
  * One-line address for forms and reports: "Sitio, Brgy Bigte, Norzagaray, Bulacan"
  * @param {string} sitioStreet - Sitio / street / block (first segment(s))
@@ -560,6 +603,54 @@ async function handleIDImageUpload(file, formType) {
     }
 }
 
+/**
+ * Block document-request UI until census_form has a row for this account (check_census.php).
+ * Aligns with main_UI ensureCensusBeforeDocumentRequests + server validateRequesterAgainstCensus.
+ */
+async function ensureCensusCompletedBeforeRequestPage() {
+    const userEmail = sessionStorage.getItem('user_email') || localStorage.getItem('user_email');
+    if (!userEmail) {
+        return true;
+    }
+
+    try {
+        const response = await fetch('php/check_census.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: userEmail })
+        });
+        const data = await response.json();
+        if (data.success && data.emailExists === true && data.hasCompletedCensus) {
+            return true;
+        }
+
+        if (typeof Swal !== 'undefined') {
+            await Swal.fire({
+                icon: 'info',
+                title: 'Complete Census First',
+                text: 'Please complete the Barangay Census before requesting documents. You will be taken to the home screen to fill out the form.',
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#3085d6'
+            });
+        }
+        window.location.href = 'main_UI.html?openCensus=1';
+        return false;
+    } catch (e) {
+        console.error('Census check failed on request page:', e);
+        if (typeof Swal !== 'undefined') {
+            await Swal.fire({
+                icon: 'info',
+                title: 'Complete Census First',
+                text: 'We could not verify your census status. Please open the home screen and complete the Barangay Census before requesting documents.',
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#3085d6'
+            });
+        }
+        window.location.href = 'main_UI.html?openCensus=1';
+        return false;
+    }
+}
+
 // Request Page JavaScript
 document.addEventListener('DOMContentLoaded', async function() {
     const isRequestPage =
@@ -573,6 +664,12 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Show full-screen loading when page loads
     showFullScreenLoading('Loading...');
+
+    const censusOk = await ensureCensusCompletedBeforeRequestPage();
+    if (!censusOk) {
+        hideFullScreenLoading();
+        return;
+    }
     
     setupSidebarNavigation();
     setupSidebarToggle();
@@ -1437,6 +1534,10 @@ function clearAllFormInputs() {
     // Hide all report displays
     hideAllReportDisplays();
     
+    if (typeof toggleIndParaKayOther === 'function') {
+        toggleIndParaKayOther();
+    }
+
     console.log('All form inputs cleared');
 }
 
@@ -2191,6 +2292,8 @@ function setupIndigencyForm() {
             }
         });
     }
+
+    toggleIndParaKayOther();
 }
 
 // Setup Clearance Form
@@ -3664,6 +3767,10 @@ function displayIndigencyPreview(formData) {
     document.getElementById('previewIndigencyGender').textContent = formData.get('indGender') ? formData.get('indGender').charAt(0).toUpperCase() + formData.get('indGender').slice(1) : '-';
     document.getElementById('previewIndigencyCivilStatus').textContent = formData.get('indCivilStatus') ? formData.get('indCivilStatus').charAt(0).toUpperCase() + formData.get('indCivilStatus').slice(1) : '-';
     document.getElementById('previewIndigencyPurpose').textContent = purpose ? purpose.charAt(0).toUpperCase() + purpose.slice(1).replace('-', ' ') : '-';
+    document.getElementById('previewIndigencyParaKay').textContent = formatIndParaKayDisplay(
+        formData.get('indParaKay'),
+        formData.get('otherIndParaKay')
+    );
     document.getElementById('previewIndigencyValidId').textContent = validId ? validId.charAt(0).toUpperCase() + validId.slice(1).replace('-', ' ') : '-';
     
     // Update submit button text with step count
@@ -3704,7 +3811,20 @@ async function finalSubmitIndigency() {
         // Get user email
         const userEmail = sessionStorage.getItem('user_email') || localStorage.getItem('user_email');
         
-        // Prepare data for submission
+        const pkCode = formData.get('indParaKay');
+        const otherParaKaySpec = (formData.get('otherIndParaKay') || '').trim();
+        const pkMeta = getIndParaKayDetails(pkCode);
+        let paraKaySend = '';
+        let positionSend = '';
+        if (pkCode === 'OTHER') {
+            paraKaySend = otherParaKaySpec;
+            positionSend = '';
+        } else {
+            paraKaySend = pkMeta ? pkMeta.name : (pkCode || '');
+            positionSend = pkMeta ? `${pkMeta.en}|${pkMeta.tl}` : '';
+        }
+
+        // Prepare data for submission (server resolves para_kay / position from position_code; OTHER uses client text)
         const submissionData = {
             form_type: 'indigency',
             email: userEmail,
@@ -3719,6 +3839,10 @@ async function finalSubmitIndigency() {
             gender: formData.get('indGender'),
             purpose: formData.get('indPurpose'),
             other_purpose: formData.get('otherIndPurpose'),
+            position_code: pkCode || '',
+            para_kay: paraKaySend,
+            other_para_kay: pkCode === 'OTHER' ? otherParaKaySpec : '',
+            position: positionSend,
             valid_id: formData.get('indIdType'),
             other_valid_id: formData.get('otherIndIdType'),
             id_image: imageData
@@ -4145,6 +4269,10 @@ function displayIndigencyForm(formData) {
     document.getElementById('displayIndigencyGender').textContent = formData.get('indGender').charAt(0).toUpperCase() + formData.get('indGender').slice(1);
     document.getElementById('displayIndigencyCivilStatus').textContent = formData.get('indCivilStatus').charAt(0).toUpperCase() + formData.get('indCivilStatus').slice(1);
     document.getElementById('displayIndigencyPurpose').textContent = purpose.charAt(0).toUpperCase() + purpose.slice(1).replace('-', ' ');
+    document.getElementById('displayIndigencyParaKay').textContent = formatIndParaKayDisplay(
+        formData.get('indParaKay'),
+        formData.get('otherIndParaKay')
+    );
     document.getElementById('displayIndigencyValidId').textContent = validId.charAt(0).toUpperCase() + validId.slice(1).replace('-', ' ');
     document.getElementById('displayIndigencyDateTime').textContent = formattedDateTime;
 }
@@ -6170,7 +6298,7 @@ function initializeRequiredIndicatorToggle() {
         }
         
         // Skip Purpose field - it should always show required indicator when required
-        if (input.id === 'certPurpose' || input.id === 'indPurpose' || input.id === 'clearPurpose') {
+        if (input.id === 'certPurpose' || input.id === 'indPurpose' || input.id === 'indParaKay' || input.id === 'otherIndParaKay' || input.id === 'clearPurpose') {
             return;
         }
         

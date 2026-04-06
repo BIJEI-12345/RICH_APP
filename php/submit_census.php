@@ -51,27 +51,71 @@ if (!function_exists('census_extract_house_number')) {
     }
 }
 
-if (!function_exists('census_person_already_recorded')) {
-    /**
-     * True if census_form already has this first + last name at the same house number.
-     */
-    function census_person_already_recorded(PDO $pdo, $firstName, $lastName, $houseNumber) {
-        $firstName = trim((string) $firstName);
-        $lastName = trim((string) $lastName);
-        $houseNumber = trim((string) $houseNumber);
-        if ($firstName === '' || $lastName === '' || $houseNumber === '') {
-            return false;
+if (!function_exists('census_normalize_identity_age')) {
+    function census_normalize_identity_age($value) {
+        if ($value === null || $value === '') {
+            return '';
         }
-        $stmt = $pdo->query('SELECT first_name, last_name, complete_address FROM census_form');
+        if (is_numeric($value)) {
+            return (string) (int) $value;
+        }
+        return mb_strtolower(trim((string) $value), 'UTF-8');
+    }
+}
+
+if (!function_exists('census_normalize_identity_birthday')) {
+    function census_normalize_identity_birthday($value) {
+        $value = trim((string) ($value ?? ''));
+        if ($value === '') {
+            return '';
+        }
+        $ts = strtotime($value);
+        if ($ts !== false) {
+            return date('Y-m-d', $ts);
+        }
+        return mb_strtolower($value, 'UTF-8');
+    }
+}
+
+if (!function_exists('census_identity_signature')) {
+    /**
+     * Normalized 8-field identity for duplicate detection (reference: census_form only).
+     */
+    function census_identity_signature($firstName, $lastName, $middleName, $age, $sex, $birthday, $civilStatus, $relationToHousehold) {
+        return [
+            'first_name' => mb_strtolower(trim((string) $firstName), 'UTF-8'),
+            'last_name' => mb_strtolower(trim((string) $lastName), 'UTF-8'),
+            'middle_name' => mb_strtolower(trim((string) ($middleName ?? '')), 'UTF-8'),
+            'age' => census_normalize_identity_age($age),
+            'sex' => mb_strtolower(trim((string) ($sex ?? '')), 'UTF-8'),
+            'birthday' => census_normalize_identity_birthday($birthday),
+            'civil_status' => mb_strtolower(trim((string) ($civilStatus ?? '')), 'UTF-8'),
+            'relation_to_household' => mb_strtolower(trim((string) ($relationToHousehold ?? '')), 'UTF-8'),
+        ];
+    }
+}
+
+if (!function_exists('census_identity_duplicate_exists')) {
+    /**
+     * True if census_form has a row whose 8 identity fields all match (any difference ⇒ not duplicate).
+     */
+    function census_identity_duplicate_exists(PDO $pdo, array $signature) {
+        $stmt = $pdo->query(
+            'SELECT first_name, last_name, middle_name, age, sex, birthday, civil_status, relation_to_household FROM census_form'
+        );
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
         foreach ($rows as $row) {
-            $hn = census_extract_house_number($row['complete_address'] ?? '');
-            if (strcasecmp($hn, $houseNumber) !== 0) {
-                continue;
-            }
-            $fn = trim($row['first_name'] ?? '');
-            $ln = trim($row['last_name'] ?? '');
-            if (strcasecmp($fn, $firstName) === 0 && strcasecmp($ln, $lastName) === 0) {
+            $rowSig = census_identity_signature(
+                $row['first_name'] ?? '',
+                $row['last_name'] ?? '',
+                $row['middle_name'] ?? null,
+                $row['age'] ?? null,
+                $row['sex'] ?? null,
+                $row['birthday'] ?? null,
+                $row['civil_status'] ?? null,
+                $row['relation_to_household'] ?? null
+            );
+            if ($rowSig == $signature) {
                 return true;
             }
         }
@@ -139,7 +183,7 @@ try {
         exit;
     }
 
-    // Combined address as stored in census_form (house number must match for duplicate rule)
+    // Combined address as stored in census_form (house number required for validation)
     $fullAddressPreview = trim($input['address']);
     if (!empty($input['unitHouseNumber'])) {
         $fullAddressPreview = trim($input['unitHouseNumber']) . ', ' . $fullAddressPreview;
@@ -156,10 +200,22 @@ try {
 
     $headFirst = trim($input['firstName']);
     $headLast = trim($input['lastName']);
-    if (census_person_already_recorded($pdo, $headFirst, $headLast, $submittedHouseNumber)) {
+    $headMiddle = $input['middleName'] ?? null;
+    $headRelation = $input['familyOccupation'] ?? 'Head of Household';
+    $headSig = census_identity_signature(
+        $headFirst,
+        $headLast,
+        $headMiddle,
+        $input['age'],
+        $input['sex'],
+        $input['birthday'],
+        $input['civilStatus'],
+        $headRelation
+    );
+    if (census_identity_duplicate_exists($pdo, $headSig)) {
         echo json_encode([
             'success' => false,
-            'message' => $headFirst . ' ' . $headLast . ' is already censused for this household (same house number).'
+            'message' => 'This person is already in the census with the same details (name, age, sex, birthday, civil status, and relation).'
         ]);
         exit;
     }
@@ -175,10 +231,21 @@ try {
             }
             $mf = trim($member['firstName']);
             $ml = trim($member['lastName']);
-            if (census_person_already_recorded($pdo, $mf, $ml, $submittedHouseNumber)) {
+            $mm = !empty($member['middleName']) ? trim($member['middleName']) : null;
+            $memberSig = census_identity_signature(
+                $mf,
+                $ml,
+                $mm,
+                $member['age'] ?? null,
+                $member['sex'] ?? null,
+                $member['birthday'] ?? null,
+                $member['civilStatus'] ?? null,
+                $member['relation'] ?? null
+            );
+            if (census_identity_duplicate_exists($pdo, $memberSig)) {
                 echo json_encode([
                     'success' => false,
-                    'message' => $mf . ' ' . $ml . ' is already censused for this household (same house number).'
+                    'message' => $mf . ' ' . $ml . ' is already in the census with the same details (name, age, sex, birthday, civil status, and relation).'
                 ]);
                 exit;
             }

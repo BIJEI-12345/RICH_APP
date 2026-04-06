@@ -131,6 +131,69 @@ function validateRequesterAgainstCensus($email, $firstName, $lastName, $address 
     }
 }
 
+/** Official names + position cell (EN|TL) + capitol/city hall address — must match js/request.js IND_PARA_KAY_BY_CODE */
+function indigencyParaKayCatalog() {
+    return [
+        'GOVERNOR' => [
+            'name' => 'Igg. DANIEL FERNANDO',
+            'position' => 'GOVERNOR|Punong Lalawigan',
+            'hall_address' => 'Malolos, Bulacan',
+        ],
+        'CONGRESSMAN' => [
+            'name' => 'Igg. ADOR PLEYTO',
+            'position' => 'CONGRESSMAN|Kinatawan',
+            'hall_address' => 'Santa Maria, Bulacan',
+        ],
+        'MAYOR' => [
+            'name' => 'Igg. MARIA ELENA GERMAR',
+            'position' => 'MAYOR|Punong Bayan',
+            'hall_address' => 'Norzagaray Bulacan',
+        ],
+        'NONE' => [
+            'name' => 'NONE',
+            'position' => 'NONE|Wala',
+            'hall_address' => null,
+        ],
+    ];
+}
+
+/**
+ * Resolve para_kay (official name), position (EN|TL), and hall_address from position_code; legacy clients may send para_kay only.
+ * @return array{para_kay: string, position: ?string, position_code: ?string, hall_address: ?string}
+ */
+function resolveIndigencyParaKayFields(array $data) {
+    $code = strtoupper(trim((string)($data['position_code'] ?? '')));
+    if ($code === 'OTHER') {
+        $spec = trim((string)($data['para_kay'] ?? ''));
+        if ($spec === '') {
+            $spec = trim((string)($data['other_para_kay'] ?? ''));
+        }
+        return [
+            'para_kay' => $spec,
+            'position' => null,
+            'position_code' => 'OTHER',
+            'hall_address' => null,
+        ];
+    }
+    $catalog = indigencyParaKayCatalog();
+    if ($code !== '' && isset($catalog[$code])) {
+        $row = $catalog[$code];
+        return [
+            'para_kay' => $row['name'],
+            'position' => $row['position'],
+            'position_code' => $code,
+            'hall_address' => $row['hall_address'] ?? null,
+        ];
+    }
+    $paraKay = trim((string)($data['para_kay'] ?? ''));
+    return [
+        'para_kay' => $paraKay,
+        'position' => null,
+        'position_code' => null,
+        'hall_address' => null,
+    ];
+}
+
 // Function to insert indigency form data
 function insertIndigencyForm($data) {
     $pdo = getDBConnection();
@@ -157,6 +220,27 @@ function insertIndigencyForm($data) {
         if ($purpose === 'other' && !empty($data['other_purpose'])) {
             $purpose = $data['other_purpose'];
         }
+
+        $resolvedPk = resolveIndigencyParaKayFields($data);
+        $paraKay = $resolvedPk['para_kay'];
+        $positionCell = $resolvedPk['position'];
+        $hallAddress = $resolvedPk['hall_address'] ?? null;
+        if ($paraKay === '') {
+            error_log('Indigency form: Missing required field: para_kay / position_code');
+            return ['success' => false, 'message' => 'Missing required field: Para Kay'];
+        }
+
+        $hasParaKayCol = $pdo->query("SHOW COLUMNS FROM indigency_forms LIKE 'para_kay'")->rowCount() > 0;
+        $hasPositionCol = $pdo->query("SHOW COLUMNS FROM indigency_forms LIKE 'position'")->rowCount() > 0;
+        $hasHallAddressCol = $pdo->query("SHOW COLUMNS FROM indigency_forms LIKE 'hall_address'")->rowCount() > 0;
+        $purposeSuffix = ' [Para Kay: ' . $paraKay . ']';
+        if ($positionCell) {
+            $purposeSuffix .= ' [Position: ' . $positionCell . ']';
+        }
+        if ($hallAddress && !$hasHallAddressCol) {
+            $purposeSuffix .= ' [Hall: ' . $hallAddress . ']';
+        }
+        $purposeForInsert = $hasParaKayCol ? $purpose : ($purpose . $purposeSuffix);
         
         // Handle valid_id - use custom value if "other" is selected
         $validId = $data['valid_id'] ?? '';
@@ -190,54 +274,240 @@ function insertIndigencyForm($data) {
         $emailColumnExists = $checkColumn->rowCount() > 0;
         
         if ($emailColumnExists && $email) {
-            // Prepare the insert statement with email
-            $stmt = $pdo->prepare("
-                INSERT INTO indigency_forms 
-                (email, first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, age, gender, purpose, valid_id, id_image, submitted_at) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ");
-            
-            // Execute the insert
-            $result = $stmt->execute([
-                $email,
-                $data['first_name'],
-                $data['middle_name'] ?? null,
-                $data['last_name'],
-                $data['address'],
-                $data['birth_date'],
-                $data['birth_place'],
-                $data['civil_status'],
-                $data['age'],
-                $data['gender'],
-                $purpose,
-                $validId,
-                $idImage,
-                $philippineTime
-            ]);
+            if ($hasParaKayCol && $hasPositionCol && $hasHallAddressCol) {
+                $stmt = $pdo->prepare("
+                    INSERT INTO indigency_forms 
+                    (email, first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, age, gender, purpose, para_kay, `position`, hall_address, valid_id, id_image, submitted_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ");
+                $result = $stmt->execute([
+                    $email,
+                    $data['first_name'],
+                    $data['middle_name'] ?? null,
+                    $data['last_name'],
+                    $data['address'],
+                    $data['birth_date'],
+                    $data['birth_place'],
+                    $data['civil_status'],
+                    $data['age'],
+                    $data['gender'],
+                    $purpose,
+                    $paraKay,
+                    $positionCell,
+                    $hallAddress,
+                    $validId,
+                    $idImage,
+                    $philippineTime
+                ]);
+            } elseif ($hasParaKayCol && $hasPositionCol) {
+                $stmt = $pdo->prepare("
+                    INSERT INTO indigency_forms 
+                    (email, first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, age, gender, purpose, para_kay, `position`, valid_id, id_image, submitted_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ");
+                $result = $stmt->execute([
+                    $email,
+                    $data['first_name'],
+                    $data['middle_name'] ?? null,
+                    $data['last_name'],
+                    $data['address'],
+                    $data['birth_date'],
+                    $data['birth_place'],
+                    $data['civil_status'],
+                    $data['age'],
+                    $data['gender'],
+                    $purpose,
+                    $paraKay,
+                    $positionCell,
+                    $validId,
+                    $idImage,
+                    $philippineTime
+                ]);
+            } elseif ($hasParaKayCol && $hasHallAddressCol) {
+                $stmt = $pdo->prepare("
+                    INSERT INTO indigency_forms 
+                    (email, first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, age, gender, purpose, para_kay, hall_address, valid_id, id_image, submitted_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ");
+                $result = $stmt->execute([
+                    $email,
+                    $data['first_name'],
+                    $data['middle_name'] ?? null,
+                    $data['last_name'],
+                    $data['address'],
+                    $data['birth_date'],
+                    $data['birth_place'],
+                    $data['civil_status'],
+                    $data['age'],
+                    $data['gender'],
+                    $purpose,
+                    $paraKay,
+                    $hallAddress,
+                    $validId,
+                    $idImage,
+                    $philippineTime
+                ]);
+            } elseif ($hasParaKayCol) {
+                $stmt = $pdo->prepare("
+                    INSERT INTO indigency_forms 
+                    (email, first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, age, gender, purpose, para_kay, valid_id, id_image, submitted_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ");
+                $result = $stmt->execute([
+                    $email,
+                    $data['first_name'],
+                    $data['middle_name'] ?? null,
+                    $data['last_name'],
+                    $data['address'],
+                    $data['birth_date'],
+                    $data['birth_place'],
+                    $data['civil_status'],
+                    $data['age'],
+                    $data['gender'],
+                    $purpose,
+                    $paraKay,
+                    $validId,
+                    $idImage,
+                    $philippineTime
+                ]);
+            } else {
+                $stmt = $pdo->prepare("
+                    INSERT INTO indigency_forms 
+                    (email, first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, age, gender, purpose, valid_id, id_image, submitted_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ");
+                $result = $stmt->execute([
+                    $email,
+                    $data['first_name'],
+                    $data['middle_name'] ?? null,
+                    $data['last_name'],
+                    $data['address'],
+                    $data['birth_date'],
+                    $data['birth_place'],
+                    $data['civil_status'],
+                    $data['age'],
+                    $data['gender'],
+                    $purposeForInsert,
+                    $validId,
+                    $idImage,
+                    $philippineTime
+                ]);
+            }
         } else {
-            // Prepare the insert statement without email (for backward compatibility)
-            $stmt = $pdo->prepare("
-                INSERT INTO indigency_forms 
-                (first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, age, gender, purpose, valid_id, id_image, submitted_at) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ");
-            
-            // Execute the insert
-            $result = $stmt->execute([
-                $data['first_name'],
-                $data['middle_name'] ?? null,
-                $data['last_name'],
-                $data['address'],
-                $data['birth_date'],
-                $data['birth_place'],
-                $data['civil_status'],
-                $data['age'],
-                $data['gender'],
-                $purpose,
-                $validId,
-                $idImage,
-                $philippineTime
-            ]);
+            if ($hasParaKayCol && $hasPositionCol && $hasHallAddressCol) {
+                $stmt = $pdo->prepare("
+                    INSERT INTO indigency_forms 
+                    (first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, age, gender, purpose, para_kay, `position`, hall_address, valid_id, id_image, submitted_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ");
+                $result = $stmt->execute([
+                    $data['first_name'],
+                    $data['middle_name'] ?? null,
+                    $data['last_name'],
+                    $data['address'],
+                    $data['birth_date'],
+                    $data['birth_place'],
+                    $data['civil_status'],
+                    $data['age'],
+                    $data['gender'],
+                    $purpose,
+                    $paraKay,
+                    $positionCell,
+                    $hallAddress,
+                    $validId,
+                    $idImage,
+                    $philippineTime
+                ]);
+            } elseif ($hasParaKayCol && $hasPositionCol) {
+                $stmt = $pdo->prepare("
+                    INSERT INTO indigency_forms 
+                    (first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, age, gender, purpose, para_kay, `position`, valid_id, id_image, submitted_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ");
+                $result = $stmt->execute([
+                    $data['first_name'],
+                    $data['middle_name'] ?? null,
+                    $data['last_name'],
+                    $data['address'],
+                    $data['birth_date'],
+                    $data['birth_place'],
+                    $data['civil_status'],
+                    $data['age'],
+                    $data['gender'],
+                    $purpose,
+                    $paraKay,
+                    $positionCell,
+                    $validId,
+                    $idImage,
+                    $philippineTime
+                ]);
+            } elseif ($hasParaKayCol && $hasHallAddressCol) {
+                $stmt = $pdo->prepare("
+                    INSERT INTO indigency_forms 
+                    (first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, age, gender, purpose, para_kay, hall_address, valid_id, id_image, submitted_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ");
+                $result = $stmt->execute([
+                    $data['first_name'],
+                    $data['middle_name'] ?? null,
+                    $data['last_name'],
+                    $data['address'],
+                    $data['birth_date'],
+                    $data['birth_place'],
+                    $data['civil_status'],
+                    $data['age'],
+                    $data['gender'],
+                    $purpose,
+                    $paraKay,
+                    $hallAddress,
+                    $validId,
+                    $idImage,
+                    $philippineTime
+                ]);
+            } elseif ($hasParaKayCol) {
+                $stmt = $pdo->prepare("
+                    INSERT INTO indigency_forms 
+                    (first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, age, gender, purpose, para_kay, valid_id, id_image, submitted_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ");
+                $result = $stmt->execute([
+                    $data['first_name'],
+                    $data['middle_name'] ?? null,
+                    $data['last_name'],
+                    $data['address'],
+                    $data['birth_date'],
+                    $data['birth_place'],
+                    $data['civil_status'],
+                    $data['age'],
+                    $data['gender'],
+                    $purpose,
+                    $paraKay,
+                    $validId,
+                    $idImage,
+                    $philippineTime
+                ]);
+            } else {
+                $stmt = $pdo->prepare("
+                    INSERT INTO indigency_forms 
+                    (first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, age, gender, purpose, valid_id, id_image, submitted_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ");
+                $result = $stmt->execute([
+                    $data['first_name'],
+                    $data['middle_name'] ?? null,
+                    $data['last_name'],
+                    $data['address'],
+                    $data['birth_date'],
+                    $data['birth_place'],
+                    $data['civil_status'],
+                    $data['age'],
+                    $data['gender'],
+                    $purposeForInsert,
+                    $validId,
+                    $idImage,
+                    $philippineTime
+                ]);
+            }
         }
         
         if ($result) {
@@ -246,7 +516,9 @@ function insertIndigencyForm($data) {
             return [
                 'success' => true,
                 'message' => 'Indigency form submitted successfully',
-                'form_id' => $formId
+                'form_id' => $formId,
+                'position_code' => $resolvedPk['position_code'] ?? null,
+                'hall_address' => $resolvedPk['hall_address'] ?? null,
             ];
         } else {
             error_log("Indigency form: Failed to insert - execute returned false");

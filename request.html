@@ -1654,6 +1654,21 @@
                                 <option value="other">Iba pa</option>
                             </select>
                         </div>
+                        <div class="form-group">
+                            <label for="indParaKay">Para Kay: <span class="required-indicator">*</span></label>
+                            <select id="indParaKay" name="indParaKay" required onchange="toggleIndParaKayOther()">
+                                <option value="" selected hidden>Pumili ng opisyal</option>
+                                <option value="GOVERNOR">Governor</option>
+                                <option value="CONGRESSMAN">Congressman</option>
+                                <option value="MAYOR">Mayor</option>
+                                <option value="NONE">General Format</option>
+                                <option value="OTHER">Others</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="otherIndParaKayGroup" style="display: none;">
+                            <label for="otherIndParaKay">Tukuyin ang Para Kay: <span class="required-indicator">*</span></label>
+                            <input type="text" id="otherIndParaKay" name="otherIndParaKay" placeholder="Hal.: pangalan ng opisyal o layunin" autocomplete="off">
+                        </div>
                         <div class="form-group" id="otherIndPurposeGroup" style="display: none;">
                             <label for="otherIndPurpose">Mangyaring tukuyin ang Purpose: <span class="required-indicator">*</span></label>
                             <input type="text" id="otherIndPurpose" name="otherIndPurpose" placeholder="Mangyaring tukuyin ang layunin">
@@ -1797,6 +1812,16 @@
 
                         <div class="detail-item">
                             <div class="detail-icon">
+                                <i class="fas fa-user-tie"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Para Kay</div>
+                                <div class="detail-value" id="previewIndigencyParaKay">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
                                 <i class="fas fa-id-card"></i>
                             </div>
                             <div class="detail-content">
@@ -1899,6 +1924,16 @@
                             <div class="detail-content">
                                 <div class="detail-label">Purpose</div>
                                 <div class="detail-value" id="displayIndigencyPurpose">-</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <i class="fas fa-user-tie"></i>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label">Para Kay</div>
+                                <div class="detail-value" id="displayIndigencyParaKay">-</div>
                             </div>
                         </div>
 

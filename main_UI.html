@@ -97,6 +97,7 @@
                 </div>
                 <div class="user-info">
                     <h2>Hi, Bigteño!</h2>
+                    <span class="profile-census-badge" id="profileCensusBadge" hidden aria-hidden="true">Censused</span>
                 </div>
             </div>
             <div class="greeting-logos">
@@ -595,6 +596,41 @@
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Census: data privacy consent (must agree before submit runs) -->
+    <div class="modal-overlay census-consent-overlay" id="censusConsentOverlay" aria-hidden="true">
+        <div class="modal-container census-consent-modal" role="dialog" aria-modal="true" aria-labelledby="censusConsentTitle">
+            <div class="modal-header census-consent-header">
+                <h3 id="censusConsentTitle"><i class="fas fa-shield-alt"></i> Data Privacy Consent</h3>
+            </div>
+            <div class="modal-body census-consent-body">
+                <p class="census-consent-lead"><strong>DATA PRIVACY CONSENT FORM</strong><br>
+                RICH: A Web-based Information Management System with Mobile Citizen Concerns Reporting Application</p>
+                <p>By clicking &quot;I Agree&quot; or by proceeding to fill out this form, I acknowledge and authorize Barangay Bigte to collect, use, and process my personal and sensitive information for the following purposes:</p>
+                <ol class="census-consent-list">
+                    <li><strong>Purpose of Collection (Census)</strong><br>Data obtained, such as name, address, contact details, and other credentials, shall be used exclusively for the Barangay Bigte census.</li>
+                    <li><strong>Data Protection</strong><br>The RICH system ensures that all information will be stored in a secure database and that only authorized personnel shall have the right to access it, in accordance with the Data Privacy Act of 2012.</li>
+                    <li><strong>Data Sharing</strong><br>Your information will not be shared with any third-party organizations without your explicit consent, unless otherwise required by law.</li>
+                    <li><strong>User Rights</strong><br>I am aware that I have the right to:
+                        <ul>
+                            <li><strong>Right to be Informed:</strong> To know how and why your data is being processed.</li>
+                            <li><strong>Right to Access:</strong> To request a copy of the personal data we hold about you.</li>
+                            <li><strong>Right to Rectification:</strong> To request the correction of inaccurate or outdated information.</li>
+                        </ul>
+                    </li>
+                </ol>
+                <p class="census-consent-consent-block"><strong>Consent:</strong> By clicking the checkbox below, I certify that I have read and understood the terms stated above, and I voluntarily provide my consent.</p>
+                <label class="census-consent-checkbox-row">
+                    <input type="checkbox" id="censusConsentCheckbox" name="censusConsentAgree" autocomplete="off">
+                    <span>I agree to the terms and conditions.</span>
+                </label>
+            </div>
+            <div class="modal-footer census-consent-footer">
+                <button type="button" class="cancel-btn" id="censusConsentCancelBtn">Cancel</button>
+                <button type="button" class="save-btn" id="censusConsentAgreeBtn">I Agree</button>
             </div>
         </div>
     </div>
