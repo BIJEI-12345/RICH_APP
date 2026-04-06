@@ -2646,6 +2646,16 @@ async function finalSubmitBarangayId() {
                 allowOutsideClick: false,
                 allowEscapeKey: false
             });
+
+            await Swal.fire({
+                icon: 'info',
+                title: 'Payment reminder',
+                text: 'Your requested brgy ID is submitted. Please pay 100 pesos upon claiming.',
+                timer: 5000,
+                timerProgressBar: true,
+                showConfirmButton: false,
+                allowOutsideClick: true
+            });
             
             // Clear form and go back to selection
             clearAllFormInputs();

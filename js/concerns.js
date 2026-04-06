@@ -6,9 +6,11 @@ document.addEventListener('DOMContentLoaded', function() {
     setupContactValidation();
     refreshConcernSubmissionEligibility();
     
-    // Check if reporter name is already filled (for page refreshes)
+    // Re-fetch profile if reporter or contact is empty (e.g. page refresh)
     const reporterField = document.getElementById('cfReporter');
-    if (!reporterField.value) {
+    const contactFieldRefresh = document.getElementById('cfContact');
+    const contactEmpty = !contactFieldRefresh || !String(contactFieldRefresh.value || '').trim();
+    if (!reporterField.value || contactEmpty) {
         autoPopulateReporter();
     }
     
@@ -109,6 +111,11 @@ async function autoPopulateReporter() {
         if (result.success && result.user) {
             const fullName = `${result.user.first_name} ${result.user.last_name}`.trim();
             document.getElementById('cfReporter').value = fullName;
+            const contactField = document.getElementById('cfContact');
+            const phone = result.user.contact_phone;
+            if (contactField && phone != null && String(phone).trim() !== '') {
+                contactField.value = String(phone).replace(/[^0-9]/g, '');
+            }
         } else {
             document.getElementById('cfReporter').value = 'Unknown User';
         }

@@ -4,9 +4,11 @@ document.addEventListener('DOMContentLoaded', function() {
     setupNavigation();
     setupHotlineRecommendation();
     
-    // Check if reporter name is already filled (for page refreshes)
+    // Re-fetch profile if reporter or contact is empty (e.g. page refresh)
     const reporterField = document.getElementById('reporterName');
-    if (!reporterField.value) {
+    const contactFieldRefresh = document.getElementById('emergencyContact');
+    const contactEmpty = !contactFieldRefresh || !String(contactFieldRefresh.value || '').trim();
+    if (!reporterField.value || contactEmpty) {
         populateReporterName();
     }
 });
@@ -33,8 +35,9 @@ function setupEmergencyForm() {
     // Setup real-time validation clearing
     setupRealTimeValidation();
     
-    // Auto-populate reporter name
+    // Auto-populate reporter name and contact
     populateReporterName();
+    setupEmergencyContactValidation();
     
     // Initialize empty indicator for image preview container
     const imagePreview = document.getElementById('emergencyImagePreview');
@@ -138,6 +141,13 @@ function setupEmergencyTypeHandler() {
     // Clear error when user types in landmark
     if (landmark) {
         landmark.addEventListener('input', function() {
+            clearFieldError(this);
+        });
+    }
+
+    const emergencyContact = document.getElementById('emergencyContact');
+    if (emergencyContact) {
+        emergencyContact.addEventListener('input', function() {
             clearFieldError(this);
         });
     }
@@ -448,15 +458,37 @@ function handleImagePreview(input) {
     }
 }
 
-// Function to populate reporter name from user profile
+function setupEmergencyContactValidation() {
+    const contactField = document.getElementById('emergencyContact');
+    if (!contactField) return;
+
+    contactField.addEventListener('input', function(e) {
+        e.target.value = e.target.value.replace(/[^0-9]/g, '');
+    });
+
+    contactField.addEventListener('paste', function(e) {
+        e.preventDefault();
+        const paste = (e.clipboardData || window.clipboardData).getData('text');
+        e.target.value = paste.replace(/[^0-9]/g, '');
+    });
+
+    contactField.addEventListener('keypress', function(e) {
+        const char = String.fromCharCode(e.which);
+        if (!/[0-9]/.test(char)) {
+            e.preventDefault();
+        }
+    });
+}
+
+// Populate reporter name and contact from profile (same source as concerns: main_UI.php)
 function populateReporterName() {
     const userEmail = sessionStorage.getItem('user_email') || localStorage.getItem('user_email') || 'test@example.com';
     const reporterNameField = document.getElementById('reporterName');
-    
+    const contactField = document.getElementById('emergencyContact');
+
     if (!reporterNameField) return;
-    
+
     if (userEmail && userEmail !== 'test@example.com') {
-        // Get user name from resident_information table
         fetch('php/main_UI.php', {
             method: 'POST',
             headers: {
@@ -469,6 +501,10 @@ function populateReporterName() {
             if (data.success && data.user) {
                 const fullName = `${data.user.first_name} ${data.user.last_name}`.trim();
                 reporterNameField.value = fullName;
+                const phone = data.user.contact_phone;
+                if (contactField && phone != null && String(phone).trim() !== '') {
+                    contactField.value = String(phone).replace(/[^0-9]/g, '');
+                }
             } else {
                 reporterNameField.value = 'Unknown User';
             }
@@ -523,6 +559,18 @@ async function handleEmergencySubmission(e) {
     if (!landmark.value.trim()) {
         showFieldError(landmark, 'Please enter a landmark or reference point.');
         isValid = false;
+    }
+
+    const emergencyContact = document.getElementById('emergencyContact');
+    if (emergencyContact) {
+        const c = (emergencyContact.value || '').trim();
+        if (!c) {
+            showFieldError(emergencyContact, 'Please enter your contact number.');
+            isValid = false;
+        } else if (c.length > 11) {
+            showFieldError(emergencyContact, 'Contact number must be 11 digits or less.');
+            isValid = false;
+        }
     }
     
     // Validate Description
@@ -597,6 +645,7 @@ async function handleEmergencySubmission(e) {
             description: formData.get('description'),
             location: formData.get('location'),
             landmark: formData.get('landmark'),
+            contact: formData.get('emergencyContact'),
             image_data: imageData
         };
         
@@ -691,6 +740,10 @@ function displayEmergencyReport(formData, reportId = null) {
     document.getElementById('displayLocation').textContent = formData.get('location');
     document.getElementById('displayLandmark').textContent = formData.get('landmark') || 'Not specified';
     document.getElementById('displayReporter').textContent = formData.get('reporterName');
+    const displayContact = document.getElementById('displayContact');
+    if (displayContact) {
+        displayContact.textContent = formData.get('emergencyContact') || '-';
+    }
     document.getElementById('displayDateTime').textContent = formattedDateTime;
     document.getElementById('displayDescription').textContent = formData.get('description');
     

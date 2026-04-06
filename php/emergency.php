@@ -78,6 +78,18 @@ function insertEmergencyReport($data) {
         // Check if email column exists
         $checkColumn = $pdo->query("SHOW COLUMNS FROM emergency_reports LIKE 'email'");
         $emailColumnExists = $checkColumn->rowCount() > 0;
+
+        $checkContactCol = $pdo->query("SHOW COLUMNS FROM emergency_reports LIKE 'contact'");
+        $contactColumnExists = $checkContactCol && $checkContactCol->rowCount() > 0;
+        $contactForDb = null;
+        if (!empty($data['contact'])) {
+            $contactForDb = preg_replace('/[^0-9]/', '', (string)$data['contact']);
+            if (strlen($contactForDb) > 11) {
+                return ['success' => false, 'message' => 'Contact number must be 11 digits or less'];
+            }
+        }
+        $contactSqlCol = $contactColumnExists ? ', contact' : '';
+        $contactSqlPlaceholder = $contactColumnExists ? ', ?' : '';
         
         // Try to insert with all possible columns
         // First, try the version with email, emergency_image and landmark
@@ -88,13 +100,14 @@ function insertEmergencyReport($data) {
             if ($emailColumnExists && $email) {
                 $stmt = $pdo->prepare("
                     INSERT INTO emergency_reports 
-                    (email, emergency_type, reporter_name, date_and_time, description, emergency_image, location, landmark, status) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (email, emergency_type, reporter_name{$contactSqlCol}, date_and_time, description, emergency_image, location, landmark, status) 
+                    VALUES (?, ?, ?{$contactSqlPlaceholder}, ?, ?, ?, ?, ?, ?)
                 ");
-                $result = $stmt->execute([
-                    $email,
-                    $data['emergency_type'],
-                    $reporterName,
+                $execParams = [$email, $data['emergency_type'], $reporterName];
+                if ($contactColumnExists) {
+                    $execParams[] = $contactForDb;
+                }
+                $execParams = array_merge($execParams, [
                     $philippineTime,
                     $data['description'],
                     $imageData,
@@ -102,15 +115,18 @@ function insertEmergencyReport($data) {
                     $data['landmark'] ?? null,
                     'New'
                 ]);
+                $result = $stmt->execute($execParams);
             } else {
                 $stmt = $pdo->prepare("
                     INSERT INTO emergency_reports 
-                    (emergency_type, reporter_name, date_and_time, description, emergency_image, location, landmark, status) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    (emergency_type, reporter_name{$contactSqlCol}, date_and_time, description, emergency_image, location, landmark, status) 
+                    VALUES (?, ?{$contactSqlPlaceholder}, ?, ?, ?, ?, ?, ?)
                 ");
-                $result = $stmt->execute([
-                    $data['emergency_type'],
-                    $reporterName,
+                $execParams = [$data['emergency_type'], $reporterName];
+                if ($contactColumnExists) {
+                    $execParams[] = $contactForDb;
+                }
+                $execParams = array_merge($execParams, [
                     $philippineTime,
                     $data['description'],
                     $imageData,
@@ -118,6 +134,7 @@ function insertEmergencyReport($data) {
                     $data['landmark'] ?? null,
                     'New'
                 ]);
+                $result = $stmt->execute($execParams);
             }
             if ($result) {
                 $insertSuccess = true;
@@ -131,32 +148,37 @@ function insertEmergencyReport($data) {
                 if ($emailColumnExists && $email) {
                     $stmt = $pdo->prepare("
                         INSERT INTO emergency_reports 
-                        (email, emergency_type, reporter_name, date_and_time, description, location, status) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                        (email, emergency_type, reporter_name{$contactSqlCol}, date_and_time, description, location, status) 
+                        VALUES (?, ?, ?{$contactSqlPlaceholder}, ?, ?, ?, ?)
                     ");
-                    $result = $stmt->execute([
-                        $email,
-                        $data['emergency_type'],
-                        $reporterName,
+                    $execParams = [$email, $data['emergency_type'], $reporterName];
+                    if ($contactColumnExists) {
+                        $execParams[] = $contactForDb;
+                    }
+                    $execParams = array_merge($execParams, [
                         $philippineTime,
                         $data['description'],
                         $data['location'] ?? null,
                         'New'
                     ]);
+                    $result = $stmt->execute($execParams);
                 } else {
                     $stmt = $pdo->prepare("
                         INSERT INTO emergency_reports 
-                        (emergency_type, reporter_name, date_and_time, description, location, status) 
-                        VALUES (?, ?, ?, ?, ?, ?)
+                        (emergency_type, reporter_name{$contactSqlCol}, date_and_time, description, location, status) 
+                        VALUES (?, ?{$contactSqlPlaceholder}, ?, ?, ?, ?)
                     ");
-                    $result = $stmt->execute([
-                        $data['emergency_type'],
-                        $reporterName,
+                    $execParams = [$data['emergency_type'], $reporterName];
+                    if ($contactColumnExists) {
+                        $execParams[] = $contactForDb;
+                    }
+                    $execParams = array_merge($execParams, [
                         $philippineTime,
                         $data['description'],
                         $data['location'] ?? null,
                         'New'
                     ]);
+                    $result = $stmt->execute($execParams);
                 }
                 if ($result) {
                     $insertSuccess = true;

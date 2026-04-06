@@ -49,11 +49,48 @@ try {
     }
     
     // Prepare and execute query to fetch user data
-    $stmt = $pdo->prepare("SELECT first_name, middle_name, last_name, suffix, email, age, sex, birthday, civil_status, address, valid_id, id_image, profile_pic FROM resident_information WHERE email = ?");
+    $stmt = $pdo->prepare("SELECT id, first_name, middle_name, last_name, suffix, email, age, sex, birthday, civil_status, address, valid_id, id_image, profile_pic FROM resident_information WHERE email = ?");
     $stmt->execute([$email]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
     
     if ($user) {
+        // Contact for forms (concerns, etc.): census head contact first, then resident mobile if column exists
+        $contactPhone = null;
+        $residentId = (int)($user['id'] ?? 0);
+        try {
+            $tableCheck = $pdo->query("SHOW TABLES LIKE 'census_form'");
+            if ($tableCheck && $tableCheck->rowCount() > 0 && $residentId > 0) {
+                $cStmt = $pdo->prepare(
+                    "SELECT contact_number FROM census_form WHERE census_id = ? AND contact_number IS NOT NULL AND TRIM(COALESCE(contact_number, '')) != '' ORDER BY id ASC LIMIT 1"
+                );
+                $cStmt->execute([$residentId]);
+                $cRow = $cStmt->fetch(PDO::FETCH_ASSOC);
+                if ($cRow && isset($cRow['contact_number'])) {
+                    $digits = preg_replace('/[^0-9]/', '', (string)$cRow['contact_number']);
+                    if ($digits !== '') {
+                        $contactPhone = $digits;
+                    }
+                }
+            }
+        } catch (PDOException $e) {
+            error_log('main_UI.php census contact lookup: ' . $e->getMessage());
+        }
+        if ($contactPhone === null && $residentId > 0) {
+            try {
+                $mobStmt = $pdo->prepare('SELECT mobile FROM resident_information WHERE id = ? LIMIT 1');
+                $mobStmt->execute([$residentId]);
+                $mobRow = $mobStmt->fetch(PDO::FETCH_ASSOC);
+                if ($mobRow && isset($mobRow['mobile']) && $mobRow['mobile'] !== null && trim((string)$mobRow['mobile']) !== '') {
+                    $digits = preg_replace('/[^0-9]/', '', (string)$mobRow['mobile']);
+                    if ($digits !== '') {
+                        $contactPhone = $digits;
+                    }
+                }
+            } catch (PDOException $e) {
+                // mobile column may be absent on older schemas
+            }
+        }
+
         // Handle birthday - it could be a date object or string
         $birthday = null;
         if ($user['birthday']) {
@@ -89,7 +126,8 @@ try {
             'address' => $user['address'],
             'valid_id' => $user['valid_id'],
             'id_image' => $id_image_base64,
-            'profile_pic' => $profile_pic_base64
+            'profile_pic' => $profile_pic_base64,
+            'contact_phone' => $contactPhone
         ];
         
         echo json_encode([
