@@ -4219,6 +4219,28 @@ async function confirmClearanceSubmission() {
                 allowOutsideClick: false,
                 allowEscapeKey: false
             });
+
+            if (purpose === 'business-clearance') {
+                await Swal.fire({
+                    icon: 'info',
+                    title: 'Payment reminder',
+                    text: 'Your Business Clearance request is submitted. Please prepare your payment upon claiming.',
+                    timer: 5000,
+                    timerProgressBar: true,
+                    showConfirmButton: false,
+                    allowOutsideClick: true
+                });
+            } else if (purpose === 'barangay-clearance' || purpose === 'proof-of-residency') {
+                await Swal.fire({
+                    icon: 'info',
+                    title: 'Payment reminder',
+                    text: 'Pay 100 upon claiming',
+                    timer: 5000,
+                    timerProgressBar: true,
+                    showConfirmButton: false,
+                    allowOutsideClick: true
+                });
+            }
             
             // Clear form and go back to selection
             clearAllFormInputs();
@@ -4376,7 +4398,7 @@ function displayBarangayIdForm(formData) {
     document.getElementById('displayBarangayIdBirthDate').textContent = formData.get('birthDate');
     const displayBarangayIdAddressEl = document.getElementById('displayBarangayIdAddress');
     if (displayBarangayIdAddressEl) displayBarangayIdAddressEl.textContent = displayAddressLine;
-    document.getElementById('displayBarangayIdHeight').textContent = formData.get('height') + ' cm';
+    document.getElementById('displayBarangayIdHeight').textContent = formData.get('height') || '-';
     document.getElementById('displayBarangayIdWeight').textContent = formData.get('weight') + ' kg';
     document.getElementById('displayBarangayIdCivilStatus').textContent = formData.get('civilStatus').charAt(0).toUpperCase() + formData.get('civilStatus').slice(1);
     document.getElementById('displayBarangayIdGender').textContent = formData.get('gender').charAt(0).toUpperCase() + formData.get('gender').slice(1);

@@ -709,8 +709,29 @@ body {
 .transaction-details {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
     gap: 6px 10px;
     margin-bottom: 4px;
+}
+
+.transaction-details-main {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    flex: 1;
+    min-width: 0;
+}
+
+.transaction-claiming-fee {
+    flex-shrink: 0;
+    margin-left: auto;
+    text-align: right;
+    font-size: 12px;
+    font-weight: 600;
+    color: #856404;
+    line-height: 1.25;
+    max-width: 11rem;
 }
 
 .detail-item {
@@ -1111,8 +1132,14 @@ body {
     }
     
     .transaction-details {
-        grid-template-columns: 1fr;
         gap: 10px;
+    }
+
+    .transaction-claiming-fee {
+        width: 100%;
+        max-width: none;
+        margin-left: 0;
+        text-align: right;
     }
     
     .transaction-footer {

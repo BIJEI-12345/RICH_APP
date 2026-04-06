@@ -425,6 +425,27 @@ function createTransactionCard(transaction) {
     
     // Get request type icon
     const requestTypeIcon = getRequestTypeIcon(transaction.request_type);
+
+    const clearancePurpose = (transaction.notes != null ? String(transaction.notes) : '').trim();
+    const showBarangayClaimingFee =
+        transaction.request_type === 'barangay_id' && displayStatus === 'finished';
+    const clearanceFinished =
+        transaction.request_type === 'clearance' && displayStatus === 'finished';
+
+    let claimingFeeText = null;
+    if (showBarangayClaimingFee) {
+        claimingFeeText = 'Pay ₱100 upon claiming';
+    } else if (clearanceFinished) {
+        if (clearancePurpose === 'barangay-clearance' || clearancePurpose === 'proof-of-residency') {
+            claimingFeeText = 'Pay ₱100 upon claiming';
+        } else if (clearancePurpose === 'business-clearance') {
+            claimingFeeText = 'Prepare payment upon claiming';
+        }
+    }
+
+    const claimingFeeHtml = claimingFeeText
+        ? `<div class="transaction-claiming-fee" aria-label="Payment upon claiming">${claimingFeeText}</div>`
+        : '';
     
     return `
         <div class="transaction-card ${statusClass}">
@@ -441,10 +462,13 @@ function createTransactionCard(transaction) {
             </div>
             
             <div class="transaction-details">
-                <div class="detail-item">
-                    <span class="detail-label">Submitted at:</span>
-                    <span class="detail-value">${formatDateTime(transaction.request_date)}</span>
+                <div class="transaction-details-main">
+                    <div class="detail-item">
+                        <span class="detail-label">Submitted at:</span>
+                        <span class="detail-value">${formatDateTime(transaction.request_date)}</span>
+                    </div>
                 </div>
+                ${claimingFeeHtml}
             </div>
             
             <div class="transaction-footer">
@@ -864,8 +888,8 @@ function generatePersonalInfoCards(transaction) {
                     <i class="fas fa-ruler-vertical"></i>
                 </div>
                 <div class="info-content">
-                    <span class="info-label">Height</span>
-                    <span class="info-value">${transaction.height} cm</span>
+                    <span class="info-label">Height (Feet)</span>
+                    <span class="info-value">${transaction.height}</span>
                 </div>
             </div>
         `;
