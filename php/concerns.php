@@ -74,7 +74,19 @@ function getConcernSubmissionEligibility($email) {
                             WHEN LOWER(status) IN ('new', 'pending', 'processing', 'on process', 'in process', 'open') THEN 1
                             ELSE 0
                         END
-                    ) AS unresolved_count
+                    ) AS unresolved_count,
+                    SUM(
+                        CASE
+                            WHEN status IS NULL OR status = '' OR LOWER(status) IN ('new', 'pending') THEN 1
+                            ELSE 0
+                        END
+                    ) AS new_count,
+                    SUM(
+                        CASE
+                            WHEN LOWER(status) IN ('processing', 'on process', 'in process', 'open') THEN 1
+                            ELSE 0
+                        END
+                    ) AS processing_count
                 FROM concerns
                 WHERE email = ?
             ";
@@ -91,7 +103,19 @@ function getConcernSubmissionEligibility($email) {
                             WHEN LOWER(status) IN ('new', 'pending', 'processing', 'on process', 'in process', 'open') THEN 1
                             ELSE 0
                         END
-                    ) AS unresolved_count
+                    ) AS unresolved_count,
+                    SUM(
+                        CASE
+                            WHEN status IS NULL OR status = '' OR LOWER(status) IN ('new', 'pending') THEN 1
+                            ELSE 0
+                        END
+                    ) AS new_count,
+                    SUM(
+                        CASE
+                            WHEN LOWER(status) IN ('processing', 'on process', 'in process', 'open') THEN 1
+                            ELSE 0
+                        END
+                    ) AS processing_count
                 FROM concerns
                 WHERE reporter_name = ?
             ";
@@ -99,9 +123,15 @@ function getConcernSubmissionEligibility($email) {
             $stmt->execute([$reporterName]);
         }
 
-        $counts = $stmt->fetch(PDO::FETCH_ASSOC) ?: ['total_count' => 0, 'unresolved_count' => 0];
+        $counts = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
         $totalCount = (int)($counts['total_count'] ?? 0);
         $unresolvedCount = (int)($counts['unresolved_count'] ?? 0);
+        $newCount = (int)($counts['new_count'] ?? 0);
+        $processingCount = (int)($counts['processing_count'] ?? 0);
+        $statusBreakdown = [
+            'new' => $newCount,
+            'processing' => $processingCount,
+        ];
 
         if ($unresolvedCount >= MAX_UNRESOLVED_CONCERNS_PER_ACCOUNT) {
             return [
@@ -111,7 +141,8 @@ function getConcernSubmissionEligibility($email) {
                 'total_count' => $totalCount,
                 'unresolved_count' => $unresolvedCount,
                 'max_total' => MAX_TOTAL_CONCERNS_PER_ACCOUNT,
-                'max_unresolved' => MAX_UNRESOLVED_CONCERNS_PER_ACCOUNT
+                'max_unresolved' => MAX_UNRESOLVED_CONCERNS_PER_ACCOUNT,
+                'status_breakdown' => $statusBreakdown,
             ];
         }
 
@@ -120,7 +151,8 @@ function getConcernSubmissionEligibility($email) {
             'total_count' => $totalCount,
             'unresolved_count' => $unresolvedCount,
             'max_total' => MAX_TOTAL_CONCERNS_PER_ACCOUNT,
-            'max_unresolved' => MAX_UNRESOLVED_CONCERNS_PER_ACCOUNT
+            'max_unresolved' => MAX_UNRESOLVED_CONCERNS_PER_ACCOUNT,
+            'status_breakdown' => $statusBreakdown,
         ];
     } catch (PDOException $e) {
         error_log("Concern eligibility check failed: " . $e->getMessage());
@@ -172,6 +204,7 @@ function insertConcern($data) {
                     'unresolved_count' => (int)($eligibility['unresolved_count'] ?? 0),
                     'max_total' => (int)($eligibility['max_total'] ?? MAX_TOTAL_CONCERNS_PER_ACCOUNT),
                     'max_unresolved' => (int)($eligibility['max_unresolved'] ?? MAX_UNRESOLVED_CONCERNS_PER_ACCOUNT),
+                    'status_breakdown' => $eligibility['status_breakdown'] ?? ['new' => 0, 'processing' => 0],
                 ]
             ];
         }
@@ -204,14 +237,24 @@ function insertConcern($data) {
         // Check if email column exists
         $checkColumn = $pdo->query("SHOW COLUMNS FROM concerns LIKE 'email'");
         $emailColumnExists = $checkColumn->rowCount() > 0;
+        $checkRating = $pdo->query("SHOW COLUMNS FROM concerns LIKE 'rating'");
+        $ratingColumnExists = $checkRating && $checkRating->rowCount() > 0;
         
         if ($emailColumnExists && $email) {
             // Prepare the insert statement with email
-            $stmt = $pdo->prepare("
-                INSERT INTO concerns 
-                (email, concern_image, reporter_name, contact, date_and_time, location, statement) 
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            ");
+            if ($ratingColumnExists) {
+                $stmt = $pdo->prepare("
+                    INSERT INTO concerns 
+                    (email, concern_image, reporter_name, contact, date_and_time, location, statement, status, rating) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)
+                ");
+            } else {
+                $stmt = $pdo->prepare("
+                    INSERT INTO concerns 
+                    (email, concern_image, reporter_name, contact, date_and_time, location, statement, status) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ");
+            }
             
             // Execute the insert
             $result = $stmt->execute([
@@ -221,15 +264,24 @@ function insertConcern($data) {
                 $data['contact'],
                 $philippineTime,
                 $data['location'],
-                $data['statement']
+                $data['statement'],
+                'new'
             ]);
         } else {
             // Prepare the insert statement without email (for backward compatibility)
-            $stmt = $pdo->prepare("
-                INSERT INTO concerns 
-                (concern_image, reporter_name, contact, date_and_time, location, statement) 
-                VALUES (?, ?, ?, ?, ?, ?)
-            ");
+            if ($ratingColumnExists) {
+                $stmt = $pdo->prepare("
+                    INSERT INTO concerns 
+                    (concern_image, reporter_name, contact, date_and_time, location, statement, status, rating) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, 0)
+                ");
+            } else {
+                $stmt = $pdo->prepare("
+                    INSERT INTO concerns 
+                    (concern_image, reporter_name, contact, date_and_time, location, statement, status) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                ");
+            }
             
             // Execute the insert
             $result = $stmt->execute([
@@ -238,7 +290,8 @@ function insertConcern($data) {
                 $data['contact'],
                 $philippineTime,
                 $data['location'],
-                $data['statement']
+                $data['statement'],
+                'new'
             ]);
         }
         
@@ -298,6 +351,7 @@ try {
                 'unresolved_count' => (int)($eligibility['unresolved_count'] ?? 0),
                 'max_total' => (int)($eligibility['max_total'] ?? MAX_TOTAL_CONCERNS_PER_ACCOUNT),
                 'max_unresolved' => (int)($eligibility['max_unresolved'] ?? MAX_UNRESOLVED_CONCERNS_PER_ACCOUNT),
+                'status_breakdown' => $eligibility['status_breakdown'] ?? ['new' => 0, 'processing' => 0],
             ]
         ]);
         exit;

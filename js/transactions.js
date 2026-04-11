@@ -6,6 +6,100 @@ let filteredTransactions = [];
 let currentFilter = 'all';
 let statCardsInitialized = false;
 
+/** Finished / resolved / completed items stay on this page for 15 days after completion, then drop from the list (UI only). */
+const FINISHED_UI_RETENTION_DAYS = 15;
+
+function transactionStatusIsFinishedForRetention(transaction) {
+    if (!transaction || transaction.status == null) {
+        return false;
+    }
+    const s = String(transaction.status).toLowerCase();
+    return s === 'finished' || s === 'resolved' || s === 'completed';
+}
+
+/** Milliseconds at completion (best available field from API). */
+function transactionFinishedAnchorDateMs(transaction) {
+    if (!transaction) {
+        return NaN;
+    }
+    const candidates = [
+        transaction.completion_date,
+        transaction.finish_at,
+        transaction.resolved_at,
+        transaction.resolved_datetime,
+        transaction.processing_date,
+        transaction.updated_at,
+        transaction.created_at,
+        transaction.request_date
+    ];
+    for (let i = 0; i < candidates.length; i++) {
+        const raw = candidates[i];
+        if (raw == null || raw === '') {
+            continue;
+        }
+        const t = new Date(raw).getTime();
+        if (!Number.isNaN(t)) {
+            return t;
+        }
+    }
+    return NaN;
+}
+
+/** True when this finished item is past the 15-day UI window (hidden from list). */
+function transactionIsFinishedHiddenFromUi(transaction) {
+    if (!transactionStatusIsFinishedForRetention(transaction)) {
+        return false;
+    }
+    const anchor = transactionFinishedAnchorDateMs(transaction);
+    if (Number.isNaN(anchor)) {
+        return false;
+    }
+    const removeAfterMs = anchor + FINISHED_UI_RETENTION_DAYS * 86400000;
+    return Date.now() >= removeAfterMs;
+}
+
+function transactionsVisibleInUi() {
+    return allTransactions.filter(function (t) {
+        return !transactionIsFinishedHiddenFromUi(t);
+    });
+}
+
+/** Whole days remaining before removal (>=1); null if not finished or no date. */
+function transactionDaysUntilUiRemoval(transaction) {
+    if (!transactionStatusIsFinishedForRetention(transaction)) {
+        return null;
+    }
+    const anchor = transactionFinishedAnchorDateMs(transaction);
+    if (Number.isNaN(anchor)) {
+        return null;
+    }
+    const removeAfterMs = anchor + FINISHED_UI_RETENTION_DAYS * 86400000;
+    const msLeft = removeAfterMs - Date.now();
+    if (msLeft <= 0) {
+        return 0;
+    }
+    return Math.ceil(msLeft / 86400000);
+}
+
+function getFinishedRetentionHintHtml(transaction) {
+    if (!transactionStatusIsFinishedForRetention(transaction) || transactionIsFinishedHiddenFromUi(transaction)) {
+        return '';
+    }
+    const days = transactionDaysUntilUiRemoval(transaction);
+    if (days == null || days < 1) {
+        return '';
+    }
+    const dayWord = days === 1 ? 'day' : 'days';
+    return (
+        '<div class="transaction-retention-hint" role="status">' +
+        'This entry will be removed from this list in <strong>' +
+        days +
+        '</strong> ' +
+        dayWord +
+        '.</div>'
+    );
+}
+
 // Initialize the page
 document.addEventListener('DOMContentLoaded', function() {
     initializePage();
@@ -78,6 +172,8 @@ function setupStatCardListeners() {
                 targetFilter = 'processing';
             } else if (icon.classList.contains('completed')) {
                 targetFilter = 'finished';
+            } else if (icon.classList.contains('revoked')) {
+                targetFilter = 'revoked';
             }
             
             // Debug logging
@@ -152,6 +248,8 @@ function updateStatCardSelection(activeFilter) {
                 card.classList.add('active');
             } else if (icon.classList.contains('completed') && activeFilter === 'finished') {
                 card.classList.add('active');
+            } else if (icon.classList.contains('revoked') && activeFilter === 'revoked') {
+                card.classList.add('active');
             }
         });
     }
@@ -188,6 +286,7 @@ async function loadTransactions() {
 
         const response = await fetch(url, {
             method: 'GET',
+            credentials: 'same-origin',
             headers: {
                 'Content-Type': 'application/json',
             }
@@ -267,14 +366,16 @@ async function loadTransactions() {
 // Filter transactions based on current filter and search
 function filterTransactions() {
     const searchTerm = document.getElementById('search-input').value.toLowerCase();
+    const pool = transactionsVisibleInUi();
     
     console.log('=== FILTER DEBUG ===');
     console.log('Search term:', searchTerm);
     console.log('Current filter:', currentFilter);
-    console.log('All transactions before filtering:', allTransactions.length);
+    console.log('All transactions (API):', allTransactions.length);
+    console.log('Visible in UI (after ' + FINISHED_UI_RETENTION_DAYS + 'd retention):', pool.length);
     
     // Check finished transactions before filtering
-    const finishedBeforeFilter = allTransactions.filter(t => 
+    const finishedBeforeFilter = pool.filter(t => 
         t.status === 'Finished' || 
         t.status === 'finished' || 
         t.status === 'FINISHED' ||
@@ -288,7 +389,7 @@ function filterTransactions() {
     console.log('Finished transactions before filtering:', finishedBeforeFilter.length);
     console.log('Finished transaction IDs before filtering:', finishedBeforeFilter.map(t => t.id));
     
-    filteredTransactions = allTransactions.filter(transaction => {
+    filteredTransactions = pool.filter(transaction => {
         // Filter by status - map statuses for display
         let displayStatus = transaction.status;
         if (transaction.status === 'New' || transaction.status === 'new' || transaction.status === 'NEW') {
@@ -304,6 +405,13 @@ function filterTransactions() {
                    transaction.status === 'completed' ||
                    transaction.status === 'COMPLETED') {
             displayStatus = 'finished';
+        } else if (transaction.status === 'Revoked' ||
+                   transaction.status === 'revoked' ||
+                   transaction.status === 'REVOKED' ||
+                   transaction.status === 'Cancelled' ||
+                   transaction.status === 'cancelled' ||
+                   transaction.status === 'CANCELLED') {
+            displayStatus = 'revoked';
         }
         
         const statusMatch = currentFilter === 'all' || displayStatus === currentFilter;
@@ -392,6 +500,22 @@ function displayTransactions() {
     }
 }
 
+/** 1–5 stars on list card for Community Concern when `rating` (or legacy resident_rating) is set. */
+function getTransactionCardRatingHtml(transaction) {
+    if (!transaction || transaction.request_type !== 'concern') {
+        return '';
+    }
+    const v = transactionConcernRatingValue(transaction);
+    if (v < 1) {
+        return '';
+    }
+    var stars = '';
+    for (var i = 1; i <= 5; i++) {
+        stars += '<span class="transaction-card-star' + (i <= v ? ' is-on' : '') + '"><i class="fas fa-star" aria-hidden="true"></i></span>';
+    }
+    return '<div class="transaction-card-rating" title="Rating: ' + v + '/5" aria-label="Rating ' + v + ' out of 5 stars">' + stars + '</div>';
+}
+
 // Create transaction card HTML
 function createTransactionCard(transaction) {
     // Map status for display purposes
@@ -416,6 +540,19 @@ function createTransactionCard(transaction) {
         displayStatus = 'finished';
         statusClass = 'finished';
         statusText = 'FINISHED';
+    } else if (transaction.status === 'Completed' || transaction.status === 'completed' || transaction.status === 'COMPLETED') {
+        displayStatus = 'finished';
+        statusClass = 'finished';
+        statusText = 'FINISHED';
+    } else if (transaction.status === 'Revoked' ||
+               transaction.status === 'revoked' ||
+               transaction.status === 'REVOKED' ||
+               transaction.status === 'Cancelled' ||
+               transaction.status === 'cancelled' ||
+               transaction.status === 'CANCELLED') {
+        displayStatus = 'revoked';
+        statusClass = 'revoked';
+        statusText = 'REVOKED';
     } else {
         // For other statuses, show as-is
         displayStatus = transaction.status.toLowerCase();
@@ -446,6 +583,14 @@ function createTransactionCard(transaction) {
     const claimingFeeHtml = claimingFeeText
         ? `<div class="transaction-claiming-fee" aria-label="Payment upon claiming">${claimingFeeText}</div>`
         : '';
+
+    const cardRatingHtml = getTransactionCardRatingHtml(transaction);
+    const retentionHintHtml = getFinishedRetentionHintHtml(transaction);
+
+    const cardStatusBadge =
+        displayStatus === 'revoked'
+            ? `<i class="fas fa-ban status-badge-revoked-icon" aria-hidden="true"></i><span>${statusText}</span>`
+            : statusText;
     
     return `
         <div class="transaction-card ${statusClass}">
@@ -458,20 +603,24 @@ function createTransactionCard(transaction) {
                     <h3>${transaction.document_type}</h3>
                     </div>
                 </div>
-                <div class="status-badge ${statusClass}">${statusText}</div>
+                <div class="status-badge ${statusClass}">${cardStatusBadge}</div>
             </div>
             
             <div class="transaction-details">
-                <div class="transaction-details-main">
-                    <div class="detail-item">
-                        <span class="detail-label">Submitted at:</span>
-                        <span class="detail-value">${formatDateTime(transaction.request_date)}</span>
+                <div class="transaction-details-top">
+                    <div class="transaction-details-main">
+                        <div class="detail-item">
+                            <span class="detail-label">Submitted at:</span>
+                            <span class="detail-value">${formatDateTime(transaction.request_date)}</span>
+                        </div>
                     </div>
+                    ${claimingFeeHtml}
                 </div>
-                ${claimingFeeHtml}
+                ${retentionHintHtml}
             </div>
             
             <div class="transaction-footer">
+                ${cardRatingHtml}
                 <div class="transaction-actions">
                     ${createActionButtons(transaction)}
                 </div>
@@ -581,6 +730,14 @@ function viewTransactionDetails(transactionId) {
     } else if (transaction.status === 'Resolved' || transaction.status === 'resolved' || transaction.status === 'RESOLVED') {
         displayStatus = 'finished';
         statusText = 'FINISHED';
+    } else if (transaction.status === 'Revoked' ||
+               transaction.status === 'revoked' ||
+               transaction.status === 'REVOKED' ||
+               transaction.status === 'Cancelled' ||
+               transaction.status === 'cancelled' ||
+               transaction.status === 'CANCELLED') {
+        displayStatus = 'revoked';
+        statusText = 'REVOKED';
     } else {
         // For other statuses, show as-is
         displayStatus = transaction.status.toLowerCase();
@@ -593,6 +750,11 @@ function viewTransactionDetails(transactionId) {
     // Generate personal information cards based on transaction data
     const personalInfoCards = generatePersonalInfoCards(transaction);
     const requestSpecificCards = generateRequestSpecificCards(transaction);
+
+    const statusBadgeContent =
+        displayStatus === 'revoked'
+            ? `<i class="fas fa-ban status-badge-revoked-icon" aria-hidden="true"></i><span>${statusText}</span>`
+            : statusText;
     
     modalBody.innerHTML = `
         <div class="transaction-detail">
@@ -603,7 +765,7 @@ function viewTransactionDetails(transactionId) {
                 <div class="request-type-info">
                     <h3>${getRequestTypeTitle(transaction.request_type)}</h3>
                     <p class="request-type-subtitle">${getRequestTypeDescription(transaction.request_type)}</p>
-                    <div class="status-badge-large ${displayStatus}">${statusText}</div>
+                    <div class="status-badge-large ${displayStatus}">${statusBadgeContent}</div>
                 </div>
             </div>
             
@@ -628,6 +790,10 @@ function viewTransactionDetails(transactionId) {
                 </div>
             </div>
             
+            ${getConcernResolvedImageSectionHtml(transaction)}
+            
+            ${getConcernRatingSectionHtml(transaction)}
+            
             ${transaction.notes && transaction.request_type !== 'concern' ? `
             <div class="detail-section">
                 <h4>Statement of Concern</h4>
@@ -643,12 +809,526 @@ function viewTransactionDetails(transactionId) {
     console.log('Showing modal...');
     modal.style.display = 'block';
     console.log('Modal display set to block');
+    requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+            autoSizeRevokeReasonTextareas(modalBody);
+            initConcernRatingInModal(modalBody, transaction);
+            loadConcernResolvedImageIntoModal(modalBody, transaction);
+        });
+    });
+}
+
+function transactionConcernIsFinished(transaction) {
+    const s = (transaction && transaction.status) ? String(transaction.status).toLowerCase() : '';
+    return s === 'finished' || s === 'resolved';
+}
+
+/** From list API: 1 kung may laman ang resolved_image sa DB; 0 kung wala. */
+function transactionConcernHasResolvedImageInDb(transaction) {
+    if (!transaction) {
+        return false;
+    }
+    const v = transaction.has_resolved_image;
+    if (v === true || v === 1 || v === '1') {
+        return true;
+    }
+    if (v === false || v === 0 || v === '0') {
+        return false;
+    }
+    return Number(v) === 1;
+}
+
+/** API uses lowercase 'concern'; tolerate any casing from merged data. */
+function transactionRequestTypeIsConcern(transaction) {
+    return !!(transaction && String(transaction.request_type || '').toLowerCase() === 'concern');
+}
+
+/** Build absolute or correct relative URL for img src (paths, data URLs, http). */
+function resolveConcernResolvedImageSrc(raw) {
+    if (raw == null) {
+        return '';
+    }
+    const s = String(raw).trim();
+    if (s === '') {
+        return '';
+    }
+    if (/^(https?:\/\/|data:image\/)/i.test(s)) {
+        return s;
+    }
+    try {
+        return new URL(s, window.location.href).href;
+    } catch (e) {
+        return s;
+    }
+}
+
+/**
+ * Absolute URL for serve_concern_resolved_image (list payload omits BLOB).
+ */
+function buildServeConcernResolvedImageUrl(transaction) {
+    const storedEmail = (sessionStorage.getItem('user_email') || localStorage.getItem('user_email') || '').trim();
+    const params = new URLSearchParams({
+        action: 'serve_concern_resolved_image',
+        concern_ref: String(transaction && transaction.id != null ? transaction.id : '')
+    });
+    if (storedEmail) {
+        params.set('user_email', storedEmail);
+    }
+    const rel = 'php/transactions.php?' + params.toString();
+    try {
+        return new URL(rel, window.location.href).href;
+    } catch (e) {
+        return rel;
+    }
+}
+
+/**
+ * Load resolved photo: inline data/path/http, else <img src> to serve_concern_resolved_image (no fetch).
+ */
+function loadConcernResolvedImageIntoModal(modalRoot, transaction) {
+    if (!modalRoot || !transactionRequestTypeIsConcern(transaction) || !transactionConcernIsFinished(transaction)) {
+        return;
+    }
+    const section = modalRoot.querySelector('.concern-resolved-image-section');
+    if (!section) {
+        return;
+    }
+    const img = section.querySelector('.concern-resolved-image-img');
+    const loadingEl = section.querySelector('.concern-resolved-image-loading');
+    const frame = section.querySelector('.concern-resolved-image-frame');
+    if (!img) {
+        return;
+    }
+
+    function finishOk() {
+        img.style.display = '';
+        if (loadingEl) {
+            loadingEl.remove();
+        }
+        if (frame) {
+            frame.classList.remove('concern-resolved-image-frame--loading');
+        }
+    }
+
+    function finishErr(message) {
+        if (loadingEl) {
+            loadingEl.textContent = message;
+            loadingEl.classList.add('concern-resolved-image-error');
+        }
+        if (frame) {
+            frame.classList.remove('concern-resolved-image-frame--loading');
+        }
+    }
+
+    const raw = transaction.resolved_image;
+    if (raw != null && String(raw).trim() !== '') {
+        const direct = resolveConcernResolvedImageSrc(raw);
+        if (direct) {
+            img.onload = function () {
+                img.onload = null;
+                img.onerror = null;
+                finishOk();
+            };
+            img.onerror = function () {
+                img.onload = null;
+                img.onerror = null;
+                finishErr('Hindi maipakita ang larawan.');
+            };
+            img.src = direct;
+            return;
+        }
+    }
+
+    if (!transactionConcernHasResolvedImageInDb(transaction)) {
+        if (loadingEl) {
+            loadingEl.textContent =
+                'Walang naka-upload na resolution photo mula sa barangay para sa request na ito.';
+            loadingEl.classList.remove('concern-resolved-image-loading');
+            loadingEl.classList.add('concern-resolved-image-empty');
+        }
+        if (frame) {
+            frame.classList.remove('concern-resolved-image-frame--loading');
+        }
+        img.style.display = 'none';
+        return;
+    }
+
+    const url = buildServeConcernResolvedImageUrl(transaction);
+    if (!url || !String(transaction.id || '').trim()) {
+        section.remove();
+        return;
+    }
+
+    img.onload = function () {
+        img.onload = null;
+        img.onerror = null;
+        finishOk();
+    };
+    img.onerror = function () {
+        img.onload = null;
+        img.onerror = null;
+        finishErr(
+            'Hindi ma-load ang larawan (server). Subukan i-refresh; kung tuloy pa rin, maaaring sira ang file sa database.'
+        );
+    };
+    img.src = url;
+}
+
+/** Optional text block from API field `resolution_statement` (above the image). */
+function getConcernResolutionStatementHtml(transaction) {
+    if (!transaction || transaction.resolution_statement == null) {
+        return '';
+    }
+    const raw = String(transaction.resolution_statement).trim();
+    if (raw === '') {
+        return '';
+    }
+    const body = escapeHtmlTransactions(raw).replace(/\n/g, '<br>');
+    return (
+        '<div class="concern-resolution-statement">' +
+        '<p class="concern-resolution-statement-label">Pahayag ng resolusyon</p>' +
+        '<div class="concern-resolution-statement-body">' +
+        body +
+        '</div></div>'
+    );
+}
+
+/** Barangay photo after resolution — shown above “Your rating” (column `resolved_image`). */
+function getConcernResolvedImageSectionHtml(transaction) {
+    if (!transaction || !transactionRequestTypeIsConcern(transaction) || !transactionConcernIsFinished(transaction)) {
+        return '';
+    }
+    const resolutionStatementHtml = getConcernResolutionStatementHtml(transaction);
+    return `
+            <div class="detail-section concern-resolved-image-section">
+                <h4 class="concern-resolved-image-title">Resolved photo</h4>
+                <p class="concern-resolved-image-note">Ito ang larawan ng resolusyon — dito nakabase ang iyong star rating.</p>
+                ${resolutionStatementHtml}
+                <div class="concern-resolved-image-frame concern-resolved-image-frame--loading">
+                    <span class="concern-resolved-image-loading" aria-hidden="true">Nilo-load…</span>
+                    <img src="" alt="Resolved concern photo" class="concern-resolved-image-img" style="display:none" decoding="async" />
+                </div>
+            </div>`;
+}
+
+/** DB `rating` INT: 0 = not rated; 1–5 = stars (left to right). Falls back to legacy resident_rating. */
+function transactionConcernRatingValue(transaction) {
+    if (!transaction) {
+        return 0;
+    }
+    const raw = transaction.rating != null && String(transaction.rating).trim() !== ''
+        ? transaction.rating
+        : transaction.resident_rating;
+    const n = parseInt(String(raw), 10);
+    if (Number.isNaN(n) || n < 1) {
+        return 0;
+    }
+    return Math.min(5, n);
+}
+
+function transactionConcernSuggestionsText(transaction) {
+    if (!transaction || transaction.suggestions == null) {
+        return '';
+    }
+    return String(transaction.suggestions).trim();
+}
+
+function concernRatingFeedbackFieldId(transaction) {
+    const raw = String(transaction && transaction.id ? transaction.id : 'c').replace(/[^a-zA-Z0-9_-]/g, '');
+    return 'concern-rating-feedback-' + raw;
+}
+
+function updateConcernRatingStarPreview(section, starCount) {
+    const n = Math.min(5, Math.max(0, parseInt(String(starCount), 10) || 0));
+    section.dataset.selectedRating = String(n);
+    section.querySelectorAll('.concern-rating-star').forEach(function (btn) {
+        const i = parseInt(btn.getAttribute('data-rating'), 10);
+        btn.classList.toggle('is-on', i <= n && n >= 1);
+    });
+    const send = section.querySelector('.concern-rating-send-btn');
+    if (send) {
+        send.disabled = n < 1;
+    }
+}
+
+function getConcernRatingSectionHtml(transaction) {
+    if (!transaction || !transactionRequestTypeIsConcern(transaction) || !transactionConcernIsFinished(transaction)) {
+        return '';
+    }
+    const value = transactionConcernRatingValue(transaction);
+    const rated = value >= 1;
+    const fid = concernRatingFeedbackFieldId(transaction);
+    let starsHtml = '';
+    for (let i = 1; i <= 5; i++) {
+        const on = rated && i <= value;
+        starsHtml += `<button type="button" class="concern-rating-star${on ? ' is-on' : ''}" data-rating="${i}" ${rated ? 'disabled' : ''} title="${i} of 5 stars"><i class="fas fa-star" aria-hidden="true"></i></button>`;
+    }
+    if (rated) {
+        const sug = transactionConcernSuggestionsText(transaction);
+        const feedbackBlock = sug
+            ? `<div class="concern-rating-suggestions-readonly">
+                    <p class="concern-rating-suggestions-label"><i class="fas fa-comment-dots" aria-hidden="true"></i> Feedback / suggestions</p>
+                    <p class="concern-rating-suggestions-body">${escapeHtmlTransactions(sug)}</p>
+                </div>`
+            : '<p class="concern-rating-no-suggestion-note"><i class="fas fa-info-circle" aria-hidden="true"></i> Walang text na feedback — salamat pa rin sa iyong rating.</p>';
+        return `
+            <div class="detail-section concern-rating-section concern-rating-section--done">
+                <div class="concern-rating-done-card">
+                    <div class="concern-rating-title-row">
+                        <h4>Your rating</h4>
+                        <p class="concern-rating-subline">Your feedback will help our barangay improve.</p>
+                    </div>
+                    <div class="concern-rating-stars-row">
+                        <div class="concern-rating-stars-bubble">
+                            <div class="concern-rating-stars" role="group" aria-label="1 to 5 stars">
+                                ${starsHtml}
+                            </div>
+                        </div>
+                        <div class="concern-rating-status-chip">
+                            <i class="fas fa-check-circle" aria-hidden="true"></i>
+                            <span>Naipadala na ang rating: <strong>${value}/5</strong></span>
+                        </div>
+                    </div>
+                    ${feedbackBlock}
+                </div>
+            </div>`;
+    }
+    return `
+            <div class="detail-section concern-rating-section" data-selected-rating="0">
+                <div class="concern-rating-title-row">
+                    <h4>Your rating</h4>
+                    <p class="concern-rating-subline">Your feedback will help our barangay improve.</p>
+                </div>
+                <div class="concern-rating-stars" role="group" aria-label="1 to 5 stars">
+                    ${starsHtml}
+                </div>
+                <p class="concern-rating-hint">Pumili muna ng stars (1 = pinakamababa, 5 = pinakamahusay).</p>
+                <label class="concern-rating-feedback-label" for="${fid}">Feedback o suggestions <span class="concern-rating-optional">(opsyonal)</span></label>
+                <textarea id="${fid}" class="concern-rating-feedback" rows="3" maxlength="65000" placeholder="Pwede mong iwanang blangko at magpadala gamit lang ang stars."></textarea>
+                <div class="concern-rating-actions">
+                    <button type="button" class="concern-rating-send-btn" disabled>Ipadala</button>
+                </div>
+                <div class="concern-rating-loading" aria-hidden="true">
+                    <span class="concern-rating-spinner" aria-hidden="true"></span>
+                    <span class="concern-rating-loading-text">Nagse-save…</span>
+                </div>
+            </div>`;
+}
+
+function swalTransactionsAboveModal(opts) {
+    if (typeof Swal === 'undefined') {
+        return Promise.resolve({ isConfirmed: false });
+    }
+    return Swal.fire(Object.assign({
+        customClass: { container: 'swal2-transactions-above-modal' }
+    }, opts));
+}
+
+function initConcernRatingInModal(modalRoot, transaction) {
+    if (!modalRoot || !transaction || !transactionRequestTypeIsConcern(transaction) || !transactionConcernIsFinished(transaction)) {
+        return;
+    }
+    if (transactionConcernRatingValue(transaction) >= 1) {
+        return;
+    }
+    const section = modalRoot.querySelector('.concern-rating-section');
+    if (!section) {
+        return;
+    }
+    const ta = section.querySelector('.concern-rating-feedback');
+    const sendBtn = section.querySelector('.concern-rating-send-btn');
+    section.querySelectorAll('.concern-rating-star').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const r = parseInt(btn.getAttribute('data-rating'), 10);
+            if (r >= 1 && r <= 5) {
+                updateConcernRatingStarPreview(section, r);
+            }
+        });
+    });
+    if (sendBtn) {
+        sendBtn.addEventListener('click', function () {
+            const r = parseInt(section.dataset.selectedRating || '0', 10);
+            const suggestions = ta ? ta.value.trim() : '';
+            if (r < 1 || r > 5) {
+                swalTransactionsAboveModal({
+                    icon: 'info',
+                    title: 'Pumili ng stars',
+                    text: 'Mag-tap muna ng 1 hanggang 5 stars bago magpadala.'
+                });
+                return;
+            }
+            submitConcernRating(transaction, r, suggestions, section);
+        });
+    }
+}
+
+async function submitConcernRating(transaction, rating, suggestions, sectionEl) {
+    const userEmail = sessionStorage.getItem('user_email') || localStorage.getItem('user_email') || '';
+    if (!userEmail) {
+        await swalTransactionsAboveModal({ icon: 'warning', title: 'Kailangan mag-login', text: 'Mag-log in muna para maipadala ang rating.' });
+        return;
+    }
+    if (suggestions === '') {
+        const conf = await swalTransactionsAboveModal({
+            icon: 'question',
+            title: 'Walang feedback?',
+            text: 'Magpapadala kang may stars lang, walang text na feedback o suggestions. Ituloy?',
+            showCancelButton: true,
+            confirmButtonText: 'Oo, ipadala',
+            cancelButtonText: 'Bumalik'
+        });
+        if (!conf.isConfirmed) {
+            return;
+        }
+    }
+    sectionEl.classList.add('is-loading');
+    try {
+        const res = await fetch('php/transactions.php?action=rate_concern', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                concern_id: transaction.id,
+                rating: rating,
+                suggestions: suggestions,
+                user_email: userEmail
+            })
+        });
+        const data = await res.json();
+        if (data.success) {
+            const newRating = data.rating != null ? data.rating : (data.resident_rating != null ? data.resident_rating : rating);
+            const newSug = data.suggestions != null ? data.suggestions : suggestions;
+            transaction.rating = newRating;
+            transaction.resident_rating = newRating;
+            transaction.suggestions = newSug;
+            const match = allTransactions.find(function (t) { return t.id === transaction.id; });
+            if (match) {
+                match.rating = newRating;
+                match.resident_rating = newRating;
+                match.suggestions = newSug;
+            }
+            sectionEl.outerHTML = getConcernRatingSectionHtml(transaction);
+            await swalTransactionsAboveModal({
+                icon: 'success',
+                title: 'Salamat!',
+                text: data.message || 'Na-save ang iyong rating.',
+                timer: 2400,
+                showConfirmButton: false
+            });
+        } else {
+            await swalTransactionsAboveModal({ icon: 'info', title: 'Hindi na-save', text: data.message || 'Subukan ulit.' });
+        }
+    } catch (e) {
+        console.error(e);
+        await swalTransactionsAboveModal({ icon: 'error', title: 'Error', text: 'May problema sa koneksyon.' });
+    } finally {
+        sectionEl.classList.remove('is-loading');
+    }
+}
+
+/** Set textarea height to fit content (read-only revoke reason). */
+function autoSizeRevokeReasonTextareas(root) {
+    if (!root || typeof root.querySelectorAll !== 'function') return;
+    var maxPx = Math.round(window.innerHeight * 0.55);
+    root.querySelectorAll('textarea.transaction-revoke-reason-text').forEach(function (ta) {
+        ta.style.minHeight = '0';
+        ta.style.overflowY = 'hidden';
+        ta.style.height = '0';
+        var h = ta.scrollHeight;
+        if (h > maxPx) {
+            ta.style.height = maxPx + 'px';
+            ta.style.overflowY = 'auto';
+        } else {
+            ta.style.height = Math.max(h, 48) + 'px';
+        }
+    });
+}
+
+function escapeHtmlTransactions(text) {
+    if (text == null) return '';
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+function escapeHtmlAttrTransactions(text) {
+    if (text == null) return '';
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;');
+}
+
+function transactionIsRevoked(transaction) {
+    const s = transaction && transaction.status != null ? String(transaction.status).toLowerCase() : '';
+    return s === 'revoked';
+}
+
+/** "concern" vs "documents" for revoke reason label (Community Concern vs certificates/forms). */
+function getRevokeReasonSubjectWord(requestType) {
+    return requestType === 'concern' ? 'concern' : 'documents';
+}
+
+/** Second timeline row when revoked: same layout as Submitted (large icon + card), read-only reason. */
+function getRevokeReasonReadonlyBlock(transaction) {
+    const raw = transaction.reason_revoke != null ? String(transaction.reason_revoke).trim() : '';
+    const display = raw || 'Walang nailagay na dahilan.';
+    const safe = escapeHtmlTransactions(display).replace(/<\/textarea/gi, '&lt;/textarea');
+    const id = 'revoke-reason-' + String(transaction.id || 'tx').replace(/[^a-zA-Z0-9_-]/g, '');
+    const rt = transaction.request_type;
+    const revokedTitle =
+        rt === 'concern'
+            ? 'Report Revoked:'
+            : rt === 'emergency'
+              ? 'Emergency Revoked:'
+              : 'Request Revoked:';
+    const subjectWord = getRevokeReasonSubjectWord(rt);
+    const reasonLabel = `Rason kung bakit narevoked/nareject ang ${subjectWord} mo:`;
+    return `
+            <div class="timeline-item timeline-item-revoked">
+                <div class="timeline-icon">
+                    <i class="fas fa-ban" aria-hidden="true"></i>
+                </div>
+                <div class="timeline-content timeline-content-revoked-reason">
+                    <h5>${revokedTitle}</h5>
+                    <p class="transaction-revoke-desc">${escapeHtmlTransactions(reasonLabel)}</p>
+                    <label class="transaction-revoke-reason-sr-only" for="${id}">Dahilan ng revoke</label>
+                    <textarea id="${id}" class="transaction-revoke-reason-text" readonly rows="1" spellcheck="false">${safe}</textarea>
+                </div>
+            </div>`;
+}
+
+function getRevokedTimelineHtml(transaction) {
+    const rt = transaction.request_type;
+    let submitTitle = 'Request Submitted';
+    if (rt === 'concern') {
+        submitTitle = 'Report Submitted';
+    } else if (rt === 'emergency') {
+        submitTitle = 'Emergency Reported';
+    }
+    return `
+            <div class="timeline-item completed">
+                <div class="timeline-icon">
+                    <i class="fas fa-paper-plane"></i>
+                </div>
+                <div class="timeline-content">
+                    <h5>${submitTitle}</h5>
+                    <p>${formatDateTime(transaction.request_date)}</p>
+                </div>
+            </div>
+            ${getRevokeReasonReadonlyBlock(transaction)}
+        `;
 }
 
 // Get timeline based on request type
 function getTimelineForRequestType(transaction) {
     const requestType = transaction.request_type;
-    
+
+    if (transactionIsRevoked(transaction)) {
+        return getRevokedTimelineHtml(transaction);
+    }
+
     if (requestType === 'concern') {
         // For concerns, show simplified timeline without redundant Under Review
         return `
@@ -705,9 +1385,9 @@ function getTimelineForRequestType(transaction) {
                 </div>
             </div>
         `;
-    } else {
-        // For document requests, use completed
-        return `
+    }
+    // For document requests, use completed
+    return `
             <div class="timeline-item ${transaction.status === 'New' ? 'active' : 'completed'}">
                 <div class="timeline-icon">
                     <i class="fas fa-paper-plane"></i>
@@ -738,7 +1418,6 @@ function getTimelineForRequestType(transaction) {
                 </div>
             </div>
         `;
-    }
 }
 
 // Close modal
@@ -1175,17 +1854,23 @@ async function cancelTransaction(transactionId) {
 function updateStatistics() {
     // Count based on what's actually being displayed (after filtering)
     const searchTerm = document.getElementById('search-input').value.toLowerCase();
+    const pool = transactionsVisibleInUi();
     
     // Apply the same filtering logic as the display
-    const filteredTransactions = allTransactions.filter(transaction => {
+    const filteredTransactions = pool.filter(transaction => {
         // Filter by status - map statuses for display
         let displayStatus = transaction.status;
-        if (transaction.status === 'New') {
+        if (transaction.status === 'New' || transaction.status === 'new' || transaction.status === 'NEW') {
             displayStatus = 'new';
-        } else if (transaction.status === 'Processing') {
+        } else if (transaction.status === 'Processing' || transaction.status === 'processing' || transaction.status === 'PROCESSING') {
             displayStatus = 'processing';
-        } else if (transaction.status === 'Finished') {
+        } else if (transaction.status === 'Finished' || transaction.status === 'finished' || transaction.status === 'FINISHED' ||
+            transaction.status === 'Resolved' || transaction.status === 'resolved' || transaction.status === 'RESOLVED' ||
+            transaction.status === 'Completed' || transaction.status === 'completed' || transaction.status === 'COMPLETED') {
             displayStatus = 'finished';
+        } else if (transaction.status === 'Revoked' || transaction.status === 'revoked' || transaction.status === 'REVOKED' ||
+            transaction.status === 'Cancelled' || transaction.status === 'cancelled' || transaction.status === 'CANCELLED') {
+            displayStatus = 'revoked';
         }
         
         const statusMatch = currentFilter === 'all' || displayStatus === currentFilter;
@@ -1221,22 +1906,33 @@ function updateStatistics() {
         t.status === 'completed' ||
         t.status === 'COMPLETED'
     );
+    const revokedTransactions = filteredTransactions.filter(t =>
+        t.status === 'Revoked' ||
+        t.status === 'revoked' ||
+        t.status === 'REVOKED' ||
+        t.status === 'Cancelled' ||
+        t.status === 'cancelled' ||
+        t.status === 'CANCELLED'
+    );
     
     console.log('=== STATISTICS DEBUG (FILTERED) ===');
     console.log('Filtered transactions:', filteredTransactions.length);
     console.log('New transactions (filtered):', newTransactions.length);
     console.log('Processing transactions (filtered):', processingTransactions.length);
     console.log('Finished transactions (filtered):', finishedTransactions.length);
+    console.log('Revoked transactions (filtered):', revokedTransactions.length);
     
     const stats = {
         new: newTransactions.length,
         processing: processingTransactions.length,
-        finished: finishedTransactions.length
+        finished: finishedTransactions.length,
+        revoked: revokedTransactions.length
     };
     
     document.getElementById('pending-count').textContent = stats.new;
     document.getElementById('processing-count').textContent = stats.processing;
     document.getElementById('completed-count').textContent = stats.finished;
+    document.getElementById('revoked-count').textContent = stats.revoked;
 }
 
 // Show loading indicator

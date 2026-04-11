@@ -60,6 +60,7 @@ try {
     // Database connection - Load from centralized config
     require_once __DIR__ . '/env_loader.php';
     require_once __DIR__ . '/jobseeker_claimed_lib.php';
+    require_once __DIR__ . '/brgy_user_helpers.php';
     $pdo = getDBConnection();
     if (!$pdo) {
         echo json_encode(['success' => false, 'message' => 'Database connection failed']);
@@ -357,11 +358,14 @@ try {
         error_log("Emergency reports FLAGGED as active for email '{$email}'");
     }
 
+    $coeBrgyRoleIneligible = is_email_brgy_user($pdo, $email);
+
     error_log("Returning active restrictions: " . json_encode($active));
     echo json_encode([
         'success' => true,
         'active' => $active,
-        'certification_jobseeker_used' => $certificationJobSeekerUsed
+        'certification_jobseeker_used' => $certificationJobSeekerUsed,
+        'coe_brgy_role_ineligible' => $coeBrgyRoleIneligible
     ]);
 } catch (PDOException $e) {
     error_log('DB error in check_active_requests: ' . $e->getMessage());
@@ -529,61 +533,11 @@ function serveAnnouncementImage($imageId) {
         error_log("Last 20 bytes (hex): {$lastBytes}");
         error_log("Image MD5 hash: {$imageHash}");
         
-        // Detect image type from binary data signature (magic bytes)
-        $imageType = 'image/jpeg'; // Default fallback
-        
-        // JPEG: FF D8
-        if ($imageDataLength >= 2 && substr($imageData, 0, 2) === "\xFF\xD8") {
-            $imageType = 'image/jpeg';
-            error_log("Detected image type: JPEG");
+        require_once __DIR__ . '/announcement_image_helpers.php';
+
+        if (!announcement_try_output_image_from_column_value($imageData, $imageId, $announcementInfo)) {
+            serveDefaultImage();
         }
-        // PNG: 89 50 4E 47 0D 0A 1A 0A
-        elseif ($imageDataLength >= 8 && substr($imageData, 0, 8) === "\x89PNG\r\n\x1a\n") {
-            $imageType = 'image/png';
-            error_log("Detected image type: PNG");
-        }
-        // GIF: GIF87a or GIF89a
-        elseif ($imageDataLength >= 6 && (substr($imageData, 0, 6) === "GIF87a" || substr($imageData, 0, 6) === "GIF89a")) {
-            $imageType = 'image/gif';
-            error_log("Detected image type: GIF");
-        }
-        // WebP: RIFF....WEBP
-        elseif ($imageDataLength >= 12 && substr($imageData, 0, 4) === "RIFF" && substr($imageData, 8, 4) === "WEBP") {
-            $imageType = 'image/webp';
-            error_log("Detected image type: WebP");
-        }
-        else {
-            error_log("Warning: Could not detect image type, defaulting to JPEG. First bytes: " . bin2hex(substr($imageData, 0, min(12, $imageDataLength))));
-        }
-        
-        // Set proper headers for image BEFORE any output
-        // Note: Cache-Control headers were already set at the top to prevent wrong image caching
-        header('Content-Type: ' . $imageType);
-        header('Content-Length: ' . $imageDataLength);
-        header('Accept-Ranges: bytes');
-        
-        // Clear any remaining output buffers before sending image
-        while (ob_get_level()) {
-            ob_end_clean();
-        }
-        
-        // Output the binary data directly
-        // Use output buffering disabled to ensure clean binary output
-        if (ob_get_level()) {
-            ob_end_flush();
-        }
-        
-        echo $imageData;
-        
-        // Flush output immediately
-        if (ob_get_level()) {
-            ob_end_flush();
-        }
-        flush();
-        
-        // Log AFTER output (but this shouldn't affect the image)
-        error_log("Successfully served LONGBLOB image data for ID {$imageId} (Title: '{$announcementInfo['title']}'), type: {$imageType}, size: {$imageDataLength} bytes");
-        exit; // Important: exit after outputting image
         
     } catch (Exception $e) {
         error_log("Error serving image for ID {$imageId}: " . $e->getMessage());
@@ -614,13 +568,16 @@ function fetchAnnouncements() {
                 `id`, 
                 `title`, 
                 `created_at`, 
-                `description`
+                `description`,
+                COALESCE(CRC32(`image`), 0) AS `_img_crc`,
+                COALESCE(LENGTH(`image`), 0) AS `_img_len`
             FROM `announcements` 
             ORDER BY `created_at` DESC
         ");
         $stmt->execute();
         
         $announcements = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $listCacheBust = bin2hex(random_bytes(6));
         
         // Format the created_at for display and handle images from 'image' column
         foreach ($announcements as &$announcement) {
@@ -629,13 +586,14 @@ function fetchAnnouncements() {
             $announcement['formatted_time'] = $dateTime->format('h:i A');
             $announcement['days_ago'] = calculateDaysAgo($dateTime);
             
-            // CRITICAL: Always use the API endpoint to fetch image from 'image' column
-            // The serveAnnouncementImage function will check if image exists and serve it
-            // Use announcement ID + created_at timestamp to ensure unique cache-busting for each announcement
-            $cacheBuster = strtotime($announcement['created_at']) . '_' . $announcement['id'];
+            $imgCrc = (int)($announcement['_img_crc'] ?? 0);
+            $imgLen = (int)($announcement['_img_len'] ?? 0);
+            unset($announcement['_img_crc'], $announcement['_img_len']);
+            $cacheBuster = $imgCrc . '_' . $imgLen . '_' . $announcement['id'] . '_' . $listCacheBust;
             $announcement['image'] = 'php/check_active_requests.php?image_id=' . $announcement['id'] . '&t=' . $cacheBuster;
-            error_log("Announcement ID {$announcement['id']} (Title: {$announcement['title']}): Using API endpoint for image from 'image' column with cache buster: {$cacheBuster}");
+            error_log("Announcement ID {$announcement['id']} (Title: {$announcement['title']}): image URL cache buster: {$cacheBuster}");
         }
+        unset($announcement);
         
         return [
             'success' => true,

@@ -869,6 +869,17 @@ function seeAll() {
 // Global variable to store carousel state
 let announcementCarousel = null;
 
+/** Resolve relative API/asset paths against the current page URL (correct php/announcements.php + DB-served images). */
+function resolvePageAssetUrl(relativeOrAbsolute) {
+    if (!relativeOrAbsolute) return '';
+    if (/^https?:\/\//i.test(relativeOrAbsolute)) return relativeOrAbsolute;
+    try {
+        return new URL(relativeOrAbsolute, window.location.href).href;
+    } catch (e) {
+        return relativeOrAbsolute;
+    }
+}
+
 // Function to scroll announcements (called by navigation buttons)
 function scrollAnnouncements(direction) {
     if (!announcementCarousel) return;
@@ -887,7 +898,7 @@ function scrollAnnouncements(direction) {
 // Function to fetch announcements from the database
 async function fetchAnnouncements() {
     try {
-        const response = await fetch('php/announcements.php');
+        const response = await fetch(resolvePageAssetUrl('php/announcements.php'), { cache: 'no-store' });
         const data = await response.json();
         
         if (data.success) {
@@ -912,18 +923,27 @@ function truncateWords(text, maxWords) {
     return words.slice(0, maxWords).join(' ') + '...';
 }
 
+function cacheBustAnnouncementImgUrl(url, uniq) {
+    if (!url) return url;
+    const sep = url.indexOf('?') === -1 ? '?' : '&';
+    const suffix = uniq != null ? uniq : Date.now();
+    return url + sep + '_r=' + suffix;
+}
+
 // Function to create announcement card HTML for main UI
-function createMainUIAnnouncementCard(announcement) {
-    const imageSrc = announcement.image ? announcement.image : 'Images/brgyHall.jpg';
+function createMainUIAnnouncementCard(announcement, listIndex) {
+    const defaultImage = resolvePageAssetUrl('Images/brgyHall.jpg');
+    const baseSrc = announcement.image ? resolvePageAssetUrl(announcement.image) : defaultImage;
+    const imageSrc = cacheBustAnnouncementImgUrl(baseSrc, Date.now() + '_' + listIndex);
+    const defaultForError = cacheBustAnnouncementImgUrl(defaultImage, 'fb_' + listIndex);
     const imageAlt = announcement.title || 'Announcement';
     const formattedDate = announcement.formatted_date || '';
-    const defaultImage = 'Images/brgyHall.jpg';
     
     return `
         <div class="announcement-card">
             <div class="announcement-image-container">
                 <img src="${imageSrc}" alt="${imageAlt}" class="announcement-image" 
-                     onerror="this.onerror=null; this.src='${defaultImage}';">
+                     onerror="this.onerror=null; this.src='${defaultForError}';">
             </div>
             <div class="announcement-content-wrapper">
                 <h5 class="announcement-title-horizontal">${announcement.title}</h5>
@@ -944,6 +964,8 @@ function displayMainUIAnnouncements(announcements) {
         loadingIndicator.style.display = 'none';
     }
     
+    track.querySelectorAll('.announcement-card').forEach((el) => el.remove());
+
     if (announcements.length === 0) {
         // Show no announcements message
         if (noAnnouncements) {
@@ -956,7 +978,7 @@ function displayMainUIAnnouncements(announcements) {
         }
         
         // Create and insert announcement cards
-        const cardsHTML = announcements.map(announcement => createMainUIAnnouncementCard(announcement)).join('');
+        const cardsHTML = announcements.map((announcement, i) => createMainUIAnnouncementCard(announcement, i)).join('');
         track.insertAdjacentHTML('beforeend', cardsHTML);
         
         // Reinitialize scrolling after adding new cards
@@ -974,9 +996,187 @@ async function loadAnnouncements() {
     }
 }
 
+(function setupMainUiAnnouncementsAutoRefresh() {
+    let debounceTimer;
+    function scheduleRefresh() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            debounceTimer = null;
+            loadAnnouncements();
+        }, 400);
+    }
+    document.addEventListener('visibilitychange', function () {
+        if (!document.hidden) scheduleRefresh();
+    });
+    window.addEventListener('pageshow', function (e) {
+        if (e.persisted) scheduleRefresh();
+    });
+    setInterval(function () {
+        if (!document.hidden) loadAnnouncements();
+    }, 120000);
+})();
+
 function Documents() {
     navigateToRequestWithLoading('request.html');
 }
+
+function BarangayOrdinance() {
+    openBarangayOrdinanceGallery();
+}
+
+(function setupBarangayOrdinanceGallery() {
+    const overlay = document.getElementById('barangayOrdinanceGallery');
+    const backdrop = document.getElementById('barangayOrdinanceGalleryBackdrop');
+    const closeBtn = document.getElementById('barangayOrdinanceGalleryClose');
+    const track = document.getElementById('ordinanceCarouselTrack');
+    const viewport = document.getElementById('ordinanceCarouselViewport');
+    const dotsContainer = document.getElementById('ordinanceCarouselDots');
+    if (!overlay || !track || !viewport || !dotsContainer) {
+        return;
+    }
+
+    const slides = track.querySelectorAll('.ordinance-slide');
+    const total = slides.length;
+    let current = 0;
+    let autoTimer = null;
+    let keyHandler = null;
+    var closeGalleryTimer = null;
+
+    function buildDots() {
+        dotsContainer.innerHTML = '';
+        for (let i = 0; i < total; i++) {
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'ordinance-dot' + (i === 0 ? ' is-active' : '');
+            b.setAttribute('aria-label', 'Slide ' + (i + 1));
+            b.setAttribute('role', 'tab');
+            b.addEventListener('click', () => goToSlide(i));
+            dotsContainer.appendChild(b);
+        }
+    }
+
+    function updateDots() {
+        dotsContainer.querySelectorAll('.ordinance-dot').forEach((d, i) => {
+            d.classList.toggle('is-active', i === current);
+        });
+    }
+
+    function applyTransform() {
+        var pct = -(current * (100 / total));
+        track.style.transform = 'translateX(' + pct + '%)';
+    }
+
+    function goToSlide(index) {
+        if (total === 0) return;
+        current = ((index % total) + total) % total;
+        applyTransform();
+        updateDots();
+        slides.forEach((s, i) => s.classList.toggle('is-highlight', i === current));
+    }
+
+    function nextSlide() {
+        goToSlide(current + 1);
+    }
+
+    function prevSlide() {
+        goToSlide(current - 1);
+    }
+
+    function startAutoAdvance() {
+        stopAutoAdvance();
+        autoTimer = setInterval(nextSlide, 8000);
+    }
+
+    function stopAutoAdvance() {
+        if (autoTimer) {
+            clearInterval(autoTimer);
+            autoTimer = null;
+        }
+    }
+
+    function onKeyDown(e) {
+        if (!overlay.classList.contains('is-open')) return;
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            closeBarangayOrdinanceGallery();
+        } else if (e.key === 'ArrowRight') {
+            e.preventDefault();
+            nextSlide();
+            startAutoAdvance();
+        } else if (e.key === 'ArrowLeft') {
+            e.preventDefault();
+            prevSlide();
+            startAutoAdvance();
+        }
+    }
+
+    let touchStartX = null;
+
+    function onTouchStart(e) {
+        touchStartX = e.changedTouches[0].screenX;
+    }
+
+    function onTouchEnd(e) {
+        if (touchStartX == null) return;
+        const dx = e.changedTouches[0].screenX - touchStartX;
+        touchStartX = null;
+        if (Math.abs(dx) < 45) return;
+        if (dx < 0) nextSlide();
+        else prevSlide();
+        startAutoAdvance();
+    }
+
+    buildDots();
+    slides.forEach((s, i) => s.classList.toggle('is-highlight', i === 0));
+
+    window.openBarangayOrdinanceGallery = function openBarangayOrdinanceGallery() {
+        if (closeGalleryTimer) {
+            clearTimeout(closeGalleryTimer);
+            closeGalleryTimer = null;
+        }
+        overlay.classList.add('is-open');
+        overlay.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+        current = 0;
+        goToSlide(0);
+        startAutoAdvance();
+        keyHandler = onKeyDown;
+        document.addEventListener('keydown', keyHandler);
+        requestAnimationFrame(function () {
+            overlay.classList.add('is-visible');
+        });
+    };
+
+    window.closeBarangayOrdinanceGallery = function closeBarangayOrdinanceGallery() {
+        overlay.classList.remove('is-visible');
+        stopAutoAdvance();
+        if (keyHandler) {
+            document.removeEventListener('keydown', keyHandler);
+            keyHandler = null;
+        }
+        closeGalleryTimer = window.setTimeout(function () {
+            closeGalleryTimer = null;
+            if (overlay.classList.contains('is-open') && !overlay.classList.contains('is-visible')) {
+                overlay.classList.remove('is-open');
+                overlay.setAttribute('aria-hidden', 'true');
+                document.body.style.overflow = '';
+            }
+        }, 320);
+    };
+
+    function onBackdropClick(e) {
+        if (e.target === backdrop) {
+            closeBarangayOrdinanceGallery();
+        }
+    }
+
+    if (closeBtn) closeBtn.addEventListener('click', closeBarangayOrdinanceGallery);
+    if (backdrop) backdrop.addEventListener('click', onBackdropClick);
+    viewport.addEventListener('touchstart', onTouchStart, { passive: true });
+    viewport.addEventListener('touchend', onTouchEnd, { passive: true });
+    viewport.addEventListener('mouseenter', stopAutoAdvance);
+    viewport.addEventListener('mouseleave', startAutoAdvance);
+})();
 
 // Notification Dropdown Functions
 function toggleNotificationDropdown() {

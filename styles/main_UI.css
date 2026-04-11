@@ -835,24 +835,7 @@ body:has(.testing-mode-indicator) .main-container {
 .service-icon.complaints { background: #fd7e14; }
 .service-icon.hotline { background: #e83e8c; }
 .service-icon.transactions { background: #28a745; }
-
-.service-item[data-service="transactions"] {
-    grid-column: 1 / -1;
-    justify-self: center;
-    padding: 4px 2px;
-    background: #ffffff;
-    width: 100%;
-    max-width: calc(50% - 1.5px);
-    margin-bottom: 0;
-    aspect-ratio: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 0;
-    min-width: 0;
-    border: 1px solid #f0f0f0;
-}
+.service-icon.ordinance { background: #6f42c1; }
 
 .service-label {
     font-size: 9px;
@@ -2802,14 +2785,6 @@ body:has(.testing-mode-indicator) .main-container {
         font-size: 10px;
     }
     
-    .service-item[data-service="transactions"] {
-        padding: 6px 3px;
-        max-width: calc(50% - 2px);
-        width: calc(50% - 2px);
-        min-height: 0;
-        aspect-ratio: 1;
-    }
-    
     .banner-right {
         position: absolute;
         width: 45%;
@@ -2931,16 +2906,6 @@ body:has(.testing-mode-indicator) .main-container {
         gap: 1px;
     }
     
-    .service-item[data-service="transactions"] {
-        padding: 2px 1px;
-        margin-bottom: 0;
-        max-width: calc(50% - 1px);
-        background: white;
-        aspect-ratio: 1;
-        width: 100%;
-        min-height: 0;
-    }
-    
     .service-icon {
         width: 26px;
         height: 26px;
@@ -2949,7 +2914,7 @@ body:has(.testing-mode-indicator) .main-container {
         border-radius: 5px;
         margin: 0 0 2px 0;
     }
-    
+
     .service-label {
         font-size: 8px;
     }
@@ -3017,16 +2982,6 @@ body:has(.testing-mode-indicator) .main-container {
         padding: 8px 6px;
         border-radius: 8px;
         aspect-ratio: 1;
-        min-height: 0;
-    }
-    
-    .service-item[data-service="transactions"] {
-        padding: 8px 6px;
-        margin-bottom: 0;
-        max-width: calc(50% - 3px);
-        background: white;
-        aspect-ratio: 1;
-        width: 100%;
         min-height: 0;
     }
     
@@ -3192,11 +3147,6 @@ body:has(.testing-mode-indicator) .main-container {
         font-size: 7px;
     }
     
-    .service-item[data-service="transactions"] {
-        padding: 4px 2px;
-        max-width: calc(50% - 1px);
-    }
-    
     .banner-right {
         position: relative;
         width: 100%;
@@ -3253,16 +3203,6 @@ body:has(.testing-mode-indicator) .main-container {
         padding: 8px 6px;
         border-radius: 8px;
         aspect-ratio: 1;
-        min-height: 0;
-    }
-    
-    .service-item[data-service="transactions"] {
-        padding: 8px 6px;
-        margin-bottom: 0;
-        max-width: calc(50% - 2.5px);
-        background: white;
-        aspect-ratio: 1;
-        width: 100%;
         min-height: 0;
     }
     
@@ -3521,16 +3461,6 @@ body:has(.testing-mode-indicator) .main-container {
         aspect-ratio: 1;
         min-height: 0;
         gap: 4px;
-    }
-    
-    .service-item[data-service="transactions"] {
-        padding: 6px 3px;
-        margin-bottom: 0;
-        max-width: calc(50% - 2px);
-        width: calc(50% - 2px);
-        background: white;
-        aspect-ratio: 1;
-        min-height: 0;
     }
     
     .service-icon {
@@ -4236,16 +4166,6 @@ body:has(.testing-mode-indicator) .main-container {
         padding: 6px 4px;
         border-radius: 6px;
         aspect-ratio: 1;
-        min-height: 0;
-    }
-    
-    .service-item[data-service="transactions"] {
-        padding: 6px 4px;
-        margin-bottom: 0;
-        max-width: calc(50% - 2.5px);
-        background: white;
-        aspect-ratio: 1;
-        width: 100%;
         min-height: 0;
     }
     
@@ -5329,4 +5249,257 @@ html {
     object-position: center center !important;
     margin-left: 0 !important;
     display: block !important;
+}
+
+/* Barangay Ordinance — DILG infographic gallery */
+.ordinance-gallery-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10050;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 0;
+    pointer-events: none;
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.32s ease, visibility 0.32s ease;
+}
+
+.ordinance-gallery-overlay.is-open {
+    pointer-events: auto;
+}
+
+.ordinance-gallery-overlay.is-visible {
+    visibility: visible;
+    opacity: 1;
+}
+
+.ordinance-gallery-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 35, 60, 0.72);
+    backdrop-filter: blur(4px);
+}
+
+.ordinance-gallery-panel {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 520px;
+    height: min(92dvh, 900px);
+    max-height: min(92dvh, 900px);
+    margin: 0 auto;
+    background: linear-gradient(165deg, #797c80 0%, #ffffff 45%, #687d90 100%);
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.35);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transform: translateY(100%);
+    transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ordinance-gallery-overlay.is-visible .ordinance-gallery-panel {
+    transform: translateY(0);
+}
+
+.ordinance-gallery-header {
+    position: relative;
+    padding: 14px 44px 10px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    flex-shrink: 0;
+}
+
+.ordinance-gallery-header h2 {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.02em;
+}
+
+.ordinance-gallery-sub {
+    margin: 4px 0 0;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.75);
+    line-height: 1.35;
+}
+
+.ordinance-gallery-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 50%;
+    background: rgb(65 63 63 / 12%);
+    color: #000000;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.ordinance-gallery-close:hover {
+    background: rgba(255, 255, 255, 0.22);
+}
+
+.ordinance-gallery-close:active {
+    transform: scale(0.94);
+}
+
+.ordinance-gallery-body {
+    position: relative;
+    padding: 10px 12px 16px;
+    overflow: hidden;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.ordinance-carousel-shell {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.ordinance-carousel-viewport {
+    position: relative;
+    width: 100%;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    touch-action: pan-x pinch-zoom;
+}
+
+/* Track = 4× viewport width; each slide = 25% → exactly one slide visible */
+.ordinance-carousel-track {
+    display: flex;
+    width: 400%;
+    height: 100%;
+    transition: transform 0.48s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform;
+}
+
+.ordinance-slide {
+    flex: 0 0 25%;
+    width: 25%;
+    max-width: 25%;
+    min-width: 25%;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0 6px;
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.ordinance-slide.is-highlight img {
+    animation: ordinancePulse 0.6s ease;
+}
+
+@keyframes ordinancePulse {
+    0% {
+        transform: scale(1);
+    }
+    40% {
+        transform: scale(1.01);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.ordinance-slide img {
+    display: block;
+    width: auto;
+    max-width: 100%;
+    height: auto;
+    max-height: calc(100% - 2.75rem);
+    object-fit: contain;
+    object-position: center center;
+    border-radius: 8px;
+    user-select: none;
+    pointer-events: none;
+    flex-shrink: 1;
+}
+
+.ordinance-slide figcaption {
+    flex-shrink: 0;
+    margin-top: 8px;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.82);
+    text-align: center;
+    line-height: 1.3;
+    max-width: 100%;
+}
+
+.ordinance-carousel-dots {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.ordinance-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: none;
+    padding: 0;
+    background: rgba(255, 255, 255, 0.28);
+    cursor: pointer;
+    transition: transform 0.25s ease, background 0.25s ease, width 0.25s ease;
+}
+
+.ordinance-dot.is-active {
+    background: #ffc107;
+    transform: scale(1.15);
+    width: 22px;
+    border-radius: 6px;
+}
+
+.ordinance-gallery-cta {
+    display: block;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: #7ecbff;
+    text-decoration: none;
+    padding: 6px 8px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.06);
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.ordinance-gallery-cta:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+}
+
+@media screen and (min-width: 480px) {
+    .ordinance-gallery-overlay {
+        align-items: center;
+        padding: 16px;
+    }
+
+    .ordinance-gallery-panel {
+        border-radius: 16px;
+        height: min(90dvh, 880px);
+        max-height: min(90dvh, 880px);
+    }
+
 }

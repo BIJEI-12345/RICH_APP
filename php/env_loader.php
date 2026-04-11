@@ -195,8 +195,12 @@ function getDBConnection() {
     }
     
     try {
-        // Set connection timeout for remote databases (AWS RDS)
-        $dsn = "mysql:host=$host;dbname=$db;charset=utf8mb4";
+        // Set connection timeout for remote databases (AWS RDS); optional DB_PORT in .env (default 3306)
+        $port = $_ENV['DB_PORT'] ?? getenv('DB_PORT');
+        if ($port === false || $port === null || $port === '') {
+            $port = '3306';
+        }
+        $dsn = "mysql:host=$host;port=$port;dbname=$db;charset=utf8mb4";
         $options = [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_TIMEOUT => 10, // 10 second timeout

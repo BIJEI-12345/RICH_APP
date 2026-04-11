@@ -16,6 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 require_once __DIR__ . '/env_loader.php';
 require_once __DIR__ . '/jobseeker_claimed_lib.php';
 require_once __DIR__ . '/census_address_helpers.php';
+require_once __DIR__ . '/brgy_user_helpers.php';
 
 // Validate that requesting name matches census_form (head: census_id = your resident id; members: same household shares head's census_id on each row).
 function validateRequesterAgainstCensus($email, $firstName, $lastName, $address = '') {
@@ -1085,7 +1086,13 @@ function insertCoeForm($data) {
         
         // Get email from data
         $email = $data['email'] ?? null;
-        
+        if ($email && is_email_brgy_user($pdo, $email)) {
+            return [
+                'success' => false,
+                'message' => 'You are ineligible to receive a COE because of your role in the barangay.'
+            ];
+        }
+
         // Check if email column exists
         $checkColumn = $pdo->query("SHOW COLUMNS FROM coe_forms LIKE 'email'");
         $emailColumnExists = $checkColumn->rowCount() > 0;

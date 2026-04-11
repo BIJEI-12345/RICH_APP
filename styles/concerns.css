@@ -180,7 +180,8 @@ body {
 
 /* Required indicator for labels with required inputs */
 .form-group:has(input[required]) > label::after,
-.form-group:has(textarea[required]) > label::after {
+.form-group:has(textarea[required]) > label::after,
+.form-group:has(select[required]) > label::after {
     content: ' *';
     color: #dc3545;
     font-weight: 700;
@@ -197,7 +198,8 @@ body {
 
 /* Optional indicator for labels with optional fields */
 .form-group:has(input:not([required])) > label.optional::after,
-.form-group:has(textarea:not([required])) > label.optional::after {
+.form-group:has(textarea:not([required])) > label.optional::after,
+.form-group:has(select:not([required])) > label.optional::after {
     content: ' (optional)';
     color: #6c757d;
     font-weight: 400;
@@ -206,7 +208,8 @@ body {
 }
 
 .form-group input, 
-.form-group textarea { 
+.form-group textarea,
+.form-group select { 
     padding:.8rem; 
     border:2px solid #e9ecef; 
     border-radius:8px; 
@@ -217,12 +220,14 @@ body {
 
 /* Required input styling */
 .form-group input[required], 
-.form-group textarea[required] { 
+.form-group textarea[required],
+.form-group select[required] { 
     border-left: 3px solid #dc3545;
 }
 
 .form-group input[required]:focus, 
-.form-group textarea[required]:focus { 
+.form-group textarea[required]:focus,
+.form-group select[required]:focus { 
     outline:none; 
     border-color:#667eea; 
     border-left-color: #dc3545;
@@ -231,12 +236,14 @@ body {
 
 /* Optional input styling */
 .form-group input:not([required]):not([readonly]), 
-.form-group textarea:not([required]) { 
+.form-group textarea:not([required]),
+.form-group select:not([required]) { 
     border-left: 3px solid #6c757d;
 }
 
 .form-group input:not([required]):focus, 
-.form-group textarea:not([required]):focus { 
+.form-group textarea:not([required]):focus,
+.form-group select:not([required]):focus { 
     outline:none; 
     border-color:#667eea; 
     border-left-color: #6c757d;
@@ -438,6 +445,13 @@ body {
     font-weight:700; 
     cursor:pointer; 
     box-shadow:0 6px 16px rgba(102,126,234,.35); 
+}
+
+/* At submission limit: looks “soft disabled” pero clickable para sa SweetAlert */
+.submit-btn.disabled-doc[data-at-concern-limit="1"] {
+    opacity: 0.88;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.25);
 }
 
 /* Display card */

@@ -167,6 +167,12 @@
                 </div>
                 <p class="service-label">Transactions</p>
             </div>
+            <div class="service-item" data-service="barangay-ordinance" onclick="BarangayOrdinance()">
+                <div class="service-icon ordinance">
+                    <i class="fas fa-gavel"></i>
+                </div>
+                <p class="service-label">Barangay Ordinance</p>
+            </div>
         </section>
         </div>
 
@@ -600,6 +606,46 @@
         </div>
     </div>
 
+    <!-- Barangay Ordinance: DILG infographic gallery -->
+    <div class="ordinance-gallery-overlay" id="barangayOrdinanceGallery" aria-hidden="true">
+        <div class="ordinance-gallery-backdrop" id="barangayOrdinanceGalleryBackdrop"></div>
+        <div class="ordinance-gallery-panel" role="dialog" aria-modal="true" aria-labelledby="ordinanceGalleryTitle">
+            <div class="ordinance-gallery-header">
+                <h2 id="ordinanceGalleryTitle">Barangay Ordinance</h2>
+                <p class="ordinance-gallery-sub">Impormasyon mula sa DILG (mag-swipe o pindutin ang mga tuldok)</p>
+                <button type="button" class="ordinance-gallery-close" id="barangayOrdinanceGalleryClose" aria-label="Isara">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="ordinance-gallery-body">
+                <div class="ordinance-carousel-shell">
+                    <div class="ordinance-carousel-viewport" id="ordinanceCarouselViewport">
+                        <div class="ordinance-carousel-track" id="ordinanceCarouselTrack">
+                            <figure class="ordinance-slide">
+                                <img src="Images/barangay_ordinance/01-public-conduct.png" alt="May batas na sa public disturbance, indecency, at disorderly conduct — DILG">
+                                <figcaption>Public conduct &amp; umiiral na batas</figcaption>
+                            </figure>
+                            <figure class="ordinance-slide">
+                                <img src="Images/barangay_ordinance/02-lgu-ordinances.png" alt="Local Government Ordinances LGUs — DILG">
+                                <figcaption>Mga parusa sa ilalim ng LGU ordinances</figcaption>
+                            </figure>
+                            <figure class="ordinance-slide">
+                                <img src="Images/barangay_ordinance/03-revised-penal-code.png" alt="Revised Penal Code — piling artikulo — DILG">
+                                <figcaption>Revised Penal Code — piling artikulo</figcaption>
+                            </figure>
+                            <figure class="ordinance-slide">
+                                <img src="Images/barangay_ordinance/04-enforcement.png" alt="Karagdagang enforcement measures — DILG">
+                                <figcaption>Karagdagang enforcement measures</figcaption>
+                            </figure>
+                        </div>
+                    </div>
+                </div>
+                <div class="ordinance-carousel-dots" id="ordinanceCarouselDots" role="tablist" aria-label="Gallery slides"></div>
+                <a href="request.html?open=barangay-ordinance" class="ordinance-gallery-cta">Mag-request ng kaugnay na dokumento</a>
+            </div>
+        </div>
+    </div>
+
     <!-- Census: data privacy consent (must agree before submit runs) -->
     <div class="modal-overlay census-consent-overlay" id="censusConsentOverlay" aria-hidden="true">
         <div class="modal-container census-consent-modal" role="dialog" aria-modal="true" aria-labelledby="censusConsentTitle">
@@ -637,6 +683,6 @@
 
     <!-- Shared helpers (includes full-screen loading circle) -->
     <script src="js/request.js?v=20251004113000"></script>
-    <script src="js/main_UI.js?v=20251004113000"></script>
+    <script src="js/main_UI.js?v=20260409120000"></script>
 </body>
 </html> 

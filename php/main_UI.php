@@ -1,4 +1,4 @@
-<?php
+ <?php
 // Get user data endpoint
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');

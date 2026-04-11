@@ -698,6 +698,17 @@ document.addEventListener('DOMContentLoaded', async function() {
     } catch (error) {
         console.error('Error applying restrictions:', error);
     } finally {
+        try {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('open') === 'barangay-ordinance') {
+                const btn = document.querySelector('.document-btn[data-document="barangay-ordinance"]');
+                if (btn && !btn.classList.contains('disabled-doc')) {
+                    btn.click();
+                }
+            }
+        } catch (e) {
+            console.error('open from query failed', e);
+        }
         // Hide loading after everything is loaded
         hideFullScreenLoading();
     }
@@ -776,6 +787,17 @@ const documentTypes = {
             'Proof of residency',
             'Purpose of clearance',
             'No pending cases affidavit'
+        ]
+    },
+    'barangay-ordinance': {
+        title: 'Barangay Ordinance Request',
+        description: 'Request processed through the certification form (specify ordinance details in purpose)',
+        icon: 'fas fa-gavel',
+        price: 100,
+        requirements: [
+            'Valid government-issued ID',
+            'Proof of residency',
+            'Clear purpose for the ordinance request'
         ]
     }
 };
@@ -1570,17 +1592,31 @@ function setupSidebarNavigation() {
                 e.preventDefault();
                 e.stopPropagation();
                 e.stopImmediatePropagation();
+                const brgyCoe = this.getAttribute('data-coe-brgy-ineligible') === '1';
                 if (typeof Swal !== 'undefined') {
-                    Swal.fire({
-                        icon: 'info',
-                        title: 'Request in Progress',
-                        text: 'Unable to request while your request is still processing. Please wait until it\'s finished.',
-                        confirmButtonText: 'OK',
-                        confirmButtonColor: '#3085d6',
-                        customClass: {
-                            popup: 'swal2-blocked-request-popup'
-                        }
-                    });
+                    if (brgyCoe) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Certificate of Employment',
+                            text: COE_BRGY_INELIGIBLE_MODAL_TEXT,
+                            confirmButtonText: 'OK',
+                            confirmButtonColor: '#3085d6',
+                            customClass: {
+                                popup: 'swal2-blocked-request-popup'
+                            }
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'info',
+                            title: 'Request in Progress',
+                            text: 'Unable to request while your request is still processing. Please wait until it\'s finished.',
+                            confirmButtonText: 'OK',
+                            confirmButtonColor: '#3085d6',
+                            customClass: {
+                                popup: 'swal2-blocked-request-popup'
+                            }
+                        });
+                    }
                 } else {
                     const reason = this.getAttribute('data-disabled-reason') || 'Your request is in process. Wait to finish to submit again.';
                     showMessage(reason, 'error');
@@ -1629,6 +1665,8 @@ function setupSidebarNavigation() {
                     showIndigencyForm();
                 } else if (documentType === 'clearance-form') {
                     showClearanceForm();
+                } else if (documentType === 'barangay-ordinance') {
+                    showBarangayOrdinanceForm();
                 } else {
                     hideAllForms();
                     showEmblemSection();
@@ -1761,6 +1799,11 @@ function showCertificationForm() {
     }
 }
 
+// Barangay Ordinance uses the certification workflow and the same active-request rules
+function showBarangayOrdinanceForm() {
+    showCertificationForm();
+}
+
 // Show COE Form
 function showCoeForm() {
     const emblemSection = document.getElementById('emblemSection');
@@ -1783,7 +1826,11 @@ function showCoeForm() {
     if (typeof shouldBlockForm === 'function') {
         const shouldBlock = shouldBlockForm('certification-employment');
         if (shouldBlock) {
-            showMessage('Your COE request is in process. Wait to finish to submit again.', 'error');
+            if (window.coeBrgyRoleIneligible) {
+                showMessage(COE_BRGY_INELIGIBLE_MODAL_TEXT, 'error');
+            } else {
+                showMessage('Your COE request is in process. Wait to finish to submit again.', 'error');
+            }
             return;
         }
     }
@@ -6509,24 +6556,36 @@ function applyCertificationJobSeekerOptionState() {
     }
 }
 
+// COE blocked for barangay officials (email in brgy_users)
+const COE_BRGY_INELIGIBLE_MODAL_TEXT = "I'm Sorry, but you are ineligible to receive a COE because of your role in the barangay.";
+
 // Active request restrictions
 async function applyActiveRequestRestrictions() {
     try {
         const email = sessionStorage.getItem('user_email') || localStorage.getItem('user_email');
-        if (!email) return;
+        if (!email) {
+            window.coeBrgyRoleIneligible = false;
+            const noteEl = document.getElementById('coeBrgyIneligibleNote');
+            if (noteEl) noteEl.hidden = true;
+            return;
+        }
         const res = await fetch('php/check_active_requests.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email })
         });
         const data = await res.json();
-        if (!data.success) return;
+        if (!data.success) {
+            window.coeBrgyRoleIneligible = false;
+            return;
+        }
         const active = data.active || {};
         console.log('Fetched active restrictions:', active);
         
         // Store active restrictions globally
         window.activeRestrictions = active;
         window.certificationJobSeekerUsed = !!data.certification_jobseeker_used;
+        window.coeBrgyRoleIneligible = !!data.coe_brgy_role_ineligible;
         console.log('Stored window.activeRestrictions:', window.activeRestrictions);
         applyCertificationJobSeekerOptionState();
         
@@ -6534,6 +6593,7 @@ async function applyActiveRequestRestrictions() {
         const map = {
             'barangay-id': 'barangay_id',
             'certification-form': 'certification',
+            'barangay-ordinance': 'certification',
             'certification-employment': 'coe',
             'indigency-form': 'indigency',
             'clearance-form': 'clearance'
@@ -6544,9 +6604,16 @@ async function applyActiveRequestRestrictions() {
             const key = map[type];
             if (!key) return;
             const isActive = !!(active[key] && active[key].active);
-            if (isActive) {
+            const isCoeBrgyBlock = type === 'certification-employment' && window.coeBrgyRoleIneligible;
+            if (isActive || isCoeBrgyBlock) {
                 btn.classList.add('disabled-doc');
-                btn.setAttribute('data-disabled-reason', 'Your request is in process. Wait to finish to submit again.');
+                if (isActive) {
+                    btn.removeAttribute('data-coe-brgy-ineligible');
+                    btn.setAttribute('data-disabled-reason', 'Your request is in process. Wait to finish to submit again.');
+                } else {
+                    btn.setAttribute('data-coe-brgy-ineligible', '1');
+                    btn.setAttribute('data-disabled-reason', COE_BRGY_INELIGIBLE_MODAL_TEXT);
+                }
                 // Don't set pointerEvents to 'none' - we want clicks to work to show SweetAlert
                 btn.style.opacity = '0.6';
                 btn.style.cursor = 'not-allowed';
@@ -6555,6 +6622,7 @@ async function applyActiveRequestRestrictions() {
                 btn.style.color = '#c0392b';
             } else {
                 btn.classList.remove('disabled-doc');
+                btn.removeAttribute('data-coe-brgy-ineligible');
                 btn.removeAttribute('data-disabled-reason');
                 btn.style.pointerEvents = ''; // Re-enable clicks
                 btn.style.opacity = '';
@@ -6564,6 +6632,14 @@ async function applyActiveRequestRestrictions() {
                 btn.style.color = '';
             }
         });
+        const noteEl = document.getElementById('coeBrgyIneligibleNote');
+        if (noteEl) {
+            if (window.coeBrgyRoleIneligible) {
+                noteEl.hidden = false;
+            } else {
+                noteEl.hidden = true;
+            }
+        }
         // Attach one-time click handler
         attachDisabledDocHandlers();
     } catch (e) {
@@ -6573,11 +6649,15 @@ async function applyActiveRequestRestrictions() {
 
 // Check if form should be blocked
 function shouldBlockForm(formType) {
+    if (formType === 'certification-employment' && window.coeBrgyRoleIneligible) {
+        return true;
+    }
     const active = window.activeRestrictions || {};
     console.log('shouldBlockForm called for:', formType, 'activeRestrictions:', active);
     const map = {
         'barangay-id': 'barangay_id',
         'certification-form': 'certification',
+        'barangay-ordinance': 'certification',
         'certification-employment': 'coe',
         'indigency-form': 'indigency',
         'clearance-form': 'clearance'
@@ -6604,17 +6684,31 @@ function attachDisabledDocHandlers() {
             e.preventDefault();
             e.stopPropagation();
             e.stopImmediatePropagation();
+            const brgyCoe = btn.getAttribute('data-coe-brgy-ineligible') === '1';
             if (typeof Swal !== 'undefined') {
-                Swal.fire({
-                    icon: 'info',
-                    title: 'Request in Progress',
-                    text: 'Unable to request while your request is still processing. Please wait until it\'s finished.',
-                    confirmButtonText: 'OK',
-                    confirmButtonColor: '#3085d6',
-                    customClass: {
-                        popup: 'swal2-blocked-request-popup'
-                    }
-                });
+                if (brgyCoe) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Certificate of Employment',
+                        text: COE_BRGY_INELIGIBLE_MODAL_TEXT,
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: '#3085d6',
+                        customClass: {
+                            popup: 'swal2-blocked-request-popup'
+                        }
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'Request in Progress',
+                        text: 'Unable to request while your request is still processing. Please wait until it\'s finished.',
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: '#3085d6',
+                        customClass: {
+                            popup: 'swal2-blocked-request-popup'
+                        }
+                    });
+                }
             } else {
                 const reason = btn.getAttribute('data-disabled-reason') || 'Your request is in process. Please wait to finish before submitting again.';
                 showMessage(reason, 'error');

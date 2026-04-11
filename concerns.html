@@ -58,8 +58,39 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="cfLocation">Location:</label>
-                        <input type="text" id="cfLocation" name="cfLocation" placeholder="Enter location" required>
+                        <label for="cfLocation">Sitio:</label>
+                        <select id="cfLocation" name="cfLocation" required>
+                            <option value="" selected>Select Sitio</option>
+                            <option value="AHUNIN">AHUNIN</option>
+                            <option value="BALTAZAR">BALTAZAR</option>
+                            <option value="BIAK NA BATO">BIAK NA BATO</option>
+                            <option value="CALLE ONSE/SAMPAGUITA">CALLE ONSE/SAMPAGUITA</option>
+                            <option value="UPPER">UPPER</option>
+                            <option value="COC">COC</option>
+                            <option value="CRUSHER HIGHWAY">CRUSHER HIGHWAY</option>
+                            <option value="INNER CRUSHER">INNER CRUSHER</option>
+                            <option value="LOOBAN 1">LOOBAN 1</option>
+                            <option value="LOOBAN 2">LOOBAN 2</option>
+                            <option value="NABUS">NABUS</option>
+                            <option value="OLD BARRIO NPC">OLD BARRIO NPC</option>
+                            <option value="OLD BARRIO 2">OLD BARRIO 2</option>
+                            <option value="OLD BARRIO EXT">OLD BARRIO EXT</option>
+                            <option value="POBLACION">POBLACION</option>
+                            <option value="KADAYUNAN">KADAYUNAN</option>
+                            <option value="MANGGAHAN">MANGGAHAN</option>
+                            <option value="RIVERSIDE">RIVERSIDE</option>
+                            <option value="SETTLING">SETTLING</option>
+                            <option value="SPAR">SPAR</option>
+                            <option value="ALINSANGAN">ALINSANGAN</option>
+                            <option value="RCD">RCD</option>
+                            <option value="BRIA PHASE 1">BRIA PHASE 1</option>
+                            <option value="BRIA PHASE 2">BRIA PHASE 2</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="cfLandmark">Landmark:</label>
+                        <input type="text" id="cfLandmark" name="cfLandmark" placeholder="Hal. Barangay Hall, Covered Court" required>
                     </div>
 
                     <div class="form-group">
@@ -94,8 +125,12 @@
                     <span class="value" id="cfDisplayDateTime">-</span>
                 </div>
                 <div class="display-row">
-                    <span class="label">Location:</span>
+                    <span class="label">Sitio:</span>
                     <span class="value" id="cfDisplayLocation">-</span>
+                </div>
+                <div class="display-row">
+                    <span class="label">Landmark:</span>
+                    <span class="value" id="cfDisplayLandmark">-</span>
                 </div>
                 <div class="display-column">
                     <span class="label">Statement:</span>

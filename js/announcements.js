@@ -30,6 +30,49 @@ function formatDaysAgo(daysAgoStr) {
     return daysAgoStr;
 }
 
+/** Resolve relative API/image paths against the current page URL (fixes broken <img> when path is ambiguous). */
+function resolvePageAssetUrl(relativeOrAbsolute) {
+    if (!relativeOrAbsolute) return '';
+    if (/^https?:\/\//i.test(relativeOrAbsolute)) return relativeOrAbsolute;
+    try {
+        return new URL(relativeOrAbsolute, window.location.href).href;
+    } catch (e) {
+        return relativeOrAbsolute;
+    }
+}
+
+/** Append a cache-busting query param so <img> refetches when the base URL matches a previous announcement. */
+function cacheBustUrl(url, uniq) {
+    if (!url) return url;
+    const sep = url.indexOf('?') === -1 ? '?' : '&';
+    const suffix = uniq != null ? uniq : Date.now();
+    return url + sep + '_r=' + suffix;
+}
+
+/** True if URL is the static fallback banner (list img may use this after onerror). */
+function isDefaultBrgyHallBannerUrl(url) {
+    if (!url) return true;
+    try {
+        const u = new URL(url, window.location.href);
+        return /brgyHall\.jpe?g$/i.test(u.pathname);
+    } catch (e) {
+        return /brgyHall\.jpe?g/i.test(String(url));
+    }
+}
+
+/** Prefer the image URL already loaded on the list card so detail banner matches the slide thumbnail. */
+function mergeAnnouncementImageFromSlideCard(announcement, cardEl) {
+    const thumb = cardEl && cardEl.querySelector('.announcement-image');
+    if (!thumb) return announcement;
+    const fromSlide = (thumb.currentSrc || thumb.src || thumb.getAttribute('src') || '').trim();
+    if (!fromSlide) return announcement;
+    // Do not replace API image URL with the placeholder after a failed thumbnail load
+    if (isDefaultBrgyHallBannerUrl(fromSlide)) {
+        return announcement;
+    }
+    return Object.assign({}, announcement, { image: fromSlide });
+}
+
 // Function to go back to main page
 function goBack() {
     window.location.href = 'main_UI.html';
@@ -38,7 +81,7 @@ function goBack() {
 // Function to fetch announcements from the database
 async function fetchAnnouncements() {
     try {
-        const response = await fetch('php/announcements.php');
+        const response = await fetch('php/announcements.php', { cache: 'no-store' });
         const data = await response.json();
         
         if (data.success) {
@@ -54,8 +97,11 @@ async function fetchAnnouncements() {
 }
 
 // Function to create announcement card HTML
-function createAnnouncementCard(announcement) {
-    const imageSrc = announcement.image ? announcement.image : 'Images/brgyHall.jpg';
+function createAnnouncementCard(announcement, listIndex) {
+    const defaultImage = resolvePageAssetUrl('Images/brgyHall.jpg');
+    const baseSrc = announcement.image ? resolvePageAssetUrl(announcement.image) : defaultImage;
+    const imageSrc = cacheBustUrl(baseSrc, Date.now() + '_' + listIndex);
+    const defaultForError = cacheBustUrl(defaultImage, 'fallback_' + listIndex);
     const imageAlt = announcement.title || 'Announcement';
     
     // Determine category class based on announcement data
@@ -129,13 +175,11 @@ function createAnnouncementCard(announcement) {
         timestamp = formatDaysAgo(announcement.days_ago || '1hr');
     }
     
-    const defaultImage = 'Images/brgyHall.jpg';
-    
     return `
         <div class="full-announcement-card">
             <div class="announcement-image-container">
                 <img src="${imageSrc}" alt="${imageAlt}" class="announcement-image"
-                     onerror="this.onerror=null; this.src='${defaultImage}';">
+                     onerror="this.onerror=null; this.src='${defaultForError.replace(/'/g, "\\'")}';">
             </div>
             <div class="announcement-content">
                 <h3 class="announcement-title">${announcement.title}</h3>
@@ -158,6 +202,8 @@ function displayAnnouncements(announcements) {
     // Hide loading indicator
     loadingIndicator.style.display = 'none';
     
+    container.querySelectorAll('.full-announcement-card').forEach((el) => el.remove());
+
     if (announcements.length === 0) {
         // Show no announcements message
         noAnnouncements.style.display = 'block';
@@ -166,7 +212,7 @@ function displayAnnouncements(announcements) {
         noAnnouncements.style.display = 'none';
         
         // Create and insert announcement cards
-        const cardsHTML = announcements.map(announcement => createAnnouncementCard(announcement)).join('');
+        const cardsHTML = announcements.map((announcement, i) => createAnnouncementCard(announcement, i)).join('');
         container.insertAdjacentHTML('beforeend', cardsHTML);
         
         // Add click event listeners to announcement cards
@@ -178,9 +224,43 @@ function displayAnnouncements(announcements) {
             card.addEventListener('click', function(e) {
                 const announcementIndex = Array.from(cards).indexOf(card);
                 currentDetailIndex = announcementIndex;
-                showAnnouncementDetail(announcements[announcementIndex]);
+                const ann = mergeAnnouncementImageFromSlideCard(announcements[announcementIndex], card);
+                allAnnouncements[announcementIndex] = ann;
+                showAnnouncementDetail(ann);
             });
         });
+    }
+}
+
+function isAnnouncementDetailOpen() {
+    const el = document.getElementById('announcement-detail-section');
+    return el && window.getComputedStyle(el).display !== 'none';
+}
+
+/** Re-fetch from server so admin edits (titles, images) show for residents without a full page reload. */
+async function refreshAnnouncementsFromServer() {
+    try {
+        const fresh = await fetchAnnouncements();
+        const inDetail = isAnnouncementDetailOpen();
+        const prevIndex = currentDetailIndex;
+
+        displayAnnouncements(fresh);
+
+        if (inDetail) {
+            document.getElementById('announcements-list-section').style.display = 'none';
+            document.getElementById('announcement-detail-section').style.display = 'block';
+            document.body.classList.add('detail-view');
+            if (fresh.length === 0) {
+                goBackToList();
+                return;
+            }
+            const idx = Math.min(Math.max(0, prevIndex), fresh.length - 1);
+            currentDetailIndex = idx;
+            setupDetailSwipe();
+            populateAnnouncementDetail(fresh[idx]);
+        }
+    } catch (e) {
+        console.error('Error refreshing announcements:', e);
     }
 }
 
@@ -272,6 +352,61 @@ function populateAnnouncementDetail(announcement) {
     }
     
     document.getElementById('detail-title').textContent = announcement.title || 'No Title';
+
+    const bannerImg = document.getElementById('detail-banner-image');
+    if (bannerImg) {
+        const defaultImage = resolvePageAssetUrl('Images/brgyHall.jpg');
+        const baseSrc = announcement.image ? resolvePageAssetUrl(announcement.image) : defaultImage;
+        const imageSrc = cacheBustUrl(baseSrc, Date.now() + '_' + (announcement.id != null ? announcement.id : 'detail'));
+        bannerImg.alt = announcement.title || 'Announcement';
+        bannerImg.onerror = function () {
+            this.onerror = null;
+            if (this._detailBlobUrl) {
+                try {
+                    URL.revokeObjectURL(this._detailBlobUrl);
+                } catch (e) { /* ignore */ }
+                this._detailBlobUrl = null;
+            }
+            this.src = cacheBustUrl(defaultImage, Date.now() + '_detail_fb');
+        };
+
+        const isApiImage =
+            imageSrc.indexOf('image_id=') !== -1 &&
+            (imageSrc.indexOf('announcements.php') !== -1 || imageSrc.indexOf('check_active_requests.php') !== -1);
+
+        if (isApiImage && typeof fetch === 'function') {
+            fetch(imageSrc, { cache: 'no-store', credentials: 'same-origin' })
+                .then(function (res) {
+                    if (!res.ok) throw new Error('announcement image HTTP ' + res.status);
+                    const ct = (res.headers.get('content-type') || '').toLowerCase();
+                    if (!ct.startsWith('image/')) throw new Error('not an image');
+                    return res.blob();
+                })
+                .then(function (blob) {
+                    if (bannerImg._detailBlobUrl) {
+                        try {
+                            URL.revokeObjectURL(bannerImg._detailBlobUrl);
+                        } catch (e) { /* ignore */ }
+                    }
+                    bannerImg._detailBlobUrl = URL.createObjectURL(blob);
+                    bannerImg.removeAttribute('src');
+                    bannerImg.src = bannerImg._detailBlobUrl;
+                })
+                .catch(function () {
+                    bannerImg.removeAttribute('src');
+                    bannerImg.src = imageSrc;
+                });
+        } else {
+            if (bannerImg._detailBlobUrl) {
+                try {
+                    URL.revokeObjectURL(bannerImg._detailBlobUrl);
+                } catch (e) { /* ignore */ }
+                bannerImg._detailBlobUrl = null;
+            }
+            bannerImg.removeAttribute('src');
+            bannerImg.src = imageSrc;
+        }
+    }
     
     // Set description (statement) - comes first in the container
     document.getElementById('detail-description').textContent = announcement.description || announcement.content || 'No description available.';
@@ -371,12 +506,9 @@ function showAnnouncementDetail(announcement, index) {
     
     // Create indicators first
     createDetailIndicators();
-    
-    // Populate detail view with announcement data
-    populateAnnouncementDetail(announcement);
-    
-    // Initialize swipe functionality
+    // Clone/replace container BEFORE populate so banner <img> src is not wiped by setupDetailSwipe
     setupDetailSwipe();
+    populateAnnouncementDetail(announcement);
     
     // Scroll to top of detail view
     detailSection.scrollIntoView({ behavior: 'smooth' });
@@ -859,9 +991,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Setup scroll-based animations for announcement detail containers
     setupScrollBasedAnimations();
     
-    // Fetch and display announcements
-    const announcements = await fetchAnnouncements();
-    displayAnnouncements(announcements);
+    await refreshAnnouncementsFromServer();
     
     // Add keyboard navigation for detail view
     document.addEventListener('keydown', function(e) {
@@ -874,6 +1004,26 @@ document.addEventListener('DOMContentLoaded', async function() {
 
 // Add resize event listener
 window.addEventListener('resize', handleResize);
+
+(function setupAnnouncementsAutoRefreshForResidents() {
+    let debounceTimer;
+    function scheduleRefresh() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            debounceTimer = null;
+            refreshAnnouncementsFromServer();
+        }, 400);
+    }
+    document.addEventListener('visibilitychange', function () {
+        if (!document.hidden) scheduleRefresh();
+    });
+    window.addEventListener('pageshow', function (e) {
+        if (e.persisted) scheduleRefresh();
+    });
+    setInterval(function () {
+        if (!document.hidden) refreshAnnouncementsFromServer();
+    }, 120000);
+})();
 
 // Function to setup scroll-based animations for announcement detail containers
 function setupScrollBasedAnimations() {
