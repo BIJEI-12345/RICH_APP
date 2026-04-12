@@ -1208,6 +1208,44 @@ body.detail-view {
     max-width: 100%;
 }
 
+.detail-image-banner.is-banner-loading .banner-image {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.detail-banner-loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f0f2f5;
+    z-index: 2;
+}
+
+.detail-banner-loading[hidden] {
+    display: none !important;
+}
+
+.detail-image-banner.is-banner-loading .detail-banner-loading {
+    display: flex;
+}
+
+.detail-banner-loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(44, 90, 160, 0.2);
+    border-top-color: #2c5aa0;
+    border-radius: 50%;
+    animation: detail-banner-spin 0.75s linear infinite;
+}
+
+@keyframes detail-banner-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 .detail-banner {
     background: linear-gradient(135deg, #2c5aa0, #1e3a5f);
     border-radius: 12px;

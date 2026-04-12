@@ -73,6 +73,96 @@ function mergeAnnouncementImageFromSlideCard(announcement, cardEl) {
     return Object.assign({}, announcement, { image: fromSlide });
 }
 
+/** Incremented on each detail banner load so async fetch/blob can ignore stale results after a fast swipe. */
+let detailBannerLoadSeq = 0;
+
+function beginDetailBannerImageLoad(bannerImg, wrap, loadingEl) {
+    detailBannerLoadSeq++;
+    const seq = detailBannerLoadSeq;
+    bannerImg._detailLoadSeq = seq;
+    if (bannerImg._detailFetchAbort) {
+        try {
+            bannerImg._detailFetchAbort.abort();
+        } catch (e) { /* ignore */ }
+        bannerImg._detailFetchAbort = null;
+    }
+    if (bannerImg._detailBlobUrl) {
+        try {
+            URL.revokeObjectURL(bannerImg._detailBlobUrl);
+        } catch (e) { /* ignore */ }
+        bannerImg._detailBlobUrl = null;
+    }
+    bannerImg.removeAttribute('src');
+    if (wrap) {
+        wrap.classList.add('is-banner-loading');
+    }
+    if (loadingEl) {
+        loadingEl.hidden = false;
+        loadingEl.setAttribute('aria-busy', 'true');
+    }
+    return seq;
+}
+
+function finishDetailBannerImageLoad(bannerImg, wrap, loadingEl, seq) {
+    if (bannerImg._detailLoadSeq !== seq) {
+        return;
+    }
+    if (wrap) {
+        wrap.classList.remove('is-banner-loading');
+    }
+    if (loadingEl) {
+        loadingEl.hidden = true;
+        loadingEl.setAttribute('aria-busy', 'false');
+    }
+}
+
+function revealDetailBannerWhenReady(bannerImg, wrap, loadingEl, seq) {
+    const finish = function () {
+        finishDetailBannerImageLoad(bannerImg, wrap, loadingEl, seq);
+    };
+    const tryDecode = function () {
+        if (bannerImg._detailLoadSeq !== seq) {
+            return;
+        }
+        if (typeof bannerImg.decode === 'function') {
+            bannerImg.decode().then(finish).catch(finish);
+        } else {
+            finish();
+        }
+    };
+    const proceed = function () {
+        if (bannerImg._detailLoadSeq !== seq) {
+            return;
+        }
+        if (bannerImg.naturalWidth === 0) {
+            finish();
+            return;
+        }
+        tryDecode();
+    };
+    if (bannerImg.complete) {
+        proceed();
+        return;
+    }
+    bannerImg.addEventListener(
+        'load',
+        function () {
+            proceed();
+        },
+        { once: true }
+    );
+    bannerImg.addEventListener(
+        'error',
+        function () {
+            if (bannerImg._detailLoadSeq !== seq) {
+                return;
+            }
+            finish();
+        },
+        { once: true }
+    );
+}
+
 // Function to go back to main page
 function goBack() {
     window.location.href = 'main_UI.html';
@@ -354,11 +444,16 @@ function populateAnnouncementDetail(announcement) {
     document.getElementById('detail-title').textContent = announcement.title || 'No Title';
 
     const bannerImg = document.getElementById('detail-banner-image');
+    const bannerWrap = document.getElementById('detail-image-banner-wrap');
+    const loadingEl = document.getElementById('detail-banner-loading');
     if (bannerImg) {
         const defaultImage = resolvePageAssetUrl('Images/brgyHall.jpg');
         const baseSrc = announcement.image ? resolvePageAssetUrl(announcement.image) : defaultImage;
         const imageSrc = cacheBustUrl(baseSrc, Date.now() + '_' + (announcement.id != null ? announcement.id : 'detail'));
         bannerImg.alt = announcement.title || 'Announcement';
+
+        const seq = beginDetailBannerImageLoad(bannerImg, bannerWrap, loadingEl);
+
         bannerImg.onerror = function () {
             this.onerror = null;
             if (this._detailBlobUrl) {
@@ -368,6 +463,7 @@ function populateAnnouncementDetail(announcement) {
                 this._detailBlobUrl = null;
             }
             this.src = cacheBustUrl(defaultImage, Date.now() + '_detail_fb');
+            revealDetailBannerWhenReady(this, bannerWrap, loadingEl, this._detailLoadSeq);
         };
 
         const isApiImage =
@@ -375,14 +471,26 @@ function populateAnnouncementDetail(announcement) {
             (imageSrc.indexOf('announcements.php') !== -1 || imageSrc.indexOf('check_active_requests.php') !== -1);
 
         if (isApiImage && typeof fetch === 'function') {
-            fetch(imageSrc, { cache: 'no-store', credentials: 'same-origin' })
+            const ac = new AbortController();
+            bannerImg._detailFetchAbort = ac;
+            fetch(imageSrc, { cache: 'no-store', credentials: 'same-origin', signal: ac.signal })
                 .then(function (res) {
-                    if (!res.ok) throw new Error('announcement image HTTP ' + res.status);
+                    if (bannerImg._detailLoadSeq !== seq) {
+                        return;
+                    }
+                    if (!res.ok) {
+                        throw new Error('announcement image HTTP ' + res.status);
+                    }
                     const ct = (res.headers.get('content-type') || '').toLowerCase();
-                    if (!ct.startsWith('image/')) throw new Error('not an image');
+                    if (!ct.startsWith('image/')) {
+                        throw new Error('not an image');
+                    }
                     return res.blob();
                 })
                 .then(function (blob) {
+                    if (bannerImg._detailLoadSeq !== seq) {
+                        return;
+                    }
                     if (bannerImg._detailBlobUrl) {
                         try {
                             URL.revokeObjectURL(bannerImg._detailBlobUrl);
@@ -391,10 +499,18 @@ function populateAnnouncementDetail(announcement) {
                     bannerImg._detailBlobUrl = URL.createObjectURL(blob);
                     bannerImg.removeAttribute('src');
                     bannerImg.src = bannerImg._detailBlobUrl;
+                    revealDetailBannerWhenReady(bannerImg, bannerWrap, loadingEl, seq);
                 })
-                .catch(function () {
+                .catch(function (err) {
+                    if (err && err.name === 'AbortError') {
+                        return;
+                    }
+                    if (bannerImg._detailLoadSeq !== seq) {
+                        return;
+                    }
                     bannerImg.removeAttribute('src');
                     bannerImg.src = imageSrc;
+                    revealDetailBannerWhenReady(bannerImg, bannerWrap, loadingEl, seq);
                 });
         } else {
             if (bannerImg._detailBlobUrl) {
@@ -405,6 +521,7 @@ function populateAnnouncementDetail(announcement) {
             }
             bannerImg.removeAttribute('src');
             bannerImg.src = imageSrc;
+            revealDetailBannerWhenReady(bannerImg, bannerWrap, loadingEl, seq);
         }
     }
     

@@ -14,6 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 // Database connection - Load from centralized config
 require_once __DIR__ . '/env_loader.php';
+require_once __DIR__ . '/document_request_config.php';
 require_once __DIR__ . '/jobseeker_claimed_lib.php';
 require_once __DIR__ . '/census_address_helpers.php';
 require_once __DIR__ . '/brgy_user_helpers.php';
@@ -278,7 +279,33 @@ function insertIndigencyForm($data) {
             if ($hasParaKayCol && $hasPositionCol && $hasHallAddressCol) {
                 $stmt = $pdo->prepare("
                     INSERT INTO indigency_forms 
-                    (email, first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, age, gender, purpose, para_kay, `position`, hall_address, valid_id, id_image, submitted_at) 
+                    (email, first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, age, gender, purpose, para_kay, `position`, hall_address, valid_id, id_image, status, submitted_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ");
+                $result = $stmt->execute([
+                    $email,
+                    $data['first_name'],
+                    $data['middle_name'] ?? null,
+                    $data['last_name'],
+                    $data['address'],
+                    $data['birth_date'],
+                    $data['birth_place'],
+                    $data['civil_status'],
+                    $data['age'],
+                    $data['gender'],
+                    $purpose,
+                    $paraKay,
+                    $positionCell,
+                    $hallAddress,
+                    $validId,
+                    $idImage,
+                    DOCUMENT_REQUEST_STATUS_NEW,
+                    $philippineTime
+                ]);
+            } elseif ($hasParaKayCol && $hasPositionCol) {
+                $stmt = $pdo->prepare("
+                    INSERT INTO indigency_forms 
+                    (email, first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, age, gender, purpose, para_kay, `position`, valid_id, id_image, status, submitted_at) 
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ");
                 $result = $stmt->execute([
@@ -295,40 +322,16 @@ function insertIndigencyForm($data) {
                     $purpose,
                     $paraKay,
                     $positionCell,
-                    $hallAddress,
                     $validId,
                     $idImage,
-                    $philippineTime
-                ]);
-            } elseif ($hasParaKayCol && $hasPositionCol) {
-                $stmt = $pdo->prepare("
-                    INSERT INTO indigency_forms 
-                    (email, first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, age, gender, purpose, para_kay, `position`, valid_id, id_image, submitted_at) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ");
-                $result = $stmt->execute([
-                    $email,
-                    $data['first_name'],
-                    $data['middle_name'] ?? null,
-                    $data['last_name'],
-                    $data['address'],
-                    $data['birth_date'],
-                    $data['birth_place'],
-                    $data['civil_status'],
-                    $data['age'],
-                    $data['gender'],
-                    $purpose,
-                    $paraKay,
-                    $positionCell,
-                    $validId,
-                    $idImage,
+                    DOCUMENT_REQUEST_STATUS_NEW,
                     $philippineTime
                 ]);
             } elseif ($hasParaKayCol && $hasHallAddressCol) {
                 $stmt = $pdo->prepare("
                     INSERT INTO indigency_forms 
-                    (email, first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, age, gender, purpose, para_kay, hall_address, valid_id, id_image, submitted_at) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (email, first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, age, gender, purpose, para_kay, hall_address, valid_id, id_image, status, submitted_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ");
                 $result = $stmt->execute([
                     $email,
@@ -346,13 +349,14 @@ function insertIndigencyForm($data) {
                     $hallAddress,
                     $validId,
                     $idImage,
+                    DOCUMENT_REQUEST_STATUS_NEW,
                     $philippineTime
                 ]);
             } elseif ($hasParaKayCol) {
                 $stmt = $pdo->prepare("
                     INSERT INTO indigency_forms 
-                    (email, first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, age, gender, purpose, para_kay, valid_id, id_image, submitted_at) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (email, first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, age, gender, purpose, para_kay, valid_id, id_image, status, submitted_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ");
                 $result = $stmt->execute([
                     $email,
@@ -369,13 +373,14 @@ function insertIndigencyForm($data) {
                     $paraKay,
                     $validId,
                     $idImage,
+                    DOCUMENT_REQUEST_STATUS_NEW,
                     $philippineTime
                 ]);
             } else {
                 $stmt = $pdo->prepare("
                     INSERT INTO indigency_forms 
-                    (email, first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, age, gender, purpose, valid_id, id_image, submitted_at) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (email, first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, age, gender, purpose, valid_id, id_image, status, submitted_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ");
                 $result = $stmt->execute([
                     $email,
@@ -391,6 +396,7 @@ function insertIndigencyForm($data) {
                     $purposeForInsert,
                     $validId,
                     $idImage,
+                    DOCUMENT_REQUEST_STATUS_NEW,
                     $philippineTime
                 ]);
             }
@@ -398,7 +404,32 @@ function insertIndigencyForm($data) {
             if ($hasParaKayCol && $hasPositionCol && $hasHallAddressCol) {
                 $stmt = $pdo->prepare("
                     INSERT INTO indigency_forms 
-                    (first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, age, gender, purpose, para_kay, `position`, hall_address, valid_id, id_image, submitted_at) 
+                    (first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, age, gender, purpose, para_kay, `position`, hall_address, valid_id, id_image, status, submitted_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ");
+                $result = $stmt->execute([
+                    $data['first_name'],
+                    $data['middle_name'] ?? null,
+                    $data['last_name'],
+                    $data['address'],
+                    $data['birth_date'],
+                    $data['birth_place'],
+                    $data['civil_status'],
+                    $data['age'],
+                    $data['gender'],
+                    $purpose,
+                    $paraKay,
+                    $positionCell,
+                    $hallAddress,
+                    $validId,
+                    $idImage,
+                    DOCUMENT_REQUEST_STATUS_NEW,
+                    $philippineTime
+                ]);
+            } elseif ($hasParaKayCol && $hasPositionCol) {
+                $stmt = $pdo->prepare("
+                    INSERT INTO indigency_forms 
+                    (first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, age, gender, purpose, para_kay, `position`, valid_id, id_image, status, submitted_at) 
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ");
                 $result = $stmt->execute([
@@ -414,39 +445,16 @@ function insertIndigencyForm($data) {
                     $purpose,
                     $paraKay,
                     $positionCell,
-                    $hallAddress,
                     $validId,
                     $idImage,
-                    $philippineTime
-                ]);
-            } elseif ($hasParaKayCol && $hasPositionCol) {
-                $stmt = $pdo->prepare("
-                    INSERT INTO indigency_forms 
-                    (first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, age, gender, purpose, para_kay, `position`, valid_id, id_image, submitted_at) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ");
-                $result = $stmt->execute([
-                    $data['first_name'],
-                    $data['middle_name'] ?? null,
-                    $data['last_name'],
-                    $data['address'],
-                    $data['birth_date'],
-                    $data['birth_place'],
-                    $data['civil_status'],
-                    $data['age'],
-                    $data['gender'],
-                    $purpose,
-                    $paraKay,
-                    $positionCell,
-                    $validId,
-                    $idImage,
+                    DOCUMENT_REQUEST_STATUS_NEW,
                     $philippineTime
                 ]);
             } elseif ($hasParaKayCol && $hasHallAddressCol) {
                 $stmt = $pdo->prepare("
                     INSERT INTO indigency_forms 
-                    (first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, age, gender, purpose, para_kay, hall_address, valid_id, id_image, submitted_at) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, age, gender, purpose, para_kay, hall_address, valid_id, id_image, status, submitted_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ");
                 $result = $stmt->execute([
                     $data['first_name'],
@@ -463,13 +471,14 @@ function insertIndigencyForm($data) {
                     $hallAddress,
                     $validId,
                     $idImage,
+                    DOCUMENT_REQUEST_STATUS_NEW,
                     $philippineTime
                 ]);
             } elseif ($hasParaKayCol) {
                 $stmt = $pdo->prepare("
                     INSERT INTO indigency_forms 
-                    (first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, age, gender, purpose, para_kay, valid_id, id_image, submitted_at) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, age, gender, purpose, para_kay, valid_id, id_image, status, submitted_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ");
                 $result = $stmt->execute([
                     $data['first_name'],
@@ -485,13 +494,14 @@ function insertIndigencyForm($data) {
                     $paraKay,
                     $validId,
                     $idImage,
+                    DOCUMENT_REQUEST_STATUS_NEW,
                     $philippineTime
                 ]);
             } else {
                 $stmt = $pdo->prepare("
                     INSERT INTO indigency_forms 
-                    (first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, age, gender, purpose, valid_id, id_image, submitted_at) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, age, gender, purpose, valid_id, id_image, status, submitted_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ");
                 $result = $stmt->execute([
                     $data['first_name'],
@@ -506,6 +516,7 @@ function insertIndigencyForm($data) {
                     $purposeForInsert,
                     $validId,
                     $idImage,
+                    DOCUMENT_REQUEST_STATUS_NEW,
                     $philippineTime
                 ]);
             }
@@ -595,8 +606,8 @@ function insertBarangayIdForm($data) {
             // Prepare the insert statement with email
             $stmt = $pdo->prepare("
                 INSERT INTO barangay_id_forms 
-                (email, last_name, given_name, middle_name, birth_date, address, civil_status, height, weight, gender, nationality, emergency_contact_name, emergency_contact_number, residency_duration, valid_id, id_image, res_picture, submitted_at) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (email, last_name, given_name, middle_name, birth_date, address, civil_status, height, weight, gender, nationality, emergency_contact_name, emergency_contact_number, residency_duration, valid_id, id_image, res_picture, status, submitted_at) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             
             // Execute the insert
@@ -618,14 +629,15 @@ function insertBarangayIdForm($data) {
                 $validId,
                 $idImage,
                 $resPicture,
+                DOCUMENT_REQUEST_STATUS_NEW,
                 $philippineTime
             ]);
         } else {
             // Prepare the insert statement without email (backward compatibility)
             $stmt = $pdo->prepare("
                 INSERT INTO barangay_id_forms 
-                (last_name, given_name, middle_name, birth_date, address, civil_status, height, weight, gender, nationality, emergency_contact_name, emergency_contact_number, residency_duration, valid_id, id_image, res_picture, submitted_at) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (last_name, given_name, middle_name, birth_date, address, civil_status, height, weight, gender, nationality, emergency_contact_name, emergency_contact_number, residency_duration, valid_id, id_image, res_picture, status, submitted_at) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             
             // Execute the insert
@@ -646,6 +658,7 @@ function insertBarangayIdForm($data) {
                 $validId,
                 $idImage,
                 $resPicture,
+                DOCUMENT_REQUEST_STATUS_NEW,
                 $philippineTime
             ]);
         }
@@ -786,7 +799,40 @@ function insertCertificationForm($data) {
             // With email, educational_level, course, and out_of_school_youth
             $stmt = $pdo->prepare("
                 INSERT INTO certification_forms 
-                (email, first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, gender, purpose, citizenship, job_position, start_of_work, monthly_income, start_year, month_year, educational_level, course, out_of_school_youth, valid_id, id_image, submitted_at) 
+                (email, first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, gender, purpose, citizenship, job_position, start_of_work, monthly_income, start_year, month_year, educational_level, course, out_of_school_youth, valid_id, id_image, status, submitted_at) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+            
+            $result = $stmt->execute([
+                $email,
+                $data['first_name'],
+                $data['middle_name'] ?? null,
+                $data['last_name'],
+                $data['address'],
+                $data['birth_date'],
+                $data['birth_place'],
+                $data['civil_status'],
+                $data['gender'],
+                $purpose,
+                $data['citizenship'] ?? null,
+                $data['job'] ?? null,
+                $data['date_hire'] ?? null,
+                $data['monthly_income'] ?? null,
+                $data['year_residing'] ?? null,
+                $data['month_year_passing'] ?? null,
+                $data['educational_level'] ?? null,
+                $data['course'] ?? null,
+                $outOfSchoolYouth,
+                $validId,
+                $idImage,
+                DOCUMENT_REQUEST_STATUS_NEW,
+                $philippineTime
+            ]);
+        } elseif ($emailColumnExists && $email && $educationalLevelColumnExists && $courseColumnExists) {
+            // With email, educational_level, and course (no out_of_school_youth column)
+            $stmt = $pdo->prepare("
+                INSERT INTO certification_forms 
+                (email, first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, gender, purpose, citizenship, job_position, start_of_work, monthly_income, start_year, month_year, educational_level, course, valid_id, id_image, status, submitted_at) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             
@@ -809,48 +855,17 @@ function insertCertificationForm($data) {
                 $data['month_year_passing'] ?? null,
                 $data['educational_level'] ?? null,
                 $data['course'] ?? null,
-                $outOfSchoolYouth,
                 $validId,
                 $idImage,
-                $philippineTime
-            ]);
-        } elseif ($emailColumnExists && $email && $educationalLevelColumnExists && $courseColumnExists) {
-            // With email, educational_level, and course (no out_of_school_youth column)
-            $stmt = $pdo->prepare("
-                INSERT INTO certification_forms 
-                (email, first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, gender, purpose, citizenship, job_position, start_of_work, monthly_income, start_year, month_year, educational_level, course, valid_id, id_image, submitted_at) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ");
-            
-            $result = $stmt->execute([
-                $email,
-                $data['first_name'],
-                $data['middle_name'] ?? null,
-                $data['last_name'],
-                $data['address'],
-                $data['birth_date'],
-                $data['birth_place'],
-                $data['civil_status'],
-                $data['gender'],
-                $purpose,
-                $data['citizenship'] ?? null,
-                $data['job'] ?? null,
-                $data['date_hire'] ?? null,
-                $data['monthly_income'] ?? null,
-                $data['year_residing'] ?? null,
-                $data['month_year_passing'] ?? null,
-                $data['educational_level'] ?? null,
-                $data['course'] ?? null,
-                $validId,
-                $idImage,
+                DOCUMENT_REQUEST_STATUS_NEW,
                 $philippineTime
             ]);
         } elseif ($emailColumnExists && $email && $outOfSchoolYouthColumnExists) {
             // With email and out_of_school_youth only
             $stmt = $pdo->prepare("
                 INSERT INTO certification_forms 
-                (email, first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, gender, purpose, citizenship, job_position, start_of_work, monthly_income, start_year, month_year, out_of_school_youth, valid_id, id_image, submitted_at) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (email, first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, gender, purpose, citizenship, job_position, start_of_work, monthly_income, start_year, month_year, out_of_school_youth, valid_id, id_image, status, submitted_at) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             
             $result = $stmt->execute([
@@ -873,14 +888,15 @@ function insertCertificationForm($data) {
                 $outOfSchoolYouth,
                 $validId,
                 $idImage,
+                DOCUMENT_REQUEST_STATUS_NEW,
                 $philippineTime
             ]);
         } elseif ($emailColumnExists && $email) {
             // With email only (no educational_level / course / out_of_school_youth columns)
             $stmt = $pdo->prepare("
                 INSERT INTO certification_forms 
-                (email, first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, gender, purpose, citizenship, job_position, start_of_work, monthly_income, start_year, month_year, valid_id, id_image, submitted_at) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (email, first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, gender, purpose, citizenship, job_position, start_of_work, monthly_income, start_year, month_year, valid_id, id_image, status, submitted_at) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             
             $result = $stmt->execute([
@@ -902,13 +918,46 @@ function insertCertificationForm($data) {
                 $data['month_year_passing'] ?? null,
                 $validId,
                 $idImage,
+                DOCUMENT_REQUEST_STATUS_NEW,
                 $philippineTime
             ]);
         } elseif ($educationalLevelColumnExists && $courseColumnExists && $outOfSchoolYouthColumnExists) {
             // Without email, but with educational_level, course, and out_of_school_youth
             $stmt = $pdo->prepare("
                 INSERT INTO certification_forms 
-                (first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, gender, purpose, citizenship, job_position, start_of_work, monthly_income, start_year, month_year, educational_level, course, out_of_school_youth, valid_id, id_image, submitted_at) 
+                (first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, gender, purpose, citizenship, job_position, start_of_work, monthly_income, start_year, month_year, educational_level, course, out_of_school_youth, valid_id, id_image, status, submitted_at) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+            
+            $result = $stmt->execute([
+                $data['first_name'],
+                $data['middle_name'] ?? null,
+                $data['last_name'],
+                $data['address'],
+                $data['birth_date'],
+                $data['birth_place'],
+                $data['civil_status'],
+                $data['gender'],
+                $purpose,
+                $data['citizenship'] ?? null,
+                $data['job'] ?? null,
+                $data['date_hire'] ?? null,
+                $data['monthly_income'] ?? null,
+                $data['year_residing'] ?? null,
+                $data['month_year_passing'] ?? null,
+                $data['educational_level'] ?? null,
+                $data['course'] ?? null,
+                $outOfSchoolYouth,
+                $validId,
+                $idImage,
+                DOCUMENT_REQUEST_STATUS_NEW,
+                $philippineTime
+            ]);
+        } elseif ($educationalLevelColumnExists && $courseColumnExists) {
+            // Without email, but with educational_level and course (no out_of_school_youth column)
+            $stmt = $pdo->prepare("
+                INSERT INTO certification_forms 
+                (first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, gender, purpose, citizenship, job_position, start_of_work, monthly_income, start_year, month_year, educational_level, course, valid_id, id_image, status, submitted_at) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             
@@ -930,16 +979,16 @@ function insertCertificationForm($data) {
                 $data['month_year_passing'] ?? null,
                 $data['educational_level'] ?? null,
                 $data['course'] ?? null,
-                $outOfSchoolYouth,
                 $validId,
                 $idImage,
+                DOCUMENT_REQUEST_STATUS_NEW,
                 $philippineTime
             ]);
-        } elseif ($educationalLevelColumnExists && $courseColumnExists) {
-            // Without email, but with educational_level and course (no out_of_school_youth column)
+        } elseif ($outOfSchoolYouthColumnExists) {
+            // Without email/educational_level/course, but with out_of_school_youth
             $stmt = $pdo->prepare("
                 INSERT INTO certification_forms 
-                (first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, gender, purpose, citizenship, job_position, start_of_work, monthly_income, start_year, month_year, educational_level, course, valid_id, id_image, submitted_at) 
+                (first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, gender, purpose, citizenship, job_position, start_of_work, monthly_income, start_year, month_year, out_of_school_youth, valid_id, id_image, status, submitted_at) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             
@@ -959,17 +1008,17 @@ function insertCertificationForm($data) {
                 $data['monthly_income'] ?? null,
                 $data['year_residing'] ?? null,
                 $data['month_year_passing'] ?? null,
-                $data['educational_level'] ?? null,
-                $data['course'] ?? null,
+                $outOfSchoolYouth,
                 $validId,
                 $idImage,
+                DOCUMENT_REQUEST_STATUS_NEW,
                 $philippineTime
             ]);
-        } elseif ($outOfSchoolYouthColumnExists) {
-            // Without email/educational_level/course, but with out_of_school_youth
+        } else {
+            // Original structure: no email, educational_level, course, or out_of_school_youth columns
             $stmt = $pdo->prepare("
                 INSERT INTO certification_forms 
-                (first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, gender, purpose, citizenship, job_position, start_of_work, monthly_income, start_year, month_year, out_of_school_youth, valid_id, id_image, submitted_at) 
+                (first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, gender, purpose, citizenship, job_position, start_of_work, monthly_income, start_year, month_year, valid_id, id_image, status, submitted_at) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             
@@ -989,37 +1038,9 @@ function insertCertificationForm($data) {
                 $data['monthly_income'] ?? null,
                 $data['year_residing'] ?? null,
                 $data['month_year_passing'] ?? null,
-                $outOfSchoolYouth,
                 $validId,
                 $idImage,
-                $philippineTime
-            ]);
-        } else {
-            // Original structure: no email, educational_level, course, or out_of_school_youth columns
-            $stmt = $pdo->prepare("
-                INSERT INTO certification_forms 
-                (first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, gender, purpose, citizenship, job_position, start_of_work, monthly_income, start_year, month_year, valid_id, id_image, submitted_at) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ");
-            
-            $result = $stmt->execute([
-                $data['first_name'],
-                $data['middle_name'] ?? null,
-                $data['last_name'],
-                $data['address'],
-                $data['birth_date'],
-                $data['birth_place'],
-                $data['civil_status'],
-                $data['gender'],
-                $purpose,
-                $data['citizenship'] ?? null,
-                $data['job'] ?? null,
-                $data['date_hire'] ?? null,
-                $data['monthly_income'] ?? null,
-                $data['year_residing'] ?? null,
-                $data['month_year_passing'] ?? null,
-                $validId,
-                $idImage,
+                DOCUMENT_REQUEST_STATUS_NEW,
                 $philippineTime
             ]);
         }
@@ -1101,8 +1122,8 @@ function insertCoeForm($data) {
             // Prepare the insert statement with email
             $stmt = $pdo->prepare("
                 INSERT INTO coe_forms 
-                (email, first_name, middle_name, last_name, address, age, gender, civil_status, employment_type, position, date_started, monthly_salary, valid_id, id_image, submitted_at) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (email, first_name, middle_name, last_name, address, age, gender, civil_status, employment_type, position, date_started, monthly_salary, valid_id, id_image, status, submitted_at) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             
             // Execute the insert
@@ -1121,13 +1142,14 @@ function insertCoeForm($data) {
                 $data['monthly_salary'],
                 $validId,
                 $idImage,
+                DOCUMENT_REQUEST_STATUS_NEW,
                 $philippineTime
             ]);
         } else {
             // Prepare the insert statement without email (backward compatibility)
             $stmt = $pdo->prepare("
                 INSERT INTO coe_forms 
-                (first_name, middle_name, last_name, address, age, gender, civil_status, employment_type, position, date_started, monthly_salary, valid_id, id_image, submitted_at) 
+                (first_name, middle_name, last_name, address, age, gender, civil_status, employment_type, position, date_started, monthly_salary, valid_id, id_image, status, submitted_at) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             
@@ -1146,6 +1168,7 @@ function insertCoeForm($data) {
                 $data['monthly_salary'],
                 $validId,
                 $idImage,
+                DOCUMENT_REQUEST_STATUS_NEW,
                 $philippineTime
             ]);
         }
@@ -1226,7 +1249,7 @@ function insertClearanceForm($data) {
             // Prepare the insert statement with email
             $stmt = $pdo->prepare("
                 INSERT INTO clearance_forms 
-                (email, first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, age, gender, purpose, citizenship, business_name, location, start_year, valid_id, id_image, submitted_at) 
+                (email, first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, age, gender, purpose, citizenship, business_name, location, start_year, valid_id, id_image, status, submitted_at) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             
@@ -1249,13 +1272,14 @@ function insertClearanceForm($data) {
                 $data['year_start_residing'] ?? null,
                 $validId,
                 $idImage,
+                DOCUMENT_REQUEST_STATUS_NEW,
                 $philippineTime
             ]);
         } else {
             // Prepare the insert statement without email (backward compatibility)
             $stmt = $pdo->prepare("
                 INSERT INTO clearance_forms 
-                (first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, age, gender, purpose, citizenship, business_name, location, start_year, valid_id, id_image, submitted_at) 
+                (first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, age, gender, purpose, citizenship, business_name, location, start_year, valid_id, id_image, status, submitted_at) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             
@@ -1277,6 +1301,7 @@ function insertClearanceForm($data) {
                 $data['year_start_residing'] ?? null,
                 $validId,
                 $idImage,
+                DOCUMENT_REQUEST_STATUS_NEW,
                 $philippineTime
             ]);
         }
