@@ -356,6 +356,16 @@ async function refreshAnnouncementsFromServer() {
 
 // Function to populate detail view with announcement data
 function populateAnnouncementDetail(announcement) {
+    // Clear banner and show spinner FIRST so users never see a previous announcement's image
+    // alongside the new title/category (avoids "Free Medical" label + wrong image flash).
+    const bannerImg = document.getElementById('detail-banner-image');
+    const bannerWrap = document.getElementById('detail-image-banner-wrap');
+    const loadingEl = document.getElementById('detail-banner-loading');
+    let detailBannerSeq = 0;
+    if (bannerImg) {
+        detailBannerSeq = beginDetailBannerImageLoad(bannerImg, bannerWrap, loadingEl);
+    }
+
     // Set category and styling
     const categoryElement = document.getElementById('detail-category');
     let categoryClass = 'category-announcement';
@@ -443,16 +453,13 @@ function populateAnnouncementDetail(announcement) {
     
     document.getElementById('detail-title').textContent = announcement.title || 'No Title';
 
-    const bannerImg = document.getElementById('detail-banner-image');
-    const bannerWrap = document.getElementById('detail-image-banner-wrap');
-    const loadingEl = document.getElementById('detail-banner-loading');
     if (bannerImg) {
         const defaultImage = resolvePageAssetUrl('Images/brgyHall.jpg');
         const baseSrc = announcement.image ? resolvePageAssetUrl(announcement.image) : defaultImage;
         const imageSrc = cacheBustUrl(baseSrc, Date.now() + '_' + (announcement.id != null ? announcement.id : 'detail'));
         bannerImg.alt = announcement.title || 'Announcement';
 
-        const seq = beginDetailBannerImageLoad(bannerImg, bannerWrap, loadingEl);
+        const seq = detailBannerSeq;
 
         bannerImg.onerror = function () {
             this.onerror = null;

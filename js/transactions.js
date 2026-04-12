@@ -573,7 +573,7 @@ function createTransactionCard(transaction) {
     if (showBarangayClaimingFee) {
         claimingFeeText = 'Pay ₱100 upon claiming';
     } else if (clearanceFinished) {
-        if (clearancePurpose === 'barangay-clearance' || clearancePurpose === 'proof-of-residency') {
+        if (clearancePurpose === 'barangay-clearance') {
             claimingFeeText = 'Pay ₱100 upon claiming';
         } else if (clearancePurpose === 'business-clearance') {
             claimingFeeText = 'Prepare payment upon claiming';
@@ -790,6 +790,7 @@ function viewTransactionDetails(transactionId) {
                 </div>
             </div>
             
+            ${getConcernReportedImageSectionHtml(transaction)}
             ${getConcernResolvedImageSectionHtml(transaction)}
             
             ${getConcernRatingSectionHtml(transaction)}
@@ -813,6 +814,7 @@ function viewTransactionDetails(transactionId) {
         requestAnimationFrame(function () {
             autoSizeRevokeReasonTextareas(modalBody);
             initConcernRatingInModal(modalBody, transaction);
+            loadConcernReportedImageIntoModal(modalBody, transaction);
             loadConcernResolvedImageIntoModal(modalBody, transaction);
         });
     });
@@ -829,6 +831,21 @@ function transactionConcernHasResolvedImageInDb(transaction) {
         return false;
     }
     const v = transaction.has_resolved_image;
+    if (v === true || v === 1 || v === '1') {
+        return true;
+    }
+    if (v === false || v === 0 || v === '0') {
+        return false;
+    }
+    return Number(v) === 1;
+}
+
+/** From list API: 1 kung may laman ang concern_image (reported photo) sa DB; 0 kung wala. */
+function transactionConcernHasReportedImageInDb(transaction) {
+    if (!transaction) {
+        return false;
+    }
+    const v = transaction.has_concern_image;
     if (v === true || v === 1 || v === '1') {
         return true;
     }
@@ -869,6 +886,24 @@ function buildServeConcernResolvedImageUrl(transaction) {
     const storedEmail = (sessionStorage.getItem('user_email') || localStorage.getItem('user_email') || '').trim();
     const params = new URLSearchParams({
         action: 'serve_concern_resolved_image',
+        concern_ref: String(transaction && transaction.id != null ? transaction.id : '')
+    });
+    if (storedEmail) {
+        params.set('user_email', storedEmail);
+    }
+    const rel = 'php/transactions.php?' + params.toString();
+    try {
+        return new URL(rel, window.location.href).href;
+    } catch (e) {
+        return rel;
+    }
+}
+
+/** Absolute URL for serve_concern_reported_image (original reported photo). */
+function buildServeConcernReportedImageUrl(transaction) {
+    const storedEmail = (sessionStorage.getItem('user_email') || localStorage.getItem('user_email') || '').trim();
+    const params = new URLSearchParams({
+        action: 'serve_concern_reported_image',
         concern_ref: String(transaction && transaction.id != null ? transaction.id : '')
     });
     if (storedEmail) {
@@ -974,6 +1009,98 @@ function loadConcernResolvedImageIntoModal(modalRoot, transaction) {
     img.src = url;
 }
 
+/**
+ * Load reported (original) photo: inline data/path/http, else serve_concern_reported_image.
+ */
+function loadConcernReportedImageIntoModal(modalRoot, transaction) {
+    if (!modalRoot || !transactionRequestTypeIsConcern(transaction) || !transactionConcernIsFinished(transaction)) {
+        return;
+    }
+    const section = modalRoot.querySelector('.concern-reported-image-section');
+    if (!section) {
+        return;
+    }
+    const img = section.querySelector('.concern-reported-image-img');
+    const loadingEl = section.querySelector('.concern-reported-image-loading');
+    const frame = section.querySelector('.concern-reported-image-frame');
+    if (!img) {
+        return;
+    }
+
+    function finishOk() {
+        img.style.display = '';
+        if (loadingEl) {
+            loadingEl.remove();
+        }
+        if (frame) {
+            frame.classList.remove('concern-reported-image-frame--loading');
+        }
+    }
+
+    function finishErr(message) {
+        if (loadingEl) {
+            loadingEl.textContent = message;
+            loadingEl.classList.add('concern-reported-image-error');
+        }
+        if (frame) {
+            frame.classList.remove('concern-reported-image-frame--loading');
+        }
+    }
+
+    const raw = transaction.concern_image;
+    if (raw != null && String(raw).trim() !== '') {
+        const direct = resolveConcernResolvedImageSrc(raw);
+        if (direct) {
+            img.onload = function () {
+                img.onload = null;
+                img.onerror = null;
+                finishOk();
+            };
+            img.onerror = function () {
+                img.onload = null;
+                img.onerror = null;
+                finishErr('Hindi maipakita ang larawan.');
+            };
+            img.src = direct;
+            return;
+        }
+    }
+
+    if (!transactionConcernHasReportedImageInDb(transaction)) {
+        if (loadingEl) {
+            loadingEl.textContent =
+                'Walang naka-upload na larawan ng report para sa request na ito.';
+            loadingEl.classList.remove('concern-reported-image-loading');
+            loadingEl.classList.add('concern-reported-image-empty');
+        }
+        if (frame) {
+            frame.classList.remove('concern-reported-image-frame--loading');
+        }
+        img.style.display = 'none';
+        return;
+    }
+
+    const url = buildServeConcernReportedImageUrl(transaction);
+    if (!url || !String(transaction.id || '').trim()) {
+        section.remove();
+        return;
+    }
+
+    img.onload = function () {
+        img.onload = null;
+        img.onerror = null;
+        finishOk();
+    };
+    img.onerror = function () {
+        img.onload = null;
+        img.onerror = null;
+        finishErr(
+            'Hindi ma-load ang larawan (server). Subukan i-refresh; kung tuloy pa rin, maaaring sira ang file sa database.'
+        );
+    };
+    img.src = url;
+}
+
 /** Optional text block from API field `resolution_statement` (above the image). */
 function getConcernResolutionStatementHtml(transaction) {
     if (!transaction || transaction.resolution_statement == null) {
@@ -991,6 +1118,22 @@ function getConcernResolutionStatementHtml(transaction) {
         body +
         '</div></div>'
     );
+}
+
+/** Original reported photo — column `concern_image`; shown above Resolved photo. */
+function getConcernReportedImageSectionHtml(transaction) {
+    if (!transaction || !transactionRequestTypeIsConcern(transaction) || !transactionConcernIsFinished(transaction)) {
+        return '';
+    }
+    return `
+            <div class="detail-section concern-reported-image-section">
+                <h4 class="concern-reported-image-title">Reported Image</h4>
+                <p class="concern-reported-image-note">Larawan na isinumite nang mag-report ng concern.</p>
+                <div class="concern-reported-image-frame concern-reported-image-frame--loading">
+                    <span class="concern-reported-image-loading" aria-hidden="true">Nilo-load…</span>
+                    <img src="" alt="Reported concern photo" class="concern-reported-image-img" style="display:none" decoding="async" />
+                </div>
+            </div>`;
 }
 
 /** Barangay photo after resolution — shown above “Your rating” (column `resolved_image`). */

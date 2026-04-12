@@ -782,6 +782,8 @@ const documentTypes = {
         description: 'Barangay clearance certificate',
         icon: 'fas fa-shield-alt',
         price: 100,
+        /** Overrides flat ₱ price in header: Proof of Residency has no fee; Barangay ₱100; Business pays at claiming. */
+        priceCaption: 'May bayad: Barangay Clearance (₱100) at Business clearance. Proof of Residency: walang bayad.',
         requirements: [
             'Valid government-issued ID',
             'Proof of residency',
@@ -843,7 +845,11 @@ function setupDocumentType(type) {
     }
     
     if (priceAmount) {
-        priceAmount.textContent = `₱${docConfig.price}.00`;
+        if (docConfig.priceCaption) {
+            priceAmount.textContent = docConfig.priceCaption;
+        } else {
+            priceAmount.textContent = `₱${docConfig.price}.00`;
+        }
     }
     
     if (requirementsList) {
@@ -4277,7 +4283,7 @@ async function confirmClearanceSubmission() {
                     showConfirmButton: false,
                     allowOutsideClick: true
                 });
-            } else if (purpose === 'barangay-clearance' || purpose === 'proof-of-residency') {
+            } else if (purpose === 'barangay-clearance') {
                 await Swal.fire({
                     icon: 'info',
                     title: 'Payment reminder',

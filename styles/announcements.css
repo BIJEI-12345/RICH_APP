@@ -1208,6 +1208,10 @@ body.detail-view {
     max-width: 100%;
 }
 
+.detail-image-banner.is-banner-loading {
+    min-height: 200px;
+}
+
 .detail-image-banner.is-banner-loading .banner-image {
     opacity: 0;
     visibility: hidden;

@@ -54,6 +54,9 @@ switch ($action) {
     case 'serve_concern_resolved_image':
         serveConcernResolvedImage($pdo);
         break;
+    case 'serve_concern_reported_image':
+        serveConcernReportedImage($pdo);
+        break;
     case 'download':
         downloadDocument($pdo);
         break;
@@ -172,6 +175,23 @@ function concern_has_resolved_image_expression(PDO $pdo) {
         $q = $pdo->query("SHOW COLUMNS FROM `concerns` LIKE 'resolved_image'");
         if ($q && $q->rowCount() > 0) {
             return $cache = '(c.resolved_image IS NOT NULL AND LENGTH(c.resolved_image) > 0)';
+        }
+    } catch (Throwable $e) {
+        // ignore
+    }
+    return $cache = '0';
+}
+
+/** SQL expression: 1 if concern has non-empty concern_image (reported), else 0 (or 0 if column missing). */
+function concern_has_concern_image_expression(PDO $pdo) {
+    static $cache = false;
+    if ($cache !== false) {
+        return $cache;
+    }
+    try {
+        $q = $pdo->query("SHOW COLUMNS FROM `concerns` LIKE 'concern_image'");
+        if ($q && $q->rowCount() > 0) {
+            return $cache = '(c.concern_image IS NOT NULL AND LENGTH(c.concern_image) > 0)';
         }
     } catch (Throwable $e) {
         // ignore
@@ -506,6 +526,181 @@ function serveConcernResolvedImage(PDO $pdo) {
     echo json_encode(['success' => false, 'message' => 'Could not decode resolved image.']);
 }
 
+/**
+ * Serve raw concern_image (photo submitted with the report) for one concern.
+ * GET: action=serve_concern_reported_image&concern_ref=CONC-33&user_email=
+ */
+function serveConcernReportedImage(PDO $pdo) {
+    $userEmail = transactions_resolve_request_user_email();
+    if (!$userEmail) {
+        http_response_code(401);
+        header('Content-Type: application/json; charset=utf-8', true);
+        echo json_encode(['success' => false, 'message' => 'Please log in to view this image.']);
+        return;
+    }
+
+    $ref = trim((string)($_GET['concern_ref'] ?? $_GET['id'] ?? ''));
+    if (!preg_match('/^CONC-(\d+)$/i', $ref, $m)) {
+        http_response_code(400);
+        header('Content-Type: application/json; charset=utf-8', true);
+        echo json_encode(['success' => false, 'message' => 'Invalid concern reference.']);
+        return;
+    }
+    $concernNumericId = (int)$m[1];
+
+    try {
+        $q = $pdo->query("SHOW COLUMNS FROM `concerns` LIKE 'concern_image'");
+        if (!$q || $q->rowCount() === 0) {
+            http_response_code(404);
+            header('Content-Type: application/json; charset=utf-8', true);
+            echo json_encode(['success' => false, 'message' => 'No concern_image column.']);
+            return;
+        }
+    } catch (Throwable $e) {
+        http_response_code(500);
+        header('Content-Type: application/json; charset=utf-8', true);
+        echo json_encode(['success' => false, 'message' => 'Server error.']);
+        return;
+    }
+
+    $userEmailTrim = trim((string)$userEmail);
+    $userEmailLookup = strtolower($userEmailTrim);
+    $userStmt = $pdo->prepare('SELECT id, CONCAT(TRIM(first_name), " ", TRIM(last_name)) AS full_name FROM resident_information WHERE email = ? OR LOWER(TRIM(email)) = ?');
+    $userStmt->execute([$userEmailTrim, $userEmailLookup]);
+    $userRow = $userStmt->fetch(PDO::FETCH_ASSOC);
+    if (!$userRow) {
+        http_response_code(403);
+        header('Content-Type: application/json; charset=utf-8', true);
+        echo json_encode(['success' => false, 'message' => 'Access denied.']);
+        return;
+    }
+
+    $checkEmailColumn = $pdo->query("SHOW COLUMNS FROM concerns LIKE 'email'");
+    $hasEmailColumn = $checkEmailColumn->rowCount() > 0;
+
+    $emailForList = strtolower($userEmailTrim);
+    $row = null;
+    if ($hasEmailColumn) {
+        $stmt = $pdo->prepare("
+            SELECT c.concern_image FROM concerns c
+            WHERE c.id = ?
+              AND LOWER(TRIM(COALESCE(c.email, ''))) = ?
+              AND TRIM(COALESCE(c.email, '')) <> ''
+        ");
+        $stmt->execute([$concernNumericId, $emailForList]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$row) {
+            $stmt = $pdo->prepare("
+                SELECT c.concern_image FROM concerns c
+                INNER JOIN resident_information r ON c.reporter_name = CONCAT(TRIM(r.first_name), ' ', TRIM(r.last_name))
+                WHERE c.id = ? AND LOWER(TRIM(r.email)) = ?
+            ");
+            $stmt->execute([$concernNumericId, $emailForList]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        }
+    } else {
+        $stmt = $pdo->prepare("
+            SELECT c.concern_image FROM concerns c
+            INNER JOIN resident_information r ON c.reporter_name = CONCAT(TRIM(r.first_name), ' ', TRIM(r.last_name))
+            WHERE c.id = ? AND LOWER(TRIM(r.email)) = ?
+        ");
+        $stmt->execute([$concernNumericId, $emailForList]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+    if (!$row) {
+        http_response_code(404);
+        header('Content-Type: application/json; charset=utf-8', true);
+        echo json_encode(['success' => false, 'message' => 'Concern not found.']);
+        return;
+    }
+
+    $v = $row['concern_image'];
+    if (is_resource($v)) {
+        $v = stream_get_contents($v);
+    }
+    if (!is_string($v) || strlen($v) === 0) {
+        http_response_code(404);
+        header('Content-Type: application/json; charset=utf-8', true);
+        echo json_encode(['success' => false, 'message' => 'No reported image stored for this concern.']);
+        return;
+    }
+
+    require_once __DIR__ . '/announcement_image_helpers.php';
+
+    $trimAll = trim($v);
+
+    if (preg_match('#^https?://#i', $trimAll)) {
+        header('Location: ' . $trimAll, true, 302);
+        exit;
+    }
+
+    if (preg_match('#^data:image/#i', $trimAll) && preg_match('#^data:image/[^;]+;base64,#i', $trimAll)) {
+        $comma = strpos($trimAll, ',');
+        if ($comma !== false) {
+            $b64 = substr($trimAll, $comma + 1);
+            $decoded = @base64_decode($b64, true);
+            if ($decoded !== false && $decoded !== '') {
+                $bin = transactions_resolved_image_strip_prefix_noise($decoded);
+                $mime = transactions_resolved_image_detect_mime_from_bytes($bin)
+                    ?: transactions_resolved_image_detect_mime_finfo($bin)
+                    ?: 'image/jpeg';
+                transactions_emit_resolved_image_bytes($bin, $mime);
+                exit;
+            }
+        }
+    }
+
+    $binary = transactions_resolved_image_strip_prefix_noise($v);
+    $mime = transactions_resolved_image_detect_mime_from_bytes($binary)
+        ?: transactions_resolved_image_detect_mime_finfo($binary);
+    if ($mime !== null) {
+        transactions_emit_resolved_image_bytes($binary, $mime);
+        exit;
+    }
+
+    if (strlen($trimAll) >= 32 && preg_match('/^[A-Za-z0-9+\/=\r\n\-_]+$/', $trimAll)) {
+        $decoded = @base64_decode(preg_replace('/\s+/', '', $trimAll), true);
+        if ($decoded !== false && strlen($decoded) > 16) {
+            $decBin = transactions_resolved_image_strip_prefix_noise($decoded);
+            $mime2 = transactions_resolved_image_detect_mime_from_bytes($decBin)
+                ?: transactions_resolved_image_detect_mime_finfo($decBin);
+            if ($mime2 !== null) {
+                transactions_emit_resolved_image_bytes($decBin, $mime2);
+                exit;
+            }
+        }
+    }
+
+    if (strlen($trimAll) <= 8192 && strpos($trimAll, "\0") === false && preg_match('/^[\x20-\x7E]+$/', $trimAll)) {
+        $norm = str_replace('\\', '/', $trimAll);
+        $looksLikePath =
+            strpos($norm, '/') !== false
+            || preg_match('#^[a-zA-Z]:/#', $norm)
+            || strpos($norm, './') === 0
+            || preg_match('/\.(jpe?g|png|gif|webp|bmp|svg)$/i', $norm);
+        if ($looksLikePath && tryServeAnnouncementImageFromStoredPath($norm, 'concern-reported-' . $concernNumericId)) {
+            exit;
+        }
+    }
+
+    if (function_exists('getimagesizefromstring')) {
+        foreach ([$binary, $v] as $blobTry) {
+            if (!is_string($blobTry) || $blobTry === '') {
+                continue;
+            }
+            $info = @getimagesizefromstring($blobTry);
+            if (is_array($info) && !empty($info['mime']) && strpos($info['mime'], 'image/') === 0) {
+                transactions_emit_resolved_image_bytes($blobTry, $info['mime']);
+                exit;
+            }
+        }
+    }
+
+    http_response_code(404);
+    header('Content-Type: application/json; charset=utf-8', true);
+    echo json_encode(['success' => false, 'message' => 'Could not decode reported image.']);
+}
+
 function transactions_emit_resolved_image_bytes(string $body, string $mime) {
     while (ob_get_level() > 0) {
         ob_end_clean();
@@ -716,6 +911,7 @@ function listTransactions($pdo) {
         $suggestionsConcerns = concern_suggestions_select_fragment($pdo);
         $resolutionStatementConcerns = concern_resolution_statement_select_fragment($pdo);
         $hasResolvedExpr = concern_has_resolved_image_expression($pdo);
+        $hasConcernExpr = concern_has_concern_image_expression($pdo);
         
         // Fetch concerns - Check if email column exists, if yes query directly by email, otherwise use JOIN
         $checkEmailColumn = $pdo->query("SHOW COLUMNS FROM concerns LIKE 'email'");
@@ -749,6 +945,7 @@ function listTransactions($pdo) {
                     {$resolutionStatementConcerns} AS resolution_statement,
                     NULL AS resolved_image,
                     {$hasResolvedExpr} AS has_resolved_image,
+                    {$hasConcernExpr} AS has_concern_image,
                     {$rvConcerns} AS reason_revoke,
                     'concern' as request_type
                 FROM concerns c
@@ -785,6 +982,7 @@ function listTransactions($pdo) {
                     {$resolutionStatementConcerns} AS resolution_statement,
                     NULL AS resolved_image,
                     {$hasResolvedExpr} AS has_resolved_image,
+                    {$hasConcernExpr} AS has_concern_image,
                     {$rvConcerns} AS reason_revoke,
                     'concern' as request_type
                 FROM concerns c

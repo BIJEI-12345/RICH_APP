@@ -1553,12 +1553,14 @@ body {
     box-shadow: 0 0 0 2px rgba(200, 35, 51, 0.2);
 }
 
-/* Resolved concern photo (above Your rating) */
-.concern-resolved-image-section {
+/* Resolved concern photo (above Your rating); reported = original submission above resolved */
+.concern-resolved-image-section,
+.concern-reported-image-section {
     margin-bottom: 8px;
 }
 
-.concern-resolved-image-section .concern-resolved-image-title {
+.concern-resolved-image-section .concern-resolved-image-title,
+.concern-reported-image-section .concern-reported-image-title {
     margin: 0 0 6px;
     padding: 0;
     border: none;
@@ -1567,7 +1569,8 @@ body {
     color: #1a3d2e;
 }
 
-.concern-resolved-image-note {
+.concern-resolved-image-note,
+.concern-reported-image-note {
     margin: 0 0 12px;
     font-size: 13px;
     line-height: 1.45;
@@ -1602,7 +1605,8 @@ body {
     word-break: break-word;
 }
 
-.concern-resolved-image-frame {
+.concern-resolved-image-frame,
+.concern-reported-image-frame {
     border-radius: 14px;
     overflow: hidden;
     background: linear-gradient(180deg, #f8f9fa 0%, #eef1f4 100%);
@@ -1610,19 +1614,22 @@ body {
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
 }
 
-.concern-resolved-image-frame--loading {
+.concern-resolved-image-frame--loading,
+.concern-reported-image-frame--loading {
     min-height: 120px;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
-.concern-resolved-image-loading {
+.concern-resolved-image-loading,
+.concern-reported-image-loading {
     font-size: 13px;
     color: #6c757d;
 }
 
-.concern-resolved-image-error {
+.concern-resolved-image-error,
+.concern-reported-image-error {
     color: #a71d2a;
     font-size: 12px;
     line-height: 1.4;
@@ -1631,7 +1638,8 @@ body {
 }
 
 /* Walang naka-upload na photo — hindi error na server */
-.concern-resolved-image-empty {
+.concern-resolved-image-empty,
+.concern-reported-image-empty {
     color: #5a6570;
     font-size: 13px;
     line-height: 1.45;
@@ -1639,7 +1647,8 @@ body {
     text-align: center;
 }
 
-.concern-resolved-image-img {
+.concern-resolved-image-img,
+.concern-reported-image-img {
     display: block;
     width: 100%;
     max-height: 320px;
