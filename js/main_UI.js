@@ -1027,7 +1027,7 @@ function BarangayOrdinance() {
 (function setupBarangayOrdinanceGallery() {
     const overlay = document.getElementById('barangayOrdinanceGallery');
     const backdrop = document.getElementById('barangayOrdinanceGalleryBackdrop');
-    const closeBtn = document.getElementById('barangayOrdinanceGalleryClose');
+    const homeBtn = document.getElementById('barangayOrdinanceGalleryHome');
     const track = document.getElementById('ordinanceCarouselTrack');
     const viewport = document.getElementById('ordinanceCarouselViewport');
     const dotsContainer = document.getElementById('ordinanceCarouselDots');
@@ -1170,7 +1170,7 @@ function BarangayOrdinance() {
         }
     }
 
-    if (closeBtn) closeBtn.addEventListener('click', closeBarangayOrdinanceGallery);
+    if (homeBtn) homeBtn.addEventListener('click', closeBarangayOrdinanceGallery);
     if (backdrop) backdrop.addEventListener('click', onBackdropClick);
     viewport.addEventListener('touchstart', onTouchStart, { passive: true });
     viewport.addEventListener('touchend', onTouchEnd, { passive: true });

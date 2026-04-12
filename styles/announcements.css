@@ -1187,19 +1187,23 @@ body.detail-view {
 .detail-image-banner {
     width: 100%;
     max-width: 100%;
-    height: 200px;
+    height: auto;
+    min-height: 0;
     overflow: hidden;
     border-radius: 12px;
     margin-bottom: 20px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     position: relative;
     box-sizing: border-box;
+    background: #f0f2f5;
 }
 
 .banner-image {
     width: 100%;
-    height: 100%;
-    object-fit: cover;
+    height: auto;
+    max-height: none;
+    object-fit: contain;
+    object-position: center top;
     display: block;
     max-width: 100%;
 }
@@ -1459,7 +1463,7 @@ body.detail-view {
     }
     
     .detail-image-banner {
-        height: 160px;
+        height: auto;
         margin-bottom: 15px;
         width: 100%;
         max-width: 100%;
@@ -1469,6 +1473,8 @@ body.detail-view {
     .banner-image {
         width: 100%;
         max-width: 100%;
+        height: auto;
+        object-fit: contain;
     }
     
     .detail-banner {
@@ -1626,7 +1632,7 @@ body.detail-view {
     }
     
     .detail-image-banner {
-        height: 140px;
+        height: auto;
         margin-bottom: 12px;
         width: 100%;
         max-width: 100%;
@@ -1636,6 +1642,8 @@ body.detail-view {
     .banner-image {
         width: 100%;
         max-width: 100%;
+        height: auto;
+        object-fit: contain;
     }
     
     .detail-banner {

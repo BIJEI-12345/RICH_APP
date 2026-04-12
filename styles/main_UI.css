@@ -5306,9 +5306,20 @@ html {
 
 .ordinance-gallery-header {
     position: relative;
-    padding: 14px 44px 10px 16px;
+    padding: 12px 16px 10px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.12);
     flex-shrink: 0;
+}
+
+.ordinance-gallery-header-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.ordinance-gallery-header-text {
+    flex: 1;
+    min-width: 0;
 }
 
 .ordinance-gallery-header h2 {
@@ -5326,28 +5337,27 @@ html {
     line-height: 1.35;
 }
 
-.ordinance-gallery-close {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    width: 36px;
-    height: 36px;
+.ordinance-gallery-home {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
     border: none;
     border-radius: 50%;
     background: rgb(65 63 63 / 12%);
-    color: #000000;
+    color: #fff;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: background 0.2s ease, transform 0.15s ease;
+    font-size: 17px;
 }
 
-.ordinance-gallery-close:hover {
+.ordinance-gallery-home:hover {
     background: rgba(255, 255, 255, 0.22);
 }
 
-.ordinance-gallery-close:active {
+.ordinance-gallery-home:active {
     transform: scale(0.94);
 }
 
