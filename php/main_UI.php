@@ -54,16 +54,18 @@ try {
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
     
     if ($user) {
-        // Contact for forms (concerns, etc.): census head contact first, then resident mobile if column exists
+        // Contact source for concerns/emergency/census auto-fill:
+        // use census_form.contact_number linked by census_id.
         $contactPhone = null;
         $residentId = (int)($user['id'] ?? 0);
         try {
             $tableCheck = $pdo->query("SHOW TABLES LIKE 'census_form'");
             if ($tableCheck && $tableCheck->rowCount() > 0 && $residentId > 0) {
+                $censusLinkId = census_id_for_resident_pk($residentId);
                 $cStmt = $pdo->prepare(
                     "SELECT contact_number FROM census_form WHERE census_id = ? AND contact_number IS NOT NULL AND TRIM(COALESCE(contact_number, '')) != '' ORDER BY id ASC LIMIT 1"
                 );
-                $cStmt->execute([$residentId]);
+                $cStmt->execute([$censusLinkId]);
                 $cRow = $cStmt->fetch(PDO::FETCH_ASSOC);
                 if ($cRow && isset($cRow['contact_number'])) {
                     $digits = preg_replace('/[^0-9]/', '', (string)$cRow['contact_number']);
@@ -74,21 +76,6 @@ try {
             }
         } catch (PDOException $e) {
             error_log('main_UI.php census contact lookup: ' . $e->getMessage());
-        }
-        if ($contactPhone === null && $residentId > 0) {
-            try {
-                $mobStmt = $pdo->prepare('SELECT mobile FROM resident_information WHERE id = ? LIMIT 1');
-                $mobStmt->execute([$residentId]);
-                $mobRow = $mobStmt->fetch(PDO::FETCH_ASSOC);
-                if ($mobRow && isset($mobRow['mobile']) && $mobRow['mobile'] !== null && trim((string)$mobRow['mobile']) !== '') {
-                    $digits = preg_replace('/[^0-9]/', '', (string)$mobRow['mobile']);
-                    if ($digits !== '') {
-                        $contactPhone = $digits;
-                    }
-                }
-            } catch (PDOException $e) {
-                // mobile column may be absent on older schemas
-            }
         }
 
         // Handle birthday - it could be a date object or string

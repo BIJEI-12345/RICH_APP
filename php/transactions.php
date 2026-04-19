@@ -200,6 +200,29 @@ function concern_has_concern_image_expression(PDO $pdo) {
 }
 
 /**
+ * Whether a known form table has a column (cached). Avoids SQL errors on older DBs missing e.g. `purpose`.
+ *
+ * @param string $table One of: indigency_forms, certification_forms, coe_forms, clearance_forms
+ */
+function transactions_form_table_has_column(PDO $pdo, string $table, string $column): bool {
+    static $cache = [];
+    $allowed = ['indigency_forms', 'certification_forms', 'coe_forms', 'clearance_forms'];
+    if (!in_array($table, $allowed, true) || !preg_match('/^[a-z0-9_]+$/i', $column)) {
+        return false;
+    }
+    $key = $table . "\0" . strtolower($column);
+    if (isset($cache[$key])) {
+        return $cache[$key];
+    }
+    try {
+        $q = $pdo->query("SHOW COLUMNS FROM `{$table}` LIKE " . $pdo->quote($column));
+        return $cache[$key] = ($q && $q->rowCount() > 0);
+    } catch (Throwable $e) {
+        return $cache[$key] = false;
+    }
+}
+
+/**
  * Strip UTF-8 BOM and leading whitespace before image magic bytes (matches announcement_image_helpers).
  */
 function transactions_resolved_image_strip_prefix_noise(string $binary): string {
@@ -1078,6 +1101,32 @@ function listTransactions($pdo) {
         }
         
         $allTransactions = array_merge($allTransactions, $emergencies);
+
+        // Optional `purpose` (and COE `position`) columns — older schemas may omit them; avoid Unknown column errors.
+        $indigencyHasPurpose = transactions_form_table_has_column($pdo, 'indigency_forms', 'purpose');
+        $indigencyNotesFrag = $indigencyHasPurpose ? 'purpose as notes' : 'NULL as notes';
+        $indigencyPurposeFrag = $indigencyHasPurpose ? 'purpose as purpose' : 'NULL as purpose';
+        $indigencyNotesFragI = $indigencyHasPurpose ? 'i.purpose as notes' : 'NULL as notes';
+        $indigencyPurposeFragI = $indigencyHasPurpose ? 'i.purpose as purpose' : 'NULL as purpose';
+
+        $certHasPurpose = transactions_form_table_has_column($pdo, 'certification_forms', 'purpose');
+        $certNotesFrag = $certHasPurpose ? 'purpose as notes' : 'NULL as notes';
+        $certPurposeFrag = $certHasPurpose ? 'purpose as purpose' : 'NULL as purpose';
+        $certNotesFragC = $certHasPurpose ? 'c.purpose as notes' : 'NULL as notes';
+        $certPurposeFragC = $certHasPurpose ? 'c.purpose as purpose' : 'NULL as purpose';
+
+        $coeHasPurpose = transactions_form_table_has_column($pdo, 'coe_forms', 'purpose');
+        $coeHasPosition = transactions_form_table_has_column($pdo, 'coe_forms', 'position');
+        $coeNotesFrag = $coeHasPosition ? 'position as notes' : 'NULL as notes';
+        $coePurposeFrag = $coeHasPurpose ? 'purpose as purpose' : 'NULL as purpose';
+        $coeNotesFragCoe = $coeHasPosition ? 'coe.position as notes' : 'NULL as notes';
+        $coePurposeFragCoe = $coeHasPurpose ? 'coe.purpose as purpose' : 'NULL as purpose';
+
+        $clrHasPurpose = transactions_form_table_has_column($pdo, 'clearance_forms', 'purpose');
+        $clrNotesFrag = $clrHasPurpose ? 'purpose as notes' : 'NULL as notes';
+        $clrPurposeFrag = $clrHasPurpose ? 'purpose as purpose' : 'NULL as purpose';
+        $clrNotesFragCl = $clrHasPurpose ? 'cl.purpose as notes' : 'NULL as notes';
+        $clrPurposeFragCl = $clrHasPurpose ? 'cl.purpose as purpose' : 'NULL as purpose';
         
         // Fetch indigency forms - Check if email column exists, if yes query directly by email, otherwise use JOIN
         $checkEmailColumn = $pdo->query("SHOW COLUMNS FROM indigency_forms LIKE 'email'");
@@ -1100,7 +1149,8 @@ function listTransactions($pdo) {
                     submitted_at as request_date,
                     process_at as processing_date,
                     finish_at as completion_date,
-                    purpose as notes,
+                    {$indigencyNotesFrag},
+                    {$indigencyPurposeFrag},
                     NULL as document_url,
                     submitted_at as created_at,
                     submitted_at as updated_at,
@@ -1128,7 +1178,8 @@ function listTransactions($pdo) {
                     i.submitted_at as request_date,
                     i.process_at as processing_date,
                     i.finish_at as completion_date,
-                    i.purpose as notes,
+                    {$indigencyNotesFragI},
+                    {$indigencyPurposeFragI},
                     NULL as document_url,
                     i.submitted_at as created_at,
                     i.submitted_at as updated_at,
@@ -1232,7 +1283,8 @@ function listTransactions($pdo) {
                     submitted_at as request_date,
                     process_at as processing_date,
                     finish_at as completion_date,
-                    purpose as notes,
+                    {$certNotesFrag},
+                    {$certPurposeFrag},
                     NULL as document_url,
                     submitted_at as created_at,
                     submitted_at as updated_at,
@@ -1260,7 +1312,8 @@ function listTransactions($pdo) {
                     c.submitted_at as request_date,
                     c.process_at as processing_date,
                     c.finish_at as completion_date,
-                    c.purpose as notes,
+                    {$certNotesFragC},
+                    {$certPurposeFragC},
                     NULL as document_url,
                     c.submitted_at as created_at,
                     c.submitted_at as updated_at,
@@ -1298,7 +1351,8 @@ function listTransactions($pdo) {
                     submitted_at as request_date,
                     process_at as processing_date,
                     finish_at as completion_date,
-                    position as notes,
+                    {$coeNotesFrag},
+                    {$coePurposeFrag},
                     NULL as document_url,
                     submitted_at as created_at,
                     submitted_at as updated_at,
@@ -1326,7 +1380,8 @@ function listTransactions($pdo) {
                     coe.submitted_at as request_date,
                     coe.process_at as processing_date,
                     coe.finish_at as completion_date,
-                    coe.position as notes,
+                    {$coeNotesFragCoe},
+                    {$coePurposeFragCoe},
                     NULL as document_url,
                     coe.submitted_at as created_at,
                     coe.submitted_at as updated_at,
@@ -1364,7 +1419,8 @@ function listTransactions($pdo) {
                     submitted_at as request_date,
                     process_at as processing_date,
                     finish_at as completion_date,
-                    purpose as notes,
+                    {$clrNotesFrag},
+                    {$clrPurposeFrag},
                     NULL as document_url,
                     submitted_at as created_at,
                     submitted_at as updated_at,
@@ -1392,7 +1448,8 @@ function listTransactions($pdo) {
                     cl.submitted_at as request_date,
                     cl.process_at as processing_date,
                     cl.finish_at as completion_date,
-                    cl.purpose as notes,
+                    {$clrNotesFragCl},
+                    {$clrPurposeFragCl},
                     NULL as document_url,
                     cl.submitted_at as created_at,
                     cl.submitted_at as updated_at,

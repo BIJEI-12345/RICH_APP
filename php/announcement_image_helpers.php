@@ -273,11 +273,16 @@ function announcement_try_output_image_from_column_value($imageData, $imageId, a
     $imageType = announcement_detect_raster_content_type($prepared);
 
     if ($imageType !== null) {
-        announcement_send_raster_bytes($prepared, $imageType, $imageId, $title);
+        $announcementTitle = $announcementInfo['title'] ?? 'Image';
+        announcement_send_raster_bytes($prepared, $imageType, $imageId, $announcementTitle);
     }
 
-    error_log("No raster magic bytes for ID {$imageId}; trying VARCHAR path. First bytes: " . bin2hex(substr($prepared, 0, min(12, strlen($prepared)))));
-    tryServeAnnouncementImageFromStoredPath($prepared, $imageId);
+    $hex = '';
+    if (is_string($prepared)) {
+        $hex = bin2hex(substr($prepared, 0, min(12, strlen($prepared))));
+    }
+    error_log("No raster magic bytes for ID {$imageId}; trying VARCHAR path. First bytes: " . $hex);
+    tryServeAnnouncementImageFromStoredPath(is_string($prepared) ? $prepared : '', $imageId);
 
     return false;
 }

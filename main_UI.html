@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/jpg" href="Images/logo app 2.jpg">
     <title>RICH - Main Portal</title>
-    <link rel="stylesheet" href="styles/main_UI.css">
+    <link rel="stylesheet" href="styles/main_UI.css?v=20260417180000">
+    <link rel="stylesheet" href="styles/full_disclosure.css?v=20260418200000">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- Immediate redirect check - redirect to index.php if no session -->
@@ -229,7 +230,27 @@
             </div>
         </section> -->
 
-        
+        <!-- Full Disclosure Policy Board (above News and Articles) -->
+        <div class="section-container-no-border">
+            <div class="news-card full-disclosure-policy-board" role="region" aria-label="Full Disclosure Policy Board">
+                <div class="news-content">
+                    <h4>Full Disclosure Policy Board</h4>
+                    <p>Transparency and accountability information for the barangay.</p>
+                </div>
+                <div class="announcements announcements--policy-board" id="main-ui-policy-board-root">
+                    <div class="policy-board-loading" role="status" aria-live="polite">
+                        <div class="policy-board-loading__spin-wrap">
+                            <div class="policy-board-loading__spinner" aria-hidden="true"></div>
+                        </div>
+                        <span class="policy-board-loading__label">Loading</span>
+                    </div>
+                </div>
+            </div>
+            <div class="see-all-container see-all-container--full-disclosure">
+                <button type="button" class="see-all-btn" onclick="seeAllFullDisclosure()">See All <i class="fas fa-arrow-right"></i></button>
+            </div>
+        </div>
+
         <!-- News and Articles Section -->
         <div class="section-container-no-border">
         <section class="news-section">
@@ -481,29 +502,11 @@
                                 </div>
                                 <div class="form-group" style="flex: 0.5; max-width: 120px;">
                                     <label for="censusSuffix">Suffix</label>
-                                    <select id="censusSuffix" name="suffix">
-                                        <option value="">None</option>
-                                        <option value="Jr.">Jr.</option>
-                                        <option value="Sr.">Sr.</option>
-                                        <option value="II">II</option>
-                                        <option value="III">III</option>
-                                        <option value="IV">IV</option>
-                                        <option value="V">V</option>
-                                    </select>
+                                    <select id="censusSuffix" name="suffix"></select>
                                 </div>
                                 <div class="form-group" style="flex: 1.5;">
                                     <label for="censusFamilyOccupation">Family Occupation <span class="required-indicator">*</span></label>
-                                    <select id="censusFamilyOccupation" name="familyOccupation" required>
-                                        <option value="">Select family occupation</option>
-                                        <option value="Mother">Mother</option>
-                                        <option value="Father">Father</option>
-                                        <option value="Son">Son</option>
-                                        <option value="Daughter">Daughter</option>
-                                        <option value="Grandparent">Grandparent</option>
-                                        <option value="Cousin">Cousin</option>
-                                        <option value="Other Relative">Other Relative</option>
-                                        <option value="Non-Relative">Non-Relative</option>
-                                    </select>
+                                    <select id="censusFamilyOccupation" name="familyOccupation" required></select>
                                 </div>
                             </div>
                             
@@ -518,66 +521,86 @@
                                 </div>
                                 <div class="form-group">
                                     <label for="censusSex">Sex <span class="required-indicator">*</span></label>
-                                    <select id="censusSex" name="sex" required>
-                                        <option value="">Select your sex</option>
-                                        <option value="Male">Male</option>
-                                        <option value="Female">Female</option>
-                                    </select>
+                                    <select id="censusSex" name="sex" required></select>
                                 </div>
                             </div>
                             
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="censusCivilStatus">Civil Status <span class="required-indicator">*</span></label>
-                                    <select id="censusCivilStatus" name="civilStatus" required>
-                                        <option value="">Select status</option>
-                                        <option value="Single">Single</option>
-                                        <option value="Married">Married</option>
-                                        <option value="Divorced">Divorced</option>
-                                        <option value="Widowed">Widowed</option>
-                                    </select>
+                                    <select id="censusCivilStatus" name="civilStatus" required></select>
                                 </div>
                             </div>
                             
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="censusContactNumber">Contact Number <span class="required-indicator">*</span></label>
-                                    <input type="tel" id="censusContactNumber" name="contactNumber" placeholder="09XXXXXXXXX" maxlength="11" pattern="[0-9]{11}" required>
+                                    <input type="tel" id="censusContactNumber" name="contactNumber" placeholder="09XX-XXX-XXXX" maxlength="13" inputmode="numeric" autocomplete="tel" required>
                                     
-                                    <label for="censusDisability" style="margin-top: 0.75rem;">Disability <span class="required-indicator">*</span></label>
-                                    <input type="text" id="censusDisability" name="disability" placeholder="e.g., None, Visual Impairment, Physical Disability" required>
+                                    <label for="censusDisabilitySelect" style="margin-top: 0.75rem;">Disability <span class="required-indicator">*</span></label>
+                                    <!-- Options filled from js/main_UI.js (shared with household members) -->
+                                    <select id="censusDisabilitySelect" class="census-select-long" required></select>
+                                    <div id="censusDisabilityOtherWrap" class="census-occupation-other-wrap" hidden>
+                                        <label for="censusDisabilityOther" class="census-occupation-other-label">Specify disability <span class="required-indicator">*</span></label>
+                                        <input type="text" id="censusDisabilityOther" placeholder="Ilarawan ang kapansanan" maxlength="100" autocomplete="off">
+                                    </div>
                                 </div>
-                                <div class="form-group">
-                                    <label for="censusOccupation">Your Occupation <span class="required-indicator">*</span></label>
-                                    <input type="text" id="censusOccupation" name="occupation" placeholder="e.g., Teacher, Engineer, Student" required>
+                                <div class="form-group census-occupation-field">
+                                    <label for="censusOccupationSelect">Your Occupation <span class="required-indicator">*</span></label>
+                                    <select id="censusOccupationSelect" required></select>
+                                    <div id="censusOccupationOtherWrap" class="census-occupation-other-wrap" hidden>
+                                        <label for="censusOccupationOther" class="census-occupation-other-label">Job / type of work <span class="required-indicator">*</span></label>
+                                        <input type="text" id="censusOccupationOther" placeholder="e.g., Sales clerk, teacher, driver" autocomplete="off">
+                                    </div>
                                 </div>
                             </div>
                             
                             <div class="form-row">
                                 <div class="form-group">
-                                    <label for="censusPlaceOfWork">Place of Work <span class="required-indicator">*</span></label>
-                                    <input type="text" id="censusPlaceOfWork" name="placeOfWork" placeholder="Company name or work address" required>
+                                    <label for="censusPlaceOfWork">Place of Work <span id="censusPlaceOfWorkRequiredMark" class="required-indicator">*</span></label>
+                                    <input type="text" id="censusPlaceOfWork" name="placeOfWork" placeholder="Company name" autocomplete="off">
                                 </div>
                                 <div class="form-group">
-                                    <label for="censusClaimedBenefits">Supported Benefits from Barangay <span class="required-indicator">*</span></label>
-                                    <input type="text" id="censusClaimedBenefits" name="claimedBenefits" placeholder="List any benefits you receive" required>
+                                    <label for="censusBenefitsSelect">Supported Benefits from Barangay <span class="required-indicator">*</span></label>
+                                    <select id="censusBenefitsSelect" required></select>
+                                    <div id="censusBenefitsOtherWrap" class="census-occupation-other-wrap" hidden>
+                                        <label for="censusBenefitsOther" class="census-occupation-other-label">Specify benefit <span class="required-indicator">*</span></label>
+                                        <input type="text" id="censusBenefitsOther" placeholder="Ilarawan ang benepisyo" autocomplete="off">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-row census-indigenous-row">
+                                <div class="form-group census-indigenous-group">
+                                    <span class="census-indigenous-label" id="censusIndigenousLabel">Kayo po ba ay kabilang sa Indigenous People? <span class="required-indicator">*</span></span>
+                                    <div class="census-indigenous-checks" role="group" aria-labelledby="censusIndigenousLabel">
+                                        <label class="census-indigenous-option">
+                                            <input type="checkbox" id="censusIndigenousYes" autocomplete="off">
+                                            Oo
+                                        </label>
+                                        <label class="census-indigenous-option">
+                                            <input type="checkbox" id="censusIndigenousNo" autocomplete="off">
+                                            Hindi
+                                        </label>
+                                    </div>
+                                    <input type="hidden" id="censusIndigenous" name="indigenous" value="">
                                 </div>
                             </div>
                             
                             <div class="form-group">
                                 <label for="censusAddress">Current Address <span class="required-indicator">*</span></label>
-                                <textarea id="censusAddress" name="address" rows="3" required placeholder="Block No., House No., Street, Barangay Bigte, Norzagaray, Bulacan"></textarea>
+                                <textarea id="censusAddress" name="address" class="census-field-readonly" rows="3" required readonly placeholder="From your registered address"></textarea>
                             </div>
                             
                             <div class="form-group">
                                 <label for="censusUnitHouseNumber">Unit/House Number <span class="required-indicator">*</span></label>
-                                <input type="text" id="censusUnitHouseNumber" name="unitHouseNumber" placeholder="Enter unit or house number" required>
+                                <input type="text" id="censusUnitHouseNumber" name="unitHouseNumber" class="census-field-readonly" placeholder="From your registered address" required readonly>
                             </div>
                         </div>
                     </div>
 
                     <!-- Section 2: Household Members -->
-                    <div class="census-section">
+                    <div class="census-section census-section-household">
                         <div class="section-header">
                             <i class="fas fa-users"></i>
                             <h4>Step 2: Household Members</h4>
@@ -624,28 +647,12 @@
             <div class="ordinance-gallery-body">
                 <div class="ordinance-carousel-shell">
                     <div class="ordinance-carousel-viewport" id="ordinanceCarouselViewport">
-                        <div class="ordinance-carousel-track" id="ordinanceCarouselTrack">
-                            <figure class="ordinance-slide">
-                                <img src="Images/barangay_ordinance/01-public-conduct.png" alt="May batas na sa public disturbance, indecency, at disorderly conduct — DILG">
-                                <figcaption>Public conduct &amp; umiiral na batas</figcaption>
-                            </figure>
-                            <figure class="ordinance-slide">
-                                <img src="Images/barangay_ordinance/02-lgu-ordinances.png" alt="Local Government Ordinances LGUs — DILG">
-                                <figcaption>Mga parusa sa ilalim ng LGU ordinances</figcaption>
-                            </figure>
-                            <figure class="ordinance-slide">
-                                <img src="Images/barangay_ordinance/03-revised-penal-code.png" alt="Revised Penal Code — piling artikulo — DILG">
-                                <figcaption>Revised Penal Code — piling artikulo</figcaption>
-                            </figure>
-                            <figure class="ordinance-slide">
-                                <img src="Images/barangay_ordinance/04-enforcement.png" alt="Karagdagang enforcement measures — DILG">
-                                <figcaption>Karagdagang enforcement measures</figcaption>
-                            </figure>
+                        <div class="ordinance-carousel-track" id="ordinanceCarouselTrack" aria-live="polite">
+                            <!-- Slides injected from php/ordinances.php (ordinance.image) -->
                         </div>
                     </div>
                 </div>
                 <div class="ordinance-carousel-dots" id="ordinanceCarouselDots" role="tablist" aria-label="Gallery slides"></div>
-                <a href="request.html?open=barangay-ordinance" class="ordinance-gallery-cta">Mag-request ng kaugnay na dokumento</a>
             </div>
         </div>
     </div>
@@ -687,6 +694,8 @@
 
     <!-- Shared helpers (includes full-screen loading circle) -->
     <script src="js/request.js?v=20251004113000"></script>
-    <script src="js/main_UI.js?v=20260409120000"></script>
+    <script src="js/policy_board_carousel.js?v=20260418200000"></script>
+    <script src="js/main_ui_policy_board.js?v=20260418200000"></script>
+    <script src="js/main_UI.js?v=20260417200000"></script>
 </body>
 </html> 

@@ -6,18 +6,18 @@ let lastConcernLimitInfo = null;
 
 document.addEventListener('DOMContentLoaded', function() {
     setupConcernForm();
-    autoPopulateReporter();
     setupContactValidation();
     refreshConcernSubmissionEligibility();
-    
-    // Re-fetch profile if reporter or contact is empty (e.g. page refresh)
-    const reporterField = document.getElementById('cfReporter');
-    const contactFieldRefresh = document.getElementById('cfContact');
-    const contactEmpty = !contactFieldRefresh || !String(contactFieldRefresh.value || '').trim();
-    if (!reporterField.value || contactEmpty) {
-        autoPopulateReporter();
-    }
-    
+
+    (async function loadProfileForConcernForm() {
+        await autoPopulateReporter();
+        const reporterField = document.getElementById('cfReporter');
+        const contactFieldRefresh = document.getElementById('cfContact');
+        const contactEmpty = !contactFieldRefresh || !String(contactFieldRefresh.value || '').trim();
+        if (reporterField && (!reporterField.value.trim() || contactEmpty)) {
+            await autoPopulateReporter();
+        }
+    })();
 });
 
 /** SweetAlert when user cannot submit (5/5 active) — shows New vs Processing counts from API. */
@@ -157,12 +157,24 @@ function getPhilippineTime() {
     return philippineTime.toISOString();
 }
 
-// Auto-populate reporter name from logged-in user
+// Auto-populate reporter name + contact (main_UI.php; cache from portal in sessionStorage)
 async function autoPopulateReporter() {
+    const reporterField = document.getElementById('cfReporter');
+    const contactField = document.getElementById('cfContact');
+    const cached = sessionStorage.getItem('user_contact_phone_digits');
+    if (contactField && cached) {
+        contactField.value = String(cached).replace(/\D/g, '').slice(0, 11);
+    }
+
+    const userEmail = (sessionStorage.getItem('user_email') || localStorage.getItem('user_email') || '').trim();
+    if (!userEmail) {
+        if (reporterField && !reporterField.value.trim()) {
+            reporterField.value = '';
+        }
+        return;
+    }
+
     try {
-        const userEmail = sessionStorage.getItem('user_email') || localStorage.getItem('user_email') || 'test@example.com';
-        
-        // Get user name from resident_information table
         const response = await fetch('php/main_UI.php', {
             method: 'POST',
             headers: {
@@ -170,24 +182,32 @@ async function autoPopulateReporter() {
             },
             body: JSON.stringify({
                 email: userEmail
-            })
+            }),
+            cache: 'no-store'
         });
-        
+
         const result = await response.json();
         if (result.success && result.user) {
-            const fullName = `${result.user.first_name} ${result.user.last_name}`.trim();
-            document.getElementById('cfReporter').value = fullName;
-            const contactField = document.getElementById('cfContact');
-            const phone = result.user.contact_phone;
+            const u = result.user;
+            if (reporterField) {
+                reporterField.value = `${u.first_name} ${u.last_name}`.trim();
+            }
+            const phone = u.contact_phone;
             if (contactField && phone != null && String(phone).trim() !== '') {
-                contactField.value = String(phone).replace(/[^0-9]/g, '');
+                const digits = String(phone).replace(/\D/g, '').slice(0, 11);
+                contactField.value = digits;
+                sessionStorage.setItem('user_contact_phone_digits', digits);
             }
         } else {
-            document.getElementById('cfReporter').value = 'Unknown User';
+            if (reporterField) {
+                reporterField.value = 'Unknown User';
+            }
         }
     } catch (error) {
         console.error('Error auto-populating reporter:', error);
-        document.getElementById('cfReporter').value = 'Unknown User';
+        if (reporterField) {
+            reporterField.value = 'Unknown User';
+        }
     }
 }
 

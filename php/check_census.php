@@ -7,6 +7,9 @@ header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST');
 header('Access-Control-Allow-Headers: Content-Type');
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+header('Expires: 0');
 
 // Only allow POST requests
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -45,6 +48,49 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 require_once __DIR__ . '/env_loader.php';
 require_once __DIR__ . '/census_address_helpers.php';
 
+/**
+ * Detect whether a census row is archived using common archive flag columns.
+ */
+function isArchivedCensusRow(array $row): bool {
+    $archiveColumns = ['is_archived', 'archived', 'archive_status', 'status', 'record_status', 'state'];
+    foreach ($archiveColumns as $column) {
+        if (!array_key_exists($column, $row)) {
+            continue;
+        }
+        $raw = $row[$column];
+        if ($raw === null) {
+            continue;
+        }
+        if (is_numeric($raw) && (int)$raw === 1 && in_array($column, ['is_archived', 'archived'], true)) {
+            return true;
+        }
+        $value = strtolower(trim((string)$raw));
+        if ($value === '') {
+            continue;
+        }
+        if (in_array($value, ['archived', 'archive', 'inactive', 'disabled'], true)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function censusIdentityText($value): string {
+    return mb_strtolower(trim((string) $value), 'UTF-8');
+}
+
+function censusIdentityDate($value): string {
+    $value = trim((string) ($value ?? ''));
+    if ($value === '') {
+        return '';
+    }
+    $ts = strtotime($value);
+    if ($ts !== false) {
+        return date('Y-m-d', $ts);
+    }
+    return censusIdentityText($value);
+}
+
 try {
     $pdo = getDBConnection();
     if ($pdo) {
@@ -80,9 +126,10 @@ try {
     
     // Email exists in resident_information table
     $userId = $user['id'];
+    $censusLinkId = census_id_for_resident_pk($userId);
     
-    // Get user's last name and address from resident_information
-    $stmt = $pdo->prepare("SELECT last_name, address FROM resident_information WHERE id = ?");
+    // Get user's identity and address from resident_information
+    $stmt = $pdo->prepare("SELECT first_name, last_name, birthday, address FROM resident_information WHERE id = ?");
     $stmt->execute([$userId]);
     $userInfo = $stmt->fetch(PDO::FETCH_ASSOC);
     
@@ -96,7 +143,9 @@ try {
         exit;
     }
     
+    $userFirstName = trim($userInfo['first_name'] ?? '');
     $userLastName = trim($userInfo['last_name'] ?? '');
+    $userBirthday = trim((string) ($userInfo['birthday'] ?? ''));
     $userAddress = trim($userInfo['address'] ?? '');
     
     // Check if census_form table exists (singular, not plural)
@@ -110,19 +159,71 @@ try {
     }
     
     if ($tableExists) {
-        // First, check if census exists for this user (using census_id which references resident_information.id)
-        $stmt = $pdo->prepare("SELECT id FROM census_form WHERE census_id = ? LIMIT 1");
-        $stmt->execute([$userId]);
-        $census = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-        $hasCompletedCensus = $census !== false;
+        // Discover archive-related columns first so we can evaluate archived rows safely.
+        $archiveColumns = [];
+        $existingColumns = [];
+        $columnsStmt = $pdo->query("SHOW COLUMNS FROM census_form");
+        if ($columnsStmt) {
+            $existingColumns = $columnsStmt->fetchAll(PDO::FETCH_COLUMN);
+        }
+        foreach (['is_archived', 'archived', 'archive_status', 'status', 'record_status', 'state'] as $candidate) {
+            if (in_array($candidate, $existingColumns, true)) {
+                $archiveColumns[] = $candidate;
+            }
+        }
+
+        // First, check if census exists for this exact resident identity (not just any household row).
+        $selectColumns = 'id, first_name, last_name, birthday, complete_address';
+        if (!empty($archiveColumns)) {
+            $selectColumns .= ', ' . implode(', ', $archiveColumns);
+        }
+        $stmt = $pdo->prepare("SELECT $selectColumns FROM census_form WHERE census_id = ?");
+        $stmt->execute([$censusLinkId]);
+        $censusRows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $isArchived = false;
+        $hasCompletedCensus = false;
+        $expectedFirst = censusIdentityText($userFirstName);
+        $expectedLast = censusIdentityText($userLastName);
+        $expectedBirthday = censusIdentityDate($userBirthday);
+        foreach ($censusRows as $census) {
+            $firstOk = censusIdentityText($census['first_name'] ?? '') === $expectedFirst;
+            $lastOk = censusIdentityText($census['last_name'] ?? '') === $expectedLast;
+            if (!$firstOk || !$lastOk) {
+                continue;
+            }
+
+            $birthdayOk = true;
+            if ($expectedBirthday !== '') {
+                $birthdayOk = censusIdentityDate($census['birthday'] ?? '') === $expectedBirthday;
+            }
+            if (!$birthdayOk) {
+                continue;
+            }
+
+            if ($userAddress !== '') {
+                $recordAddress = trim((string) ($census['complete_address'] ?? ''));
+                if ($recordAddress !== '' && !censusAddressesLikelyMatch($userAddress, $recordAddress)) {
+                    continue;
+                }
+            }
+
+            if (isArchivedCensusRow($census)) {
+                $isArchived = true;
+                continue;
+            }
+
+            $hasCompletedCensus = true;
+            $isArchived = false;
+            break;
+        }
         
         // Same last name + resident address matches census_form.complete_address (fuzzy), another household row
         // Exclude the user's own census row (census_id != this user)
         $isAlreadyCensused = false;
         if ($userLastName !== '' && $userAddress !== '') {
             $stmt = $pdo->prepare("SELECT id, last_name, complete_address FROM census_form WHERE census_id != ?");
-            $stmt->execute([$userId]);
+            $stmt->execute([$censusLinkId]);
             $allCensusRecords = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             foreach ($allCensusRecords as $record) {
@@ -148,6 +249,7 @@ try {
             'success' => true,
             'emailExists' => true,
             'hasCompletedCensus' => $hasCompletedCensus,
+            'isArchived' => $isArchived,
             'isAlreadyCensused' => $isAlreadyCensused
         ]);
     } else {

@@ -49,6 +49,31 @@ document.addEventListener('DOMContentLoaded', function() {
     const idValidationOverlay = document.getElementById('idValidationOverlay');
     const idValidationOverlayText = document.getElementById('idValidationOverlayText');
 
+    /** First letter of each word → uppercase while typing (create account step 1: names, street). */
+    (function attachAutoCapitalizeNameFields() {
+        function capitalizeLeadingLetters(value) {
+            return value.replace(/(^|[\s\-'])(\p{Ll})/gu, (_, sep, ll) => sep + ll.toUpperCase());
+        }
+        function onInput(e) {
+            const t = e.target;
+            const before = t.value;
+            const after = capitalizeLeadingLetters(before);
+            if (after === before) return;
+            const start = t.selectionStart;
+            const end = t.selectionEnd;
+            t.value = after;
+            const lenDiff = after.length - before.length;
+            if (start != null && end != null) {
+                try {
+                    t.setSelectionRange(start + lenDiff, end + lenDiff);
+                } catch (_) {}
+            }
+        }
+        [firstNameInput, middleNameInput, lastNameInput, streetInput].forEach((el) => {
+            if (el) el.addEventListener('input', onInput);
+        });
+    })();
+
     function showIdValidationLoading(message) {
         if (idValidationOverlayText && typeof message === 'string' && message.trim()) {
             idValidationOverlayText.textContent = message.trim();
@@ -1442,6 +1467,12 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!response.ok || !data.success) {
                 // Build detailed error message
                 let errorMessage = data.message || `Server error (${response.status})`;
+                if (data.error_details && String(data.error_details).trim()) {
+                    errorMessage += '<br><br><small style="opacity:0.9">' + String(data.error_details).replace(/</g, '&lt;') + '</small>';
+                }
+                if (data.error_code === 'email_delivery_failed' && data.otp_code) {
+                    console.info('Registration: OTP could not be emailed. OTP for testing (check server policy):', data.otp_code);
+                }
                 
                 // Add debug information if available
                 if (data.debug) {

@@ -22,19 +22,34 @@ class EmailSender {
         // Load environment variables
         require_once __DIR__ . '/env_loader.php';
         
-        // Email configuration from environment variables
-        $h = $_ENV['SMTP_HOST'] ?? getenv('SMTP_HOST');
+        // Email configuration — prefer $_ENV (set by env_loader.php); getenv() is fallback only
+        $h = isset($_ENV['SMTP_HOST']) && $_ENV['SMTP_HOST'] !== '' ? $_ENV['SMTP_HOST'] : (getenv('SMTP_HOST') ?: null);
         $this->smtpHost = ($h !== false && $h !== null && $h !== '') ? $h : null;
-        $p = $_ENV['SMTP_PORT'] ?? getenv('SMTP_PORT');
+        $p = isset($_ENV['SMTP_PORT']) && $_ENV['SMTP_PORT'] !== '' ? $_ENV['SMTP_PORT'] : (getenv('SMTP_PORT') ?: null);
         $this->smtpPort = ($p !== false && $p !== null && $p !== '') ? (int) $p : null;
-        $u = $_ENV['SMTP_USER'] ?? getenv('SMTP_USER');
-        $this->smtpUsername = ($u !== false && $u !== null && $u !== '') ? $u : null;
-        $pw = $_ENV['SMTP_PASS'] ?? getenv('SMTP_PASS');
-        $this->smtpPassword = ($pw !== false && $pw !== null && $pw !== '') ? $pw : null;
-        $fe = $_ENV['SMTP_FROM_EMAIL'] ?? getenv('SMTP_FROM_EMAIL');
-        $this->fromEmail = ($fe !== false && $fe !== null && $fe !== '') ? $fe : null;
-        $fn = $_ENV['SMTP_FROM_NAME'] ?? getenv('SMTP_FROM_NAME');
-        $this->fromName = ($fn !== false && $fn !== null && $fn !== '') ? $fn : null;
+        $u = isset($_ENV['SMTP_USER']) && $_ENV['SMTP_USER'] !== '' ? $_ENV['SMTP_USER'] : (getenv('SMTP_USER') ?: null);
+        $this->smtpUsername = ($u !== false && $u !== null && $u !== '') ? trim((string) $u) : null;
+        $pw = isset($_ENV['SMTP_PASS']) && $_ENV['SMTP_PASS'] !== '' ? $_ENV['SMTP_PASS'] : (getenv('SMTP_PASS') !== false ? getenv('SMTP_PASS') : null);
+        if ($pw !== false && $pw !== null && $pw !== '') {
+            // Gmail App Passwords are 16 chars; Google shows them as 4 groups with spaces — SMTP needs no spaces
+            $this->smtpPassword = preg_replace('/\s+/', '', trim((string) $pw));
+        } else {
+            $this->smtpPassword = null;
+        }
+        $fe = isset($_ENV['SMTP_FROM_EMAIL']) && $_ENV['SMTP_FROM_EMAIL'] !== '' ? $_ENV['SMTP_FROM_EMAIL'] : (getenv('SMTP_FROM_EMAIL') ?: null);
+        $this->fromEmail = ($fe !== false && $fe !== null && $fe !== '') ? trim((string) $fe) : null;
+        $fn = isset($_ENV['SMTP_FROM_NAME']) && $_ENV['SMTP_FROM_NAME'] !== '' ? $_ENV['SMTP_FROM_NAME'] : (getenv('SMTP_FROM_NAME') ?: null);
+        $this->fromName = ($fn !== false && $fn !== null && $fn !== '') ? trim((string) $fn) : null;
+
+        if ($this->smtpPassword !== null && $this->smtpHost && stripos($this->smtpHost, 'gmail') !== false) {
+            $len = strlen($this->smtpPassword);
+            if ($len !== 16 && $len > 0) {
+                error_log("EmailSender: Gmail App Password must be exactly 16 letters (no spaces). Current length after trim: {$len}. Generate a new App Password in Google Account → Security.");
+            }
+        }
+        if ($this->fromEmail && $this->smtpUsername && strcasecmp($this->fromEmail, $this->smtpUsername) !== 0) {
+            error_log('EmailSender: SMTP_FROM_EMAIL should match SMTP_USER for Gmail. From=' . $this->fromEmail . ' User=' . $this->smtpUsername);
+        }
         
         if ($this->smtpHost && $this->smtpPort && $this->smtpUsername && $this->smtpPassword && $this->fromEmail && $this->fromName) {
             $this->smtpConfigured = true;
@@ -42,8 +57,36 @@ class EmailSender {
             ini_set('smtp_port', (string)$this->smtpPort);
             ini_set('sendmail_from', $this->fromEmail);
             ini_set('smtp_ssl', 'tls');
+            $encHint = strtolower((string) ($_ENV['SMTP_ENCRYPTION'] ?? getenv('SMTP_ENCRYPTION') ?: ''));
+            error_log(
+                'EmailSender: .env loaded — SMTP host=' . $this->smtpHost
+                . ' port=' . $this->smtpPort
+                . ' user=' . $this->smtpUsername
+                . ' app_password_len=' . strlen($this->smtpPassword)
+                . ' from=' . $this->fromEmail
+                . ($encHint !== '' ? ' encryption=' . $encHint : '')
+            );
         } else {
-            error_log('EmailSender: SMTP not fully configured — PHPMailer sends will fail until .env has SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM_EMAIL, SMTP_FROM_NAME');
+            $miss = [];
+            if (!$this->smtpHost) {
+                $miss[] = 'SMTP_HOST';
+            }
+            if (!$this->smtpPort) {
+                $miss[] = 'SMTP_PORT';
+            }
+            if (!$this->smtpUsername) {
+                $miss[] = 'SMTP_USER';
+            }
+            if (!$this->smtpPassword) {
+                $miss[] = 'SMTP_PASS';
+            }
+            if (!$this->fromEmail) {
+                $miss[] = 'SMTP_FROM_EMAIL';
+            }
+            if (!$this->fromName) {
+                $miss[] = 'SMTP_FROM_NAME';
+            }
+            error_log('EmailSender: .env missing or empty SMTP keys: ' . implode(', ', $miss) . ' — fix .env path: ' . dirname(__DIR__) . DIRECTORY_SEPARATOR . '.env');
         }
     }
 
@@ -147,7 +190,8 @@ class EmailSender {
     }
 
     /**
-     * Send email using PHPMailer with Gmail SMTP
+     * Send email using PHPMailer with Gmail (or compatible) SMTP.
+     * Tries STARTTLS on configured port first; if "data not accepted" or connection issues, retries SMTPS on 465.
      */
     private function sendGmailSMTP($toEmail, $subject, $message) {
         if (!$this->smtpConfigured) {
@@ -156,77 +200,114 @@ class EmailSender {
                 'message' => 'SMTP is not configured (.env). Set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM_EMAIL, SMTP_FROM_NAME.',
             ];
         }
+
+        $enc = strtolower((string) ($_ENV['SMTP_ENCRYPTION'] ?? getenv('SMTP_ENCRYPTION') ?: ''));
+        $preferSsl = ($enc === 'ssl' || $enc === 'smtps' || (int) $this->smtpPort === 465);
+
+        if ($preferSsl) {
+            $first = $this->smtpSendOnce($toEmail, $subject, $message, true);
+            if ($first['success']) {
+                return $first;
+            }
+            error_log('EmailSender: SMTPS:465 failed, trying STARTTLS:587');
+            return $this->smtpSendOnce($toEmail, $subject, $message, false);
+        }
+
+        $first = $this->smtpSendOnce($toEmail, $subject, $message, false);
+        if ($first['success']) {
+            return $first;
+        }
+
+        $err = $first['detailed_error'] ?? $first['message'] ?? '';
+        if (is_string($err) && (
+            stripos($err, 'data not accepted') !== false
+            || stripos($err, 'Could not connect') !== false
+            || stripos($err, 'SMTP connect() failed') !== false
+        )) {
+            error_log('EmailSender: First SMTP attempt failed (' . $err . '); retrying with SMTPS ssl://smtp.gmail.com:465');
+            $second = $this->smtpSendOnce($toEmail, $subject, $message, true);
+            if ($second['success']) {
+                return $second;
+            }
+            return $second;
+        }
+
+        return $first;
+    }
+
+    /**
+     * @param bool $useImplicitSsl true = SMTPS on port 465; false = STARTTLS (usually port 587)
+     */
+    private function smtpSendOnce($toEmail, $subject, $message, $useImplicitSsl) {
         try {
             $mail = new PHPMailer(true);
-
-            // Enable verbose debug output (level 2 = client and server messages)
-            // $mail->SMTPDebug = 2; // Uncomment for detailed debugging
-            $mail->Debugoutput = function($str, $level) {
+            $mail->Debugoutput = function ($str, $level) {
                 error_log("PHPMailer Debug (Level $level): $str");
             };
 
-            //Server settings
             $mail->isSMTP();
-            $mail->Host       = $this->smtpHost;
-            $mail->SMTPAuth   = true;
-            $mail->Username   = $this->smtpUsername;
-            $mail->Password   = $this->smtpPassword;
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port       = $this->smtpPort;
-            $mail->CharSet    = 'UTF-8';
-            // Prevent long UI hangs when SMTP host is unreachable/misconfigured
-            $mail->Timeout    = 12;
-            $mail->SMTPTimeout = 12;
-            
-            // Additional SMTP options for better reliability
-            $mail->SMTPOptions = array(
-                'ssl' => array(
+            $mail->Host = $this->smtpHost;
+            $mail->SMTPAuth = true;
+            $mail->Username = $this->smtpUsername;
+            $mail->Password = $this->smtpPassword;
+            $mail->CharSet = 'UTF-8';
+            $mail->Timeout = 20;
+            $mail->SMTPTimeout = 20;
+
+            if ($useImplicitSsl) {
+                $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS; // same as 'ssl'
+                $mail->Port = 465;
+            } else {
+                $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS; // same as 'tls'
+                $mail->Port = (int) ($this->smtpPort ?: 587);
+            }
+
+            $mail->SMTPOptions = [
+                'ssl' => [
                     'verify_peer' => false,
                     'verify_peer_name' => false,
-                    'allow_self_signed' => true
-                )
-            );
+                    'allow_self_signed' => true,
+                ],
+            ];
 
-            //Recipients
+            // Envelope sender (Gmail often requires this to match the authenticated account)
+            $mail->Sender = $this->fromEmail;
             $mail->setFrom($this->fromEmail, $this->fromName);
-            $mail->addAddress($toEmail);
+            $mail->addAddress(trim((string) $toEmail));
 
-            //Content
             $mail->isHTML(true);
             $mail->Subject = $subject;
-            $mail->Body    = $message;
-            $mail->AltBody = strip_tags($message); // Plain text version
+            $mail->Body = $message;
+            $mail->AltBody = strip_tags($message);
 
             $mail->send();
-            
-            error_log("✓ Email sent successfully via SMTP to: " . $toEmail);
+
+            error_log('✓ Email sent successfully via SMTP to: ' . $toEmail . ($useImplicitSsl ? ' (SMTPS/465)' : ' (STARTTLS/' . $mail->Port . ')'));
             return [
                 'success' => true,
-                'message' => 'Email sent successfully via PHPMailer'
+                'message' => 'Email sent successfully via PHPMailer',
             ];
-            
         } catch (Exception $e) {
             $errorMessage = $e->getMessage();
-            error_log("✗ PHPMailer SMTP Error Details:");
-            error_log("  - Error: " . $errorMessage);
-            error_log("  - SMTP Host: " . $this->smtpHost);
-            error_log("  - SMTP Port: " . $this->smtpPort);
-            error_log("  - From Email: " . $this->fromEmail);
-            error_log("  - To Email: " . $toEmail);
-            
-            // Check for common SMTP errors
+            error_log('✗ PHPMailer SMTP Error Details:');
+            error_log('  - Error: ' . $errorMessage);
+            error_log('  - Mode: ' . ($useImplicitSsl ? 'SMTPS:465' : 'STARTTLS:' . (int) ($this->smtpPort ?: 587)));
+            error_log('  - SMTP Host: ' . $this->smtpHost);
+            error_log('  - From Email: ' . $this->fromEmail);
+            error_log('  - To Email: ' . $toEmail);
+
             if (strpos($errorMessage, 'SMTP connect() failed') !== false) {
                 $errorMessage .= ' - Check SMTP server connection and credentials';
-            } elseif (strpos($errorMessage, 'Authentication failed') !== false) {
-                $errorMessage .= ' - Check Gmail app password is correct';
-            } elseif (strpos($errorMessage, 'Could not instantiate mail function') !== false) {
-                $errorMessage .= ' - PHP mail() function not configured';
+            } elseif (stripos($errorMessage, 'authenticate') !== false || stripos($errorMessage, '535') !== false) {
+                $errorMessage .= ' - Use a 16-character Gmail App Password; SMTP_USER must match SMTP_FROM_EMAIL';
+            } elseif (stripos($errorMessage, 'data not accepted') !== false) {
+                $errorMessage .= ' - Confirm App Password is new and 16 chars; try SMTP_ENCRYPTION=ssl and SMTP_PORT=465 in .env';
             }
-            
+
             return [
                 'success' => false,
                 'message' => 'PHPMailer Error: ' . $errorMessage,
-                'detailed_error' => $errorMessage
+                'detailed_error' => $errorMessage,
             ];
         }
     }

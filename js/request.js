@@ -624,6 +624,20 @@ async function ensureCensusCompletedBeforeRequestPage() {
             return true;
         }
 
+        if (data.success && data.emailExists === true && data.isArchived === true) {
+            if (typeof Swal !== 'undefined') {
+                await Swal.fire({
+                    icon: 'info',
+                    title: 'Document Request Disabled',
+                    text: 'Your census record is archived. Please contact the barangay to reactivate your census record before requesting documents.',
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#3085d6'
+                });
+            }
+            window.location.href = 'main_UI.html';
+            return false;
+        }
+
         if (typeof Swal !== 'undefined') {
             await Swal.fire({
                 icon: 'info',
@@ -3297,8 +3311,8 @@ async function finalSubmitCertification() {
             educational_level: formData.get('certEducationalAttainment') || null,
             // Map Course dropdown to 'course' column
             course: formData.get('certEducationalLevel') || null,
-            // Map Out of School Youth checkbox to 'out_of_school_youth' column ('yes' when checked, null otherwise)
-            out_of_school_youth: formData.get('certOutOfSchoolYouth') === 'yes' ? 'yes' : null,
+            // OOSY checkbox state (1/0); server stores NULL when purpose is not Job Seeker
+            out_of_school_youth: formData.get('certOutOfSchoolYouth') === 'yes' ? 1 : 0,
             valid_id: formData.get('certIdType'),
             id_image: imageData
         };

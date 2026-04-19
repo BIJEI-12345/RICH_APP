@@ -3,14 +3,16 @@ document.addEventListener('DOMContentLoaded', function() {
     setupEmergencyForm();
     setupNavigation();
     setupHotlineRecommendation();
-    
-    // Re-fetch profile if reporter or contact is empty (e.g. page refresh)
-    const reporterField = document.getElementById('reporterName');
-    const contactFieldRefresh = document.getElementById('emergencyContact');
-    const contactEmpty = !contactFieldRefresh || !String(contactFieldRefresh.value || '').trim();
-    if (!reporterField.value || contactEmpty) {
-        populateReporterName();
-    }
+
+    (async function loadEmergencyProfile() {
+        await populateReporterName();
+        const reporterField = document.getElementById('reporterName');
+        const contactFieldRefresh = document.getElementById('emergencyContact');
+        const contactEmpty = !contactFieldRefresh || !String(contactFieldRefresh.value || '').trim();
+        if (reporterField && (!reporterField.value.trim() || contactEmpty)) {
+            await populateReporterName();
+        }
+    })();
 });
 
 // Get Philippine Time (UTC+8)
@@ -35,8 +37,6 @@ function setupEmergencyForm() {
     // Setup real-time validation clearing
     setupRealTimeValidation();
     
-    // Auto-populate reporter name and contact
-    populateReporterName();
     setupEmergencyContactValidation();
     
     // Initialize empty indicator for image preview container
@@ -480,40 +480,50 @@ function setupEmergencyContactValidation() {
     });
 }
 
-// Populate reporter name and contact from profile (same source as concerns: main_UI.php)
-function populateReporterName() {
-    const userEmail = sessionStorage.getItem('user_email') || localStorage.getItem('user_email') || 'test@example.com';
+// Populate reporter name and contact from profile (same source as concerns: main_UI.php + sessionStorage cache)
+async function populateReporterName() {
     const reporterNameField = document.getElementById('reporterName');
     const contactField = document.getElementById('emergencyContact');
 
     if (!reporterNameField) return;
 
-    if (userEmail && userEmail !== 'test@example.com') {
-        fetch('php/main_UI.php', {
+    const cached = sessionStorage.getItem('user_contact_phone_digits');
+    if (contactField && cached) {
+        contactField.value = String(cached).replace(/\D/g, '').slice(0, 11);
+    }
+
+    const userEmail = (sessionStorage.getItem('user_email') || localStorage.getItem('user_email') || '').trim();
+    if (!userEmail) {
+        if (!reporterNameField.value.trim()) {
+            reporterNameField.value = '';
+        }
+        return;
+    }
+
+    try {
+        const response = await fetch('php/main_UI.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ email: userEmail })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success && data.user) {
-                const fullName = `${data.user.first_name} ${data.user.last_name}`.trim();
-                reporterNameField.value = fullName;
-                const phone = data.user.contact_phone;
-                if (contactField && phone != null && String(phone).trim() !== '') {
-                    contactField.value = String(phone).replace(/[^0-9]/g, '');
-                }
-            } else {
-                reporterNameField.value = 'Unknown User';
-            }
-        })
-        .catch(error => {
-            console.error('Error fetching user name:', error);
-            reporterNameField.value = 'Unknown User';
+            body: JSON.stringify({ email: userEmail }),
+            cache: 'no-store'
         });
-    } else {
+        const data = await response.json();
+        if (data.success && data.user) {
+            const u = data.user;
+            reporterNameField.value = `${u.first_name} ${u.last_name}`.trim();
+            const phone = u.contact_phone;
+            if (contactField && phone != null && String(phone).trim() !== '') {
+                const digits = String(phone).replace(/\D/g, '').slice(0, 11);
+                contactField.value = digits;
+                sessionStorage.setItem('user_contact_phone_digits', digits);
+            }
+        } else {
+            reporterNameField.value = 'Unknown User';
+        }
+    } catch (error) {
+        console.error('Error fetching user name:', error);
         reporterNameField.value = 'Unknown User';
     }
 }
@@ -611,7 +621,13 @@ async function handleEmergencySubmission(e) {
     
     try {
         // Get user email from session/local storage
-        const userEmail = sessionStorage.getItem('user_email') || localStorage.getItem('user_email') || 'test@example.com';
+        const userEmail = (sessionStorage.getItem('user_email') || localStorage.getItem('user_email') || '').trim();
+        if (!userEmail) {
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+            showMessage('Please log in first (open the app from the main portal).', 'error');
+            return;
+        }
         
         // Determine emergency type (use custom value if "other" is selected)
         let emergencyType = formData.get('emergencyType');
@@ -789,9 +805,8 @@ function goBackToForm() {
         emergencyImagePreview.src = '';
     }
     
-    // Auto-populate reporter name again after a short delay
-    setTimeout(() => {
-        populateReporterName();
+    setTimeout(function () {
+        void populateReporterName();
     }, 100);
     
     // Scroll to top of form

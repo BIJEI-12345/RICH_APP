@@ -51,6 +51,17 @@ if (!function_exists('census_extract_house_number')) {
     }
 }
 
+if (!function_exists('census_house_number_key')) {
+    /**
+     * Normalized house/unit token used for household-level matching.
+     */
+    function census_house_number_key($value) {
+        $value = mb_strtolower(trim((string) $value), 'UTF-8');
+        $value = preg_replace('/\s+/u', ' ', $value);
+        return $value ?? '';
+    }
+}
+
 if (!function_exists('census_normalize_identity_age')) {
     function census_normalize_identity_age($value) {
         if ($value === null || $value === '') {
@@ -123,6 +134,70 @@ if (!function_exists('census_identity_duplicate_exists')) {
     }
 }
 
+if (!function_exists('census_trim_disabilities_field')) {
+    /**
+     * Value for census_form.disabilities VARCHAR(100).
+     */
+    function census_trim_disabilities_field($value): ?string {
+        if ($value === null || $value === '') {
+            return null;
+        }
+        $s = trim((string) $value);
+        if ($s === '') {
+            return null;
+        }
+        // Dropdown label "None / Wala" submits as value "None"; accept legacy payloads too.
+        if ($s === 'None / Wala') {
+            $s = 'None';
+        }
+        if (function_exists('mb_substr')) {
+            return mb_substr($s, 0, 100, 'UTF-8');
+        }
+        return substr($s, 0, 100);
+    }
+}
+
+if (!function_exists('census_trim_benefits_field')) {
+    /**
+     * Value for census_form.barangay_supported_benefits (trimmed; empty → null).
+     * Explicit "None" from the form is stored as the string None.
+     */
+    function census_trim_benefits_field($value): ?string {
+        if ($value === null || $value === '') {
+            return null;
+        }
+        $s = trim((string) $value);
+        if ($s === '') {
+            return null;
+        }
+        if (function_exists('mb_substr')) {
+            return mb_substr($s, 0, 255, 'UTF-8');
+        }
+        return substr($s, 0, 255);
+    }
+}
+
+if (!function_exists('census_normalize_place_of_work')) {
+    /**
+     * census_form.place_of_work: literal "None" when occupation is not Employed.
+     * Employed rows store occupation as "Employed - {type of work}" from the census form.
+     */
+    function census_normalize_place_of_work($occupation, $placeOfWork): ?string {
+        $occ = trim((string) ($occupation ?? ''));
+        if ($occ !== '' && strpos($occ, 'Employed - ') === 0) {
+            $p = trim((string) ($placeOfWork ?? ''));
+            if ($p === '') {
+                return null;
+            }
+            if (function_exists('mb_substr')) {
+                return mb_substr($p, 0, 255, 'UTF-8');
+            }
+            return substr($p, 0, 255);
+        }
+        return 'None';
+    }
+}
+
 // Database connection - Load from centralized config
 require_once __DIR__ . '/env_loader.php';
 
@@ -166,6 +241,30 @@ try {
             'message' => 'Census form table does not exist. Please contact administrator.'
         ]);
         exit;
+    }
+
+    $hasDisabilitiesColumn = false;
+    try {
+        $dc = $pdo->query("SHOW COLUMNS FROM census_form LIKE 'disabilities'");
+        $hasDisabilitiesColumn = $dc && $dc->rowCount() > 0;
+    } catch (PDOException $e) {
+        $hasDisabilitiesColumn = false;
+    }
+
+    $hasStatusColumn = false;
+    try {
+        $sc = $pdo->query("SHOW COLUMNS FROM census_form LIKE 'status'");
+        $hasStatusColumn = $sc && $sc->rowCount() > 0;
+    } catch (PDOException $e) {
+        $hasStatusColumn = false;
+    }
+
+    $hasIndigenousColumn = false;
+    try {
+        $ic = $pdo->query("SHOW COLUMNS FROM census_form LIKE 'indigenous'");
+        $hasIndigenousColumn = $ic && $ic->rowCount() > 0;
+    } catch (PDOException $e) {
+        $hasIndigenousColumn = false;
     }
     
     // Get user email from session or from the logged-in user
@@ -317,18 +416,45 @@ try {
             $fullAddress,
             $censusId
         ]);
-        
-        // Check if user already submitted census
-        $stmt = $pdo->prepare("SELECT id FROM census_form WHERE census_id = ? LIMIT 1");
-        $stmt->execute([$censusId]);
-        $existingCensus = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-        if ($existingCensus) {
-            echo json_encode([
-                'success' => false,
-                'message' => 'You have already submitted the census form'
-            ]);
-            exit;
+    }
+    
+    $ownCensusLinkId = census_id_for_resident_pk($censusId);
+
+    // If this account no longer has rows in census_form, allow re-submit and
+    // align census_id with an existing household census_id using the same house number.
+    $targetCensusLinkId = $ownCensusLinkId;
+
+    $stmt = $pdo->prepare("SELECT id FROM census_form WHERE census_id = ? LIMIT 1");
+    $stmt->execute([$ownCensusLinkId]);
+    $hasOwnCensusRows = (bool) $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($hasOwnCensusRows) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'You have already submitted the census form'
+        ]);
+        exit;
+    }
+
+    $submittedHouseKey = census_house_number_key($submittedHouseNumber);
+    if ($submittedHouseKey !== '') {
+        $householdStmt = $pdo->prepare(
+            "SELECT census_id, complete_address FROM census_form
+             WHERE complete_address IS NOT NULL AND TRIM(complete_address) != ''
+             ORDER BY id ASC"
+        );
+        $householdStmt->execute();
+        $householdRows = $householdStmt->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($householdRows as $householdRow) {
+            $candidateHouseKey = census_house_number_key(
+                census_extract_house_number($householdRow['complete_address'] ?? '')
+            );
+            if ($candidateHouseKey !== '' && $candidateHouseKey === $submittedHouseKey) {
+                $candidateCensusId = trim((string) ($householdRow['census_id'] ?? ''));
+                if ($candidateCensusId !== '') {
+                    $targetCensusLinkId = $candidateCensusId;
+                    break;
+                }
+            }
         }
     }
     
@@ -345,15 +471,28 @@ try {
         if (!empty($input['unitHouseNumber'])) {
             $fullAddress = trim($input['unitHouseNumber']) . ', ' . $fullAddress;
         }
-        
-        $stmt = $pdo->prepare("INSERT INTO census_form 
-            (census_id, first_name, last_name, middle_name, suffix, age, sex, birthday, 
-             civil_status, contact_number, occupation, place_of_work, 
-             barangay_supported_benefits, complete_address, relation_to_household) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        
-        $stmt->execute([
-            $censusId,
+
+        $headDisabilities = census_trim_disabilities_field($input['disability'] ?? null);
+        $headBenefits = census_trim_benefits_field($input['claimedBenefits'] ?? null);
+        $headPlaceOfWork = census_normalize_place_of_work($input['occupation'] ?? null, $input['placeOfWork'] ?? null);
+
+        $headIndigenous = 0;
+        if ($hasIndigenousColumn && array_key_exists('indigenous', $input)) {
+            $iv = $input['indigenous'];
+            if ($iv === 1 || $iv === '1' || $iv === true) {
+                $headIndigenous = 1;
+            } else {
+                $headIndigenous = 0;
+            }
+        }
+
+        $headCols = [
+            'census_id', 'first_name', 'last_name', 'middle_name', 'suffix', 'age', 'sex', 'birthday',
+            'civil_status', 'contact_number', 'occupation', 'place_of_work',
+            'barangay_supported_benefits', 'complete_address', 'relation_to_household',
+        ];
+        $headVals = [
+            $targetCensusLinkId,
             $input['firstName'],
             $input['lastName'],
             $input['middleName'] ?? null,
@@ -364,14 +503,31 @@ try {
             $input['civilStatus'],
             $input['contactNumber'] ?? null,
             $input['occupation'] ?? null,
-            $input['placeOfWork'] ?? null,
-            $input['claimedBenefits'] ?? null,
+            $headPlaceOfWork,
+            $headBenefits,
             $fullAddress,
-            $familyOccupation // Family occupation/relation from form
-        ]);
+            $familyOccupation,
+        ];
+        if ($hasDisabilitiesColumn) {
+            $headCols[] = 'disabilities';
+            $headVals[] = $headDisabilities;
+        }
+        if ($hasStatusColumn) {
+            $headCols[] = 'status';
+            $headVals[] = 'Censused';
+        }
+        if ($hasIndigenousColumn) {
+            $headCols[] = 'indigenous';
+            $headVals[] = $headIndigenous;
+        }
+        $headPlaceholders = implode(',', array_fill(0, count($headVals), '?'));
+        $stmt = $pdo->prepare(
+            'INSERT INTO census_form (' . implode(',', $headCols) . ') VALUES (' . $headPlaceholders . ')'
+        );
+        $stmt->execute($headVals);
         
         $mainRecordId = $pdo->lastInsertId();
-        error_log("Inserted main census record with ID: $mainRecordId for census_id: $censusId");
+        error_log("Inserted main census record with ID: $mainRecordId for census_id: $targetCensusLinkId");
         
         // Insert household members
         // Each household member gets their own record with their own information
@@ -396,30 +552,64 @@ try {
             $memberFirstName = trim($member['firstName']);
             $memberLastName = trim($member['lastName']);
             $memberMiddleName = !empty($member['middleName']) ? trim($member['middleName']) : null;
-            
-            $stmt = $pdo->prepare("INSERT INTO census_form 
-                (census_id, first_name, last_name, middle_name, suffix, age, sex, birthday, 
-                 civil_status, contact_number, occupation, place_of_work, 
-                 barangay_supported_benefits, complete_address, relation_to_household) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            
-            $stmt->execute([
-                $censusId, // Same census_id (links to main person/household)
-                $memberFirstName, // Household member's first name
-                $memberLastName, // Household member's last name
-                $memberMiddleName, // Household member's middle name
-                null, // Suffix not collected for household members
-                $member['age'] ?? null, // Household member's age
-                $member['sex'] ?? null, // Household member's sex
-                $member['birthday'] ?? null, // Household member's birthday
-                $member['civilStatus'] ?? null, // Household member's civil status
-                null, // Contact number not collected for household members
-                $member['work'] ?? null, // Household member's occupation
-                $member['placeOfWork'] ?? null, // Household member's place of work
-                $member['benefits'] ?? null, // Household member's benefits
-                $fullAddressForMembers, // Same address as main person (with unit/house number)
-                $member['relation'] ?? null // Relation to household head
-            ]);
+
+            $memberDisabilities = census_trim_disabilities_field($member['disability'] ?? null);
+            $memberBenefits = census_trim_benefits_field($member['benefits'] ?? null);
+            $memberPlaceOfWork = census_normalize_place_of_work($member['work'] ?? null, $member['placeOfWork'] ?? null);
+
+            $memberIndigenous = 0;
+            if ($hasIndigenousColumn && array_key_exists('indigenous', $member)) {
+                $miv = $member['indigenous'];
+                if ($miv === 1 || $miv === '1' || $miv === true) {
+                    $memberIndigenous = 1;
+                } else {
+                    $memberIndigenous = 0;
+                }
+            }
+
+            $memCols = [
+                'census_id', 'first_name', 'last_name', 'middle_name', 'suffix', 'age', 'sex', 'birthday',
+                'civil_status', 'contact_number', 'occupation', 'place_of_work',
+                'barangay_supported_benefits', 'complete_address', 'relation_to_household',
+            ];
+            $memberSuffix = isset($member['suffix']) && $member['suffix'] !== '' && $member['suffix'] !== null
+                ? trim((string) $member['suffix'])
+                : null;
+
+            $memVals = [
+                $targetCensusLinkId,
+                $memberFirstName,
+                $memberLastName,
+                $memberMiddleName,
+                $memberSuffix,
+                $member['age'] ?? null,
+                $member['sex'] ?? null,
+                $member['birthday'] ?? null,
+                $member['civilStatus'] ?? null,
+                null,
+                $member['work'] ?? null,
+                $memberPlaceOfWork,
+                $memberBenefits,
+                $fullAddressForMembers,
+                $member['relation'] ?? null,
+            ];
+            if ($hasDisabilitiesColumn) {
+                $memCols[] = 'disabilities';
+                $memVals[] = $memberDisabilities;
+            }
+            if ($hasStatusColumn) {
+                $memCols[] = 'status';
+                $memVals[] = 'Censused';
+            }
+            if ($hasIndigenousColumn) {
+                $memCols[] = 'indigenous';
+                $memVals[] = $memberIndigenous;
+            }
+            $memPlaceholders = implode(',', array_fill(0, count($memVals), '?'));
+            $stmt = $pdo->prepare(
+                'INSERT INTO census_form (' . implode(',', $memCols) . ') VALUES (' . $memPlaceholders . ')'
+            );
+            $stmt->execute($memVals);
             
             $insertedMembers++;
             $fullName = trim($memberFirstName . ' ' . ($memberMiddleName ? $memberMiddleName . ' ' : '') . $memberLastName);
@@ -435,7 +625,8 @@ try {
             'success' => true,
             'message' => 'Census form submitted successfully',
             'main_record_id' => $mainRecordId,
-            'household_members_count' => $insertedMembers
+            'household_members_count' => $insertedMembers,
+            'census_id' => $targetCensusLinkId
         ]);
         
     } catch (PDOException $e) {

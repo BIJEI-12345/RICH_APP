@@ -97,6 +97,10 @@ if ($envFileFound && $envFileUsed) {
         error_log("Debug: File readable: " . (is_readable($envFileUsed) ? 'YES' : 'NO'));
         error_log("Debug: File permissions: " . substr(sprintf('%o', fileperms($envFileUsed)), -4));
     } else {
+        // Strip UTF-8 BOM if present on first line (breaks first KEY otherwise)
+        if (!empty($lines[0]) && strncmp($lines[0], "\xEF\xBB\xBF", 3) === 0) {
+            $lines[0] = substr($lines[0], 3);
+        }
         $varsLoaded = 0;
         foreach ($lines as $lineNum => $line) {
             $line = trim($line);
@@ -115,9 +119,9 @@ if ($envFileFound && $envFileUsed) {
                 // Remove quotes if present (handle both single and double quotes)
                 $value = trim($value, '"\''); 
                 
-                // Set in $_ENV and putenv() for compatibility
+                // Set in $_ENV first (always reliable); putenv() can mishandle spaces on some Windows builds
                 $_ENV[$key] = $value;
-                putenv("$key=$value");
+                @putenv($key . '=' . $value);
                 $varsLoaded++;
             }
         }
@@ -208,6 +212,12 @@ function getDBConnection() {
         ];
         
         $pdo = new PDO($dsn, $user, $pass, $options);
+        // Philippine Standard Time (UTC+8) — affects DEFAULT CURRENT_TIMESTAMP, NOW(), at session timestamps
+        try {
+            $pdo->exec("SET time_zone = '+08:00'");
+        } catch (PDOException $e) {
+            error_log('MySQL SET time_zone: ' . $e->getMessage());
+        }
         return $pdo;
     } catch (PDOException $e) {
         $errorMsg = $e->getMessage();
@@ -228,6 +238,35 @@ function getDBConnection() {
         error_log("Unexpected error during database connection: " . $e->getMessage());
         return null;
     }
+}
+
+/**
+ * Value stored in census_form.census_id for a given resident_information primary key.
+ * Configure via CENSUS_ID_MODE: legacy (numeric) or prefixed (e.g. CEN-001).
+ *
+ * @param int|string $residentPkId resident_information.id
+ * @return string
+ */
+function census_id_for_resident_pk($residentPkId) {
+    $id = (int) $residentPkId;
+    $mode = strtolower(trim((string) ($_ENV['CENSUS_ID_MODE'] ?? getenv('CENSUS_ID_MODE') ?: 'legacy')));
+    if ($mode === '' || $mode === 'legacy' || $mode === 'numeric' || $mode === 'int') {
+        return (string) $id;
+    }
+    if ($id < 1) {
+        return (string) $residentPkId;
+    }
+    $prefix = $_ENV['CENSUS_ID_PREFIX'] ?? getenv('CENSUS_ID_PREFIX');
+    $prefix = trim((string) ($prefix !== false && $prefix !== null ? $prefix : 'CEN'));
+    if ($prefix === '') {
+        $prefix = 'CEN';
+    }
+    $padRaw = $_ENV['CENSUS_ID_PAD'] ?? getenv('CENSUS_ID_PAD');
+    $pad = (int) ($padRaw !== false && $padRaw !== null && $padRaw !== '' ? $padRaw : 3);
+    if ($pad < 1) {
+        $pad = 3;
+    }
+    return $prefix . '-' . str_pad((string) $id, $pad, '0', STR_PAD_LEFT);
 }
 
 /**

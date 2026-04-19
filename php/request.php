@@ -19,6 +19,32 @@ require_once __DIR__ . '/jobseeker_claimed_lib.php';
 require_once __DIR__ . '/census_address_helpers.php';
 require_once __DIR__ . '/brgy_user_helpers.php';
 
+/** True when census_form.status is Blocked (case-insensitive). */
+function censusFormStatusIsBlocked(?string $status): bool {
+    return strtolower(trim((string) ($status ?? ''))) === 'blocked';
+}
+
+/**
+ * Server-side gate for document requests: same rules as validateRequesterAgainstCensus.
+ * Skips when email is empty (legacy rows without account linkage).
+ *
+ * @return array|null Error shape ['success'=>false,'message'=>...] or null if OK / skipped
+ */
+function enforceDocumentRequestCensusAllowed(?string $email, string $firstName, string $lastName, string $address): ?array {
+    $email = trim((string) $email);
+    if ($email === '') {
+        return null;
+    }
+    $v = validateRequesterAgainstCensus($email, $firstName, $lastName, $address);
+    if (!$v['success']) {
+        return ['success' => false, 'message' => $v['message'] ?? 'Census validation failed.'];
+    }
+    if (empty($v['allowed'])) {
+        return ['success' => false, 'message' => $v['message'] ?? 'Your census record does not allow this request.'];
+    }
+    return null;
+}
+
 // Validate that requesting name matches census_form (head: census_id = your resident id; members: same household shares head's census_id on each row).
 function validateRequesterAgainstCensus($email, $firstName, $lastName, $address = '') {
     $pdo = getDBConnection();
@@ -42,6 +68,7 @@ function validateRequesterAgainstCensus($email, $firstName, $lastName, $address 
             return ['success' => false, 'allowed' => false, 'message' => 'User account not found'];
         }
         $residentId = (int)$user['id'];
+        $censusLinkId = census_id_for_resident_pk($residentId);
         $residentAddress = trim((string)($user['address'] ?? ''));
 
         $tableCheck = $pdo->query("SHOW TABLES LIKE 'census_form'");
@@ -49,18 +76,36 @@ function validateRequesterAgainstCensus($email, $firstName, $lastName, $address 
             return ['success' => false, 'allowed' => false, 'message' => 'Census table not found'];
         }
 
+        $hasStatusColumn = false;
+        try {
+            $sc = $pdo->query("SHOW COLUMNS FROM census_form LIKE 'status'");
+            $hasStatusColumn = $sc && $sc->rowCount() > 0;
+        } catch (PDOException $e) {
+            $hasStatusColumn = false;
+        }
+        $statusSelect = $hasStatusColumn ? ', status' : '';
+
+        $blockedMsg = [
+            'success' => true,
+            'allowed' => false,
+            'message' => 'Document requests are not allowed while your census record is blocked. Please contact the barangay office.',
+        ];
+
         $submittedAddress = trim((string)$address);
         $addressForCompare = $submittedAddress !== '' ? $submittedAddress : $residentAddress;
 
         // 1) Direct: row for this resident as census_id (submitter / head with own account).
         $stmt = $pdo->prepare(
-            'SELECT first_name, last_name, complete_address FROM census_form WHERE census_id = ? '
+            'SELECT first_name, last_name, complete_address' . $statusSelect . ' FROM census_form WHERE census_id = ? '
             . 'AND LOWER(TRIM(first_name)) = LOWER(TRIM(?)) AND LOWER(TRIM(last_name)) = LOWER(TRIM(?)) LIMIT 1'
         );
-        $stmt->execute([$residentId, $firstName, $lastName]);
+        $stmt->execute([$censusLinkId, $firstName, $lastName]);
         $census = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($census) {
+            if ($hasStatusColumn && censusFormStatusIsBlocked($census['status'] ?? null)) {
+                return $blockedMsg;
+            }
             $censusAddress = trim((string)($census['complete_address'] ?? ''));
             if ($censusAddress === '') {
                 $censusAddress = $residentAddress;
@@ -82,7 +127,7 @@ function validateRequesterAgainstCensus($email, $firstName, $lastName, $address 
 
         // This account has census rows but names don't match (e.g. head typo on the request form).
         $stmt = $pdo->prepare('SELECT id FROM census_form WHERE census_id = ? LIMIT 1');
-        $stmt->execute([$residentId]);
+        $stmt->execute([$censusLinkId]);
         if ($stmt->fetch(PDO::FETCH_ASSOC)) {
             return [
                 'success' => true,
@@ -93,7 +138,7 @@ function validateRequesterAgainstCensus($email, $firstName, $lastName, $address 
 
         // 2) Household member: rows use head's census_id, not this user's id — match name + address across census_form.
         $stmt = $pdo->prepare(
-            'SELECT complete_address FROM census_form WHERE '
+            'SELECT complete_address' . $statusSelect . ' FROM census_form WHERE '
             . 'LOWER(TRIM(first_name)) = LOWER(TRIM(?)) AND LOWER(TRIM(last_name)) = LOWER(TRIM(?))'
         );
         $stmt->execute([$firstName, $lastName]);
@@ -118,6 +163,9 @@ function validateRequesterAgainstCensus($email, $firstName, $lastName, $address 
         foreach ($nameRows as $row) {
             $censusAddress = trim((string)($row['complete_address'] ?? ''));
             if ($censusAddress !== '' && censusAddressesLikelyMatch($addressForCompare, $censusAddress)) {
+                if ($hasStatusColumn && censusFormStatusIsBlocked($row['status'] ?? null)) {
+                    return $blockedMsg;
+                }
                 return ['success' => true, 'allowed' => true];
             }
         }
@@ -269,6 +317,16 @@ function insertIndigencyForm($data) {
             $emailStmt->execute([$data['first_name'], $data['last_name']]);
             $emailResult = $emailStmt->fetch(PDO::FETCH_ASSOC);
             $email = $emailResult['email'] ?? null;
+        }
+
+        $censusDeny = enforceDocumentRequestCensusAllowed(
+            $email,
+            (string) ($data['first_name'] ?? ''),
+            (string) ($data['last_name'] ?? ''),
+            (string) ($data['address'] ?? '')
+        );
+        if ($censusDeny) {
+            return $censusDeny;
         }
         
         // Check if email column exists, if not, we'll skip it
@@ -597,6 +655,16 @@ function insertBarangayIdForm($data) {
         
         // Get email from data
         $email = $data['email'] ?? null;
+
+        $censusDeny = enforceDocumentRequestCensusAllowed(
+            $email,
+            (string) ($data['given_name'] ?? ''),
+            (string) ($data['last_name'] ?? ''),
+            (string) ($data['address'] ?? '')
+        );
+        if ($censusDeny) {
+            return $censusDeny;
+        }
         
         // Check if email column exists
         $checkColumn = $pdo->query("SHOW COLUMNS FROM barangay_id_forms LIKE 'email'");
@@ -761,10 +829,23 @@ function insertCertificationForm($data) {
             $validId = $data['other_valid_id'];
         }
         
-        // Handle out_of_school_youth - convert to "1" if checked, "0" if unchecked
-        $outOfSchoolYouth = "0"; // Default to "0" (unchecked)
-        if (!empty($data['out_of_school_youth']) && ($data['out_of_school_youth'] === 'yes' || $data['out_of_school_youth'] === 'Yes' || $data['out_of_school_youth'] === '1')) {
-            $outOfSchoolYouth = "1";
+        // out_of_school_youth: NULL unless Job Seeker + OOSY checked (then 1). Job Seeker but OOSY unchecked → NULL.
+        $rawOosy = $data['out_of_school_youth'] ?? null;
+        $oosyOn = false;
+        if ($rawOosy !== null && $rawOosy !== '') {
+            if (is_bool($rawOosy)) {
+                $oosyOn = $rawOosy;
+            } elseif (is_numeric($rawOosy)) {
+                $oosyOn = ((int) $rawOosy) !== 0;
+            } else {
+                $v = strtolower(trim((string) $rawOosy));
+                $oosyOn = in_array($v, ['1', 'yes', 'y', 'true', 'on'], true);
+            }
+        }
+        if (certification_purpose_is_jobseeker($purpose)) {
+            $outOfSchoolYouth = $oosyOn ? '1' : null;
+        } else {
+            $outOfSchoolYouth = null;
         }
         
         // Handle image upload (optional)
@@ -780,6 +861,16 @@ function insertCertificationForm($data) {
         
         // Get email from data
         $email = $data['email'] ?? null;
+
+        $censusDeny = enforceDocumentRequestCensusAllowed(
+            $email,
+            (string) ($data['first_name'] ?? ''),
+            (string) ($data['last_name'] ?? ''),
+            (string) ($data['address'] ?? '')
+        );
+        if ($censusDeny) {
+            return $censusDeny;
+        }
         
         // Check if optional columns exist
         $checkEmailColumn = $pdo->query("SHOW COLUMNS FROM certification_forms LIKE 'email'");
@@ -793,6 +884,12 @@ function insertCertificationForm($data) {
         
         $checkOutOfSchoolYouthColumn = $pdo->query("SHOW COLUMNS FROM certification_forms LIKE 'out_of_school_youth'");
         $outOfSchoolYouthColumnExists = $checkOutOfSchoolYouthColumn->rowCount() > 0;
+
+        $checkIsPermanentColumn = $pdo->query("SHOW COLUMNS FROM certification_forms LIKE 'is_permanent'");
+        $isPermanentColumnExists = $checkIsPermanentColumn->rowCount() > 0;
+
+        // is_permanent: 1 = Job Seeker (not deleted by interval cleanup); 0 = other purposes (deletable). Independent of OOSY.
+        $isPermanentValue = certification_purpose_is_jobseeker($purpose) ? 1 : 0;
         
         // Prepare INSERT statements depending on available columns
         if ($emailColumnExists && $email && $educationalLevelColumnExists && $courseColumnExists && $outOfSchoolYouthColumnExists) {
@@ -1047,6 +1144,10 @@ function insertCertificationForm($data) {
         
         if ($result) {
             $formId = $pdo->lastInsertId();
+            if ($isPermanentColumnExists && $formId) {
+                $updPerm = $pdo->prepare('UPDATE certification_forms SET is_permanent = ? WHERE id = ?');
+                $updPerm->execute([$isPermanentValue, $formId]);
+            }
             error_log("Certification form inserted successfully with ID: $formId");
             return [
                 'success' => true,
@@ -1112,6 +1213,16 @@ function insertCoeForm($data) {
                 'success' => false,
                 'message' => 'You are ineligible to receive a COE because of your role in the barangay.'
             ];
+        }
+
+        $censusDeny = enforceDocumentRequestCensusAllowed(
+            $email,
+            (string) ($data['first_name'] ?? ''),
+            (string) ($data['last_name'] ?? ''),
+            (string) ($data['address'] ?? '')
+        );
+        if ($censusDeny) {
+            return $censusDeny;
         }
 
         // Check if email column exists
@@ -1240,6 +1351,16 @@ function insertClearanceForm($data) {
         
         // Get email from data
         $email = $data['email'] ?? null;
+
+        $censusDeny = enforceDocumentRequestCensusAllowed(
+            $email,
+            (string) ($data['first_name'] ?? ''),
+            (string) ($data['last_name'] ?? ''),
+            (string) ($data['address'] ?? '')
+        );
+        if ($censusDeny) {
+            return $censusDeny;
+        }
         
         // Check if email column exists
         $checkColumn = $pdo->query("SHOW COLUMNS FROM clearance_forms LIKE 'email'");

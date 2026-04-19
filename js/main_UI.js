@@ -101,7 +101,71 @@ document.addEventListener('DOMContentLoaded', function() {
             hideFullScreenLoading();
         }
     });
+
+    if (typeof applySharedCensusHeadSelectOptions === 'function') {
+        applySharedCensusHeadSelectOptions();
+    }
 });
+
+/** PH mobile: digits only, max 11 */
+function stripPhoneDigits(value) {
+    return String(value || '').replace(/\D/g, '');
+}
+
+/** Display as 09XX-XXX-XXXX (11 digits) */
+function formatPhilippineMobileDisplay(digits) {
+    const d = stripPhoneDigits(digits).slice(0, 11);
+    if (d.length === 0) return '';
+    if (d.length <= 4) return d;
+    if (d.length <= 7) return d.slice(0, 4) + '-' + d.slice(4);
+    return d.slice(0, 4) + '-' + d.slice(4, 7) + '-' + d.slice(7, 11);
+}
+
+function getCensusContactDigitsForSubmit() {
+    const el = document.getElementById('censusContactNumber');
+    if (!el) return '';
+    return stripPhoneDigits(el.value).slice(0, 11);
+}
+
+/** Sync census contact field from main_UI.php user (contact_phone = digits) */
+function applyCensusContactFromProfile(user) {
+    const contactEl = document.getElementById('censusContactNumber');
+    if (!contactEl || !user) return;
+    const raw = user.contact_phone != null && user.contact_phone !== ''
+        ? String(user.contact_phone)
+        : '';
+    const digits = stripPhoneDigits(raw);
+    if (digits.length >= 10) {
+        contactEl.value = formatPhilippineMobileDisplay(digits);
+        contactEl.readOnly = true;
+        contactEl.classList.add('census-field-readonly');
+        sessionStorage.setItem('user_contact_phone_digits', digits.slice(0, 11));
+    } else if (digits.length > 0) {
+        contactEl.value = formatPhilippineMobileDisplay(digits);
+        contactEl.readOnly = false;
+        contactEl.classList.remove('census-field-readonly');
+    } else {
+        contactEl.value = '';
+        contactEl.readOnly = false;
+        contactEl.classList.remove('census-field-readonly');
+    }
+}
+
+function bindCensusContactPhoneField() {
+    const el = document.getElementById('censusContactNumber');
+    if (!el || el.dataset.phPhoneBound === '1') return;
+    el.dataset.phPhoneBound = '1';
+    function syncFromInput() {
+        if (el.readOnly) return;
+        const digits = stripPhoneDigits(el.value).slice(0, 11);
+        const formatted = formatPhilippineMobileDisplay(digits);
+        if (el.value !== formatted) {
+            el.value = formatted;
+        }
+    }
+    el.addEventListener('input', syncFromInput);
+    el.addEventListener('blur', syncFromInput);
+}
 
 // Initialize the application
 function initializeApp() {
@@ -194,13 +258,23 @@ function loadUserData() {
             console.log('User first name:', data.user?.first_name);
             if (data.success) {
                 currentUser = data.user;
+                const cp = data.user && data.user.contact_phone != null ? String(data.user.contact_phone).trim() : '';
+                if (cp !== '') {
+                    const d = cp.replace(/\D/g, '').slice(0, 11);
+                    if (d.length >= 10) {
+                        sessionStorage.setItem('user_contact_phone_digits', d);
+                    }
+                } else {
+                    sessionStorage.removeItem('user_contact_phone_digits');
+                }
                 updateUserInterface(data.user);
-                // Only check census status if user data was successfully loaded
+                // Only check census status if user data is successfully loaded
                 checkCensusStatus();
             } else {
                 console.warn('Server returned error:', data.message);
                 // User not found - don't set currentUser and don't check census
                 currentUser = null;
+                sessionStorage.removeItem('user_contact_phone_digits');
                 // Use default data if server returns error
                 updateUserInterface({
                     first_name: 'JUAN',
@@ -212,6 +286,7 @@ function loadUserData() {
             console.error('Error loading user data:', error);
             // User not found or error - don't set currentUser and don't check census
             currentUser = null;
+            sessionStorage.removeItem('user_contact_phone_digits');
             // Use actual logged-in user data if available
             const userEmail = sessionStorage.getItem('user_email') || localStorage.getItem('user_email');
             const userName = userEmail ? userEmail.split('@')[0].toUpperCase() : 'JUAN';
@@ -252,12 +327,19 @@ function updateUserInterface(user) {
     // Update header profile picture
     renderHeaderProfilePicture(user);
     
-    // Update phone number
+    // Update phone number (prefer API contact_phone; format like census field)
     const phoneElement = document.querySelector('.phone-number');
     if (phoneElement) {
-        const phone = user.mobile || user.phone || '+63 935 *** 8039';
+        let phone = '+63 935 *** 8039';
+        if (user.contact_phone != null && String(user.contact_phone).trim() !== '') {
+            phone = formatPhilippineMobileDisplay(user.contact_phone);
+        } else if (user.mobile || user.phone) {
+            phone = formatPhilippineMobileDisplay(user.mobile || user.phone);
+        }
         phoneElement.textContent = phone;
     }
+
+    applyCensusContactFromProfile(user);
 }
 
 // Calculate initials from name
@@ -351,8 +433,9 @@ async function ensureCensusBeforeDocumentRequests() {
     }
 
     try {
-        const response = await fetch('php/check_census.php', {
+        const response = await fetch(`php/check_census.php?t=${Date.now()}`, {
             method: 'POST',
+            cache: 'no-store',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email: userEmail })
         });
@@ -362,6 +445,18 @@ async function ensureCensusBeforeDocumentRequests() {
         if (data.success && data.emailExists === true && data.hasCompletedCensus) {
             // OK: census completed for this account
             return true;
+        }
+
+        if (data.success && data.emailExists === true && data.isArchived === true) {
+            if (typeof Swal !== 'undefined') {
+                await Swal.fire({
+                    icon: 'info',
+                    title: 'Document Request Disabled',
+                    text: 'Your census record is archived. Please contact the barangay to reactivate your census record before requesting documents.',
+                    confirmButtonColor: '#3085d6'
+                });
+            }
+            return false;
         }
 
         // Not completed → show census modal + info alert; block navigation
@@ -431,12 +526,11 @@ function navigateToRequestWithLoading(targetUrl = 'request.html') {
     window.location.href = targetUrl;
 }
 
-// Setup See All button navigation
+// Setup See All button navigation (Barangay announcements only — not Full Disclosure row)
 function setupSeeAllButton() {
-    const seeAllBtn = document.querySelector('.see-all-btn');
+    const seeAllBtn = document.querySelector('.see-all-container:not(.see-all-container--full-disclosure) .see-all-btn');
     if (seeAllBtn) {
         seeAllBtn.addEventListener('click', function() {
-            // Navigate to news & article page
             window.location.href = 'announcements.html';
         });
     }
@@ -866,6 +960,10 @@ function seeAll() {
     window.location.href = 'announcements.html';
 }
 
+function seeAllFullDisclosure() {
+    window.location.href = 'full_disclosure.html';
+}
+
 // Global variable to store carousel state
 let announcementCarousel = null;
 
@@ -1017,7 +1115,10 @@ async function loadAnnouncements() {
 })();
 
 function Documents() {
-    navigateToRequestWithLoading('request.html');
+    ensureCensusBeforeDocumentRequests().then((ok) => {
+        if (!ok) return;
+        navigateToRequestWithLoading('request.html');
+    });
 }
 
 function BarangayOrdinance() {
@@ -1035,55 +1136,196 @@ function BarangayOrdinance() {
         return;
     }
 
-    const slides = track.querySelectorAll('.ordinance-slide');
-    const total = slides.length;
     let current = 0;
+    /** Real slides only (before clone nodes); infinite loop uses N+2 DOM nodes when >= 2. */
+    let ordinanceRealCount = 0;
     let autoTimer = null;
     let keyHandler = null;
     var closeGalleryTimer = null;
 
+    function syncSlides() {
+        return Array.from(track.querySelectorAll('.ordinance-slide'));
+    }
+
+    function getSlideCount() {
+        return syncSlides().length;
+    }
+
+    function isInfiniteOrdinance() {
+        return ordinanceRealCount >= 2;
+    }
+
+    /** Map DOM index (with clones) to dot index 0..real-1 */
+    function domIndexToDotIndex(domIdx) {
+        if (!isInfiniteOrdinance()) return domIdx;
+        const N = ordinanceRealCount;
+        if (domIdx === 0) return N - 1;
+        if (domIdx === N + 1) return 0;
+        return domIdx - 1;
+    }
+
+    /** N slides → track width N×100% of viewport; each slide 100/N of track. */
+    function applyOrdinanceSlideLayout() {
+        const slides = syncSlides();
+        const n = slides.length;
+        if (n === 0) {
+            track.style.width = '';
+            return;
+        }
+        const pct = 100 / n;
+        const w = pct + '%';
+        track.style.width = n * 100 + '%';
+        slides.forEach((slide) => {
+            slide.style.flex = '0 0 ' + w;
+            slide.style.width = w;
+            slide.style.maxWidth = w;
+            slide.style.minWidth = w;
+        });
+    }
+
     function buildDots() {
+        const n = isInfiniteOrdinance() ? ordinanceRealCount : getSlideCount();
         dotsContainer.innerHTML = '';
-        for (let i = 0; i < total; i++) {
+        for (let i = 0; i < n; i++) {
             const b = document.createElement('button');
             b.type = 'button';
             b.className = 'ordinance-dot' + (i === 0 ? ' is-active' : '');
             b.setAttribute('aria-label', 'Slide ' + (i + 1));
             b.setAttribute('role', 'tab');
-            b.addEventListener('click', () => goToSlide(i));
+            b.addEventListener('click', () => goToRealSlide(i));
             dotsContainer.appendChild(b);
         }
     }
 
     function updateDots() {
+        const di = domIndexToDotIndex(current);
         dotsContainer.querySelectorAll('.ordinance-dot').forEach((d, i) => {
-            d.classList.toggle('is-active', i === current);
+            d.classList.toggle('is-active', i === di);
         });
     }
 
     function applyTransform() {
+        const total = getSlideCount();
+        if (total === 0) {
+            track.style.transform = 'translateX(0)';
+            return;
+        }
         var pct = -(current * (100 / total));
         track.style.transform = 'translateX(' + pct + '%)';
     }
 
-    function goToSlide(index) {
+    function goToDomIndex(index) {
+        const slides = syncSlides();
+        const total = slides.length;
         if (total === 0) return;
-        current = ((index % total) + total) % total;
+        if (isInfiniteOrdinance()) {
+            current = Math.max(0, Math.min(index, total - 1));
+        } else {
+            current = ((index % total) + total) % total;
+        }
         applyTransform();
         updateDots();
         slides.forEach((s, i) => s.classList.toggle('is-highlight', i === current));
     }
 
+    /** Dot / open: real slide index 0..N-1 */
+    function goToRealSlide(realIdx) {
+        if (!isInfiniteOrdinance()) {
+            goToDomIndex(realIdx);
+            return;
+        }
+        goToDomIndex(realIdx + 1);
+    }
+
+    function snapOrdinanceToFirstReal() {
+        track.style.transition = 'none';
+        current = 1;
+        applyTransform();
+        updateDots();
+        syncSlides().forEach((s, i) => s.classList.toggle('is-highlight', i === current));
+        requestAnimationFrame(function () {
+            requestAnimationFrame(function () {
+                track.style.transition = '';
+            });
+        });
+    }
+
+    function snapOrdinanceToLastReal() {
+        track.style.transition = 'none';
+        current = ordinanceRealCount;
+        applyTransform();
+        updateDots();
+        syncSlides().forEach((s, i) => s.classList.toggle('is-highlight', i === current));
+        requestAnimationFrame(function () {
+            requestAnimationFrame(function () {
+                track.style.transition = '';
+            });
+        });
+    }
+
+    function onOrdinanceTrackTransitionEnd(e) {
+        if (e.target !== track) return;
+        if (e.propertyName && e.propertyName !== 'transform') return;
+        if (!isInfiniteOrdinance()) return;
+        const N = ordinanceRealCount;
+        if (current === N + 1) {
+            snapOrdinanceToFirstReal();
+        } else if (current === 0) {
+            snapOrdinanceToLastReal();
+        }
+    }
+
     function nextSlide() {
-        goToSlide(current + 1);
+        const M = getSlideCount();
+        if (M <= 1) return;
+        if (!isInfiniteOrdinance()) {
+            goToDomIndex((current + 1) % M);
+            return;
+        }
+        const N = ordinanceRealCount;
+        if (current === N + 1) {
+            track.style.transition = 'none';
+            current = 2;
+            applyTransform();
+            updateDots();
+            syncSlides().forEach((s, i) => s.classList.toggle('is-highlight', i === current));
+            requestAnimationFrame(function () {
+                requestAnimationFrame(function () {
+                    track.style.transition = '';
+                });
+            });
+            return;
+        }
+        goToDomIndex(current + 1);
     }
 
     function prevSlide() {
-        goToSlide(current - 1);
+        const M = getSlideCount();
+        if (M <= 1) return;
+        if (!isInfiniteOrdinance()) {
+            goToDomIndex((current - 1 + M) % M);
+            return;
+        }
+        const N = ordinanceRealCount;
+        if (current === 0) {
+            track.style.transition = 'none';
+            current = Math.max(1, N - 1);
+            applyTransform();
+            updateDots();
+            syncSlides().forEach((s, i) => s.classList.toggle('is-highlight', i === current));
+            requestAnimationFrame(function () {
+                requestAnimationFrame(function () {
+                    track.style.transition = '';
+                });
+            });
+            return;
+        }
+        goToDomIndex(current - 1);
     }
 
     function startAutoAdvance() {
         stopAutoAdvance();
+        if (getSlideCount() <= 1) return;
         autoTimer = setInterval(nextSlide, 8000);
     }
 
@@ -1126,24 +1368,102 @@ function BarangayOrdinance() {
         startAutoAdvance();
     }
 
-    buildDots();
-    slides.forEach((s, i) => s.classList.toggle('is-highlight', i === 0));
+    async function loadOrdinanceSlidesIntoTrack() {
+        ordinanceRealCount = 0;
+        track.innerHTML = '<p class="ordinance-carousel-loading">Naglo-load...</p>';
+        try {
+            const res = await fetch('php/ordinances.php', { cache: 'no-store' });
+            const raw = await res.text();
+            let data;
+            try {
+                data = JSON.parse(raw);
+            } catch (parseErr) {
+                console.error('ordinances.php non-JSON:', raw.slice(0, 400));
+                throw new Error('Invalid server response');
+            }
+            track.innerHTML = '';
+            if (!data || data.success !== true) {
+                throw new Error((data && data.message) || 'Invalid response');
+            }
+            const ordinances = Array.isArray(data.ordinances) ? data.ordinances : [];
+            if (ordinances.length === 0) {
+                track.innerHTML = '<p class="ordinance-carousel-empty">Walang naka-post na ordinance slides.</p>';
+            } else {
+                let added = 0;
+                ordinances.forEach((row) => {
+                    const src = row.image_url || row.image;
+                    if (!src) return;
+                    added++;
+                    const fig = document.createElement('figure');
+                    fig.className = 'ordinance-slide';
+                    fig.dataset.id = String(row.id);
+                    const img = document.createElement('img');
+                    try {
+                        img.src = new URL(src, window.location.href).href;
+                    } catch (e) {
+                        img.src = src;
+                    }
+                    img.alt = row.caption ? row.caption : 'Barangay ordinance';
+                    img.loading = 'lazy';
+                    fig.appendChild(img);
+                    if (row.caption) {
+                        const cap = document.createElement('figcaption');
+                        cap.textContent = row.caption;
+                        fig.appendChild(cap);
+                    }
+                    track.appendChild(fig);
+                });
+                if (added === 0) {
+                    track.innerHTML = '<p class="ordinance-carousel-empty">Walang wastong larawan sa database.</p>';
+                    ordinanceRealCount = 0;
+                } else {
+                    ordinanceRealCount = added;
+                    if (ordinanceRealCount >= 2) {
+                        const nodes = track.querySelectorAll('.ordinance-slide');
+                        const first = nodes[0];
+                        const last = nodes[ordinanceRealCount - 1];
+                        const cloneLast = last.cloneNode(true);
+                        const cloneFirst = first.cloneNode(true);
+                        cloneLast.classList.add('ordinance-slide--clone');
+                        cloneFirst.classList.add('ordinance-slide--clone');
+                        cloneLast.setAttribute('aria-hidden', 'true');
+                        cloneFirst.setAttribute('aria-hidden', 'true');
+                        track.insertBefore(cloneLast, track.firstChild);
+                        track.appendChild(cloneFirst);
+                    }
+                }
+            }
+        } catch (err) {
+            console.error('loadOrdinanceSlidesIntoTrack:', err);
+            ordinanceRealCount = 0;
+            track.innerHTML = '<p class="ordinance-carousel-empty">Hindi ma-load ang mga larawan. Subukan muli mamaya.</p>';
+        }
+        applyOrdinanceSlideLayout();
+        buildDots();
+        current = isInfiniteOrdinance() ? 1 : 0;
+        syncSlides().forEach((s, i) => s.classList.toggle('is-highlight', i === current));
+        applyTransform();
+        updateDots();
+    }
+
+    const loadPromise = loadOrdinanceSlidesIntoTrack();
 
     window.openBarangayOrdinanceGallery = function openBarangayOrdinanceGallery() {
-        if (closeGalleryTimer) {
-            clearTimeout(closeGalleryTimer);
-            closeGalleryTimer = null;
-        }
-        overlay.classList.add('is-open');
-        overlay.setAttribute('aria-hidden', 'false');
-        document.body.style.overflow = 'hidden';
-        current = 0;
-        goToSlide(0);
-        startAutoAdvance();
-        keyHandler = onKeyDown;
-        document.addEventListener('keydown', keyHandler);
-        requestAnimationFrame(function () {
-            overlay.classList.add('is-visible');
+        Promise.resolve(loadPromise).then(function () {
+            if (closeGalleryTimer) {
+                clearTimeout(closeGalleryTimer);
+                closeGalleryTimer = null;
+            }
+            overlay.classList.add('is-open');
+            overlay.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+            goToRealSlide(0);
+            startAutoAdvance();
+            keyHandler = onKeyDown;
+            document.addEventListener('keydown', keyHandler);
+            requestAnimationFrame(function () {
+                overlay.classList.add('is-visible');
+            });
         });
     };
 
@@ -1172,6 +1492,7 @@ function BarangayOrdinance() {
 
     if (homeBtn) homeBtn.addEventListener('click', closeBarangayOrdinanceGallery);
     if (backdrop) backdrop.addEventListener('click', onBackdropClick);
+    track.addEventListener('transitionend', onOrdinanceTrackTransitionEnd);
     viewport.addEventListener('touchstart', onTouchStart, { passive: true });
     viewport.addEventListener('touchend', onTouchEnd, { passive: true });
     viewport.addEventListener('mouseenter', stopAutoAdvance);
@@ -1276,6 +1597,7 @@ function logout() {
                 localStorage.removeItem('reporter_name');
                 sessionStorage.removeItem('loginEmail');
                 sessionStorage.removeItem('resident_data');
+                sessionStorage.removeItem('user_contact_phone_digits');
                 
                 // Redirect to login page with logout parameter to clear PHP session
                 window.location.href = 'index.php?logout=true';
@@ -1291,6 +1613,7 @@ function logout() {
                 localStorage.removeItem('reporter_name');
                 sessionStorage.removeItem('loginEmail');
                 sessionStorage.removeItem('resident_data');
+                sessionStorage.removeItem('user_contact_phone_digits');
                 
                 // Redirect to login page with logout parameter to clear PHP session
                 window.location.href = 'index.php?logout=true';
@@ -2215,6 +2538,13 @@ function setProfileCensusedLabel(show) {
     }
 }
 
+function setDocumentsServiceDisabled(disabled) {
+    const tile = document.querySelector('.service-item[data-service="documents"]');
+    if (!tile) return;
+    tile.classList.toggle('service-item-disabled', !!disabled);
+    tile.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+}
+
 // Check if user has completed census
 async function checkCensusStatus() {
     // First check if user is actually loaded and exists in database
@@ -2239,8 +2569,9 @@ async function checkCensusStatus() {
 
     let data;
     try {
-        const response = await fetch('php/check_census.php', {
+        const response = await fetch(`php/check_census.php?t=${Date.now()}`, {
             method: 'POST',
+            cache: 'no-store',
             headers: {
                 'Content-Type': 'application/json',
             },
@@ -2265,9 +2596,11 @@ async function checkCensusStatus() {
         return;
     }
 
+    const isArchivedCensus = !!(data.success && data.emailExists === true && data.isArchived === true);
     const censused =
         !!(data.success && data.emailExists === true && data.hasCompletedCensus);
     setProfileCensusedLabel(censused);
+    setDocumentsServiceDisabled(isArchivedCensus);
 
     // "Remind me later" skips the modal only if census is not done yet
     const remindLaterTime = localStorage.getItem('census_remind_later');
@@ -2501,6 +2834,11 @@ function closeCensusModal(options) {
         if (form) {
             form.reset();
         }
+        requestAnimationFrame(function () {
+            if (currentUser) {
+                applyCensusContactFromProfile(currentUser);
+            }
+        });
         
         // Clear household members
         const container = document.getElementById('householdMembersContainer');
@@ -2611,8 +2949,13 @@ async function autoPopulateCensusForm() {
             } else {
                 if (addressEl) addressEl.value = '';
             }
+
+            applyCensusContactFromProfile(user);
             
             syncCensusHeadAgeFromBirthday();
+            syncCensusHeadPlaceOfWorkState();
+            syncCensusHeadDisabilityOtherVisibility();
+            syncCensusHeadBenefitsOtherVisibility();
 
             console.log('Census form populated successfully with data from main_UI.php');
         } else {
@@ -2624,6 +2967,47 @@ async function autoPopulateCensusForm() {
         // Silently handle errors to prevent console spam when user is not logged in
         console.log('Could not load user data for census form');
     }
+}
+
+/** Census / household text fields: uppercase first letter of each word while typing (same as create account). */
+function capitalizeLeadingLettersCensus(value) {
+    return value.replace(/(^|[\s\-'])(\p{Ll})/gu, (_, sep, ll) => sep + ll.toUpperCase());
+}
+
+function attachAutoCapitalizeCensus(el) {
+    if (!el || el.dataset.autoCapitalizeBound === '1') return;
+    el.dataset.autoCapitalizeBound = '1';
+    el.addEventListener('input', function censusAutoCapInput() {
+        const before = el.value;
+        const after = capitalizeLeadingLettersCensus(before);
+        if (after === before) return;
+        const start = el.selectionStart;
+        const end = el.selectionEnd;
+        el.value = after;
+        const lenDiff = after.length - before.length;
+        if (start != null && end != null) {
+            try {
+                el.setSelectionRange(start + lenDiff, end + lenDiff);
+            } catch (_) {}
+        }
+    });
+}
+
+function bindCensusHeadAutoCapitalize() {
+    [
+        'censusFirstName',
+        'censusLastName',
+        'censusMiddleName',
+        'censusDisabilityOther',
+        'censusOccupationOther',
+        'censusPlaceOfWork',
+        'censusBenefitsOther'
+    ].forEach((id) => attachAutoCapitalizeCensus(document.getElementById(id)));
+}
+
+function bindHouseholdMemberCardAutoCapitalize(memberCard) {
+    if (!memberCard) return;
+    memberCard.querySelectorAll('input[type="text"], textarea').forEach((field) => attachAutoCapitalizeCensus(field));
 }
 
 // Setup census form event listeners
@@ -2642,6 +3026,28 @@ function setupCensusFormListeners() {
                 birthdayEl.addEventListener('input', syncCensusHeadAgeFromBirthday);
             }
         }
+        if (!censusForm.dataset.censusOccupResetBound) {
+            censusForm.dataset.censusOccupResetBound = '1';
+            censusForm.addEventListener('reset', function () {
+                requestAnimationFrame(function () {
+                    syncCensusHeadOccupationOtherVisibility();
+                    syncCensusHeadPlaceOfWorkState();
+                    syncCensusHeadDisabilityOtherVisibility();
+                    syncCensusHeadBenefitsOtherVisibility();
+                    resetCensusIndigenousHeadControls();
+                    document.querySelectorAll('.household-member-card').forEach(function (card) {
+                        const idx = card.dataset.memberIndex;
+                        if (idx) syncMemberPlaceOfWorkState(idx);
+                    });
+                });
+            });
+        }
+        bindCensusHeadAutoCapitalize();
+        bindCensusContactPhoneField();
+        bindCensusOccupationHeadControls();
+        bindCensusDisabilityHeadControls();
+        bindCensusBenefitsHeadControls();
+        bindCensusIndigenousHeadControls();
         syncCensusHeadAgeFromBirthday();
     }
 
@@ -2656,6 +3062,432 @@ function setupCensusFormListeners() {
 
 // Counter for household members
 let householdMemberCounter = 0;
+
+/** "Employed" shows job details; saved to census_form.occupation as `Employed - [type of work]`. */
+const CENSUS_OCCUPATION_EMPLOYED = 'Employed';
+
+/** Shared <option> HTML: Step 1 personal info + household member cards (single source). */
+const CENSUS_SUFFIX_OPTIONS_HTML = `
+                                        <option value="">None</option>
+                                        <option value="Jr.">Jr.</option>
+                                        <option value="Sr.">Sr.</option>
+                                        <option value="II">II</option>
+                                        <option value="III">III</option>
+                                        <option value="IV">IV</option>
+                                        <option value="V">V</option>`;
+
+const CENSUS_FAMILY_OCCUPATION_OPTIONS_HTML = `
+                                        <option value="">Select family occupation</option>
+                                        <option value="Mother">Mother</option>
+                                        <option value="Father">Father</option>
+                                        <option value="Son">Son</option>
+                                        <option value="Daughter">Daughter</option>
+                                        <option value="Grandparent">Grandparent</option>
+                                        <option value="Cousin">Cousin</option>
+                                        <option value="Other Relative">Other Relative</option>
+                                        <option value="Non-Relative">Non-Relative</option>`;
+
+const CENSUS_SEX_OPTIONS_HTML = `
+                                        <option value="">Select your sex</option>
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option>`;
+
+const CENSUS_CIVIL_STATUS_OPTIONS_HTML = `
+                                        <option value="">Select status</option>
+                                        <option value="Single">Single</option>
+                                        <option value="Married">Married</option>
+                                        <option value="Divorced">Divorced</option>
+                                        <option value="Widowed">Widowed</option>`;
+
+/** Others → text field; saved to census_form.disabilities (VARCHAR(100)) */
+const CENSUS_DISABILITY_OTHER = '__OTHER__';
+
+const CENSUS_DISABILITY_OPTIONS_HTML = `
+                                        <option value="">Ano ang kapansanan?</option>
+                                        <option value="None">None / Wala</option>
+                                        <option value="Blind / Bulag">Blind / Bulag</option>
+                                        <option value="Deaf / Bingi (Mahina ang pandinig)">Deaf / Bingi (Mahina ang pandinig)</option>
+                                        <option value="Mute / Pipi">Mute / Pipi</option>
+                                        <option value="Physical / Pisikal (itsura)">Physical / Pisikal (itsura)</option>
+                                        <option value="Movement / Paggalaw">Movement / Paggalaw</option>
+                                        <option value="Intellectual / Problema sa pag-iisip">Intellectual / Problema sa pag-iisip</option>
+                                        <option value="Psychosocial / Isip, damdamin, ugnayan">Psychosocial / Isip, damdamin, ugnayan</option>
+                                        <option value="Visual impairment / May problema sa paningin">Visual impairment / May problema sa paningin</option>
+                                        <option value="${CENSUS_DISABILITY_OTHER}">Others / Iba pa</option>`;
+
+const CENSUS_OCCUPATION_OPTIONS_HTML = `
+                                        <option value="">Select occupation</option>
+                                        <option value="Unemployed">Unemployed</option>
+                                        <option value="Student">Student</option>
+                                        <option value="Retired">Retired</option>
+                                        <option value="${CENSUS_OCCUPATION_EMPLOYED}">Employed</option>`;
+
+/** Others → text; saved to barangay_supported_benefits */
+const CENSUS_BENEFITS_OTHER = '__OTHER__';
+
+const CENSUS_BENEFITS_OPTIONS_HTML = `
+                                        <option value="">Select benefits</option>
+                                        <option value="None">None</option>
+                                        <option value="SK Scholarship">SK Scholarship</option>
+                                        <option value="${CENSUS_BENEFITS_OTHER}">Others</option>`;
+
+function applySharedCensusHeadSelectOptions() {
+    const pairs = [
+        ['censusSuffix', CENSUS_SUFFIX_OPTIONS_HTML],
+        ['censusFamilyOccupation', CENSUS_FAMILY_OCCUPATION_OPTIONS_HTML],
+        ['censusSex', CENSUS_SEX_OPTIONS_HTML],
+        ['censusCivilStatus', CENSUS_CIVIL_STATUS_OPTIONS_HTML],
+        ['censusDisabilitySelect', CENSUS_DISABILITY_OPTIONS_HTML],
+        ['censusOccupationSelect', CENSUS_OCCUPATION_OPTIONS_HTML],
+        ['censusBenefitsSelect', CENSUS_BENEFITS_OPTIONS_HTML],
+    ];
+    for (let i = 0; i < pairs.length; i++) {
+        const el = document.getElementById(pairs[i][0]);
+        if (el) el.innerHTML = pairs[i][1].trim();
+    }
+    syncCensusHeadDisabilityOtherVisibility();
+    syncCensusHeadOccupationOtherVisibility();
+    syncCensusHeadBenefitsOtherVisibility();
+}
+
+function syncCensusHeadBenefitsOtherVisibility() {
+    const sel = document.getElementById('censusBenefitsSelect');
+    const wrap = document.getElementById('censusBenefitsOtherWrap');
+    const other = document.getElementById('censusBenefitsOther');
+    if (!sel || !wrap || !other) return;
+    const show = sel.value === CENSUS_BENEFITS_OTHER;
+    wrap.hidden = !show;
+    other.toggleAttribute('required', show);
+    if (!show) {
+        other.value = '';
+    }
+}
+
+function getResolvedBenefitsFromSelect(selectEl, otherEl) {
+    if (!selectEl || !selectEl.value) return '';
+    if (selectEl.value === CENSUS_BENEFITS_OTHER) {
+        return otherEl && otherEl.value.trim() ? otherEl.value.trim() : '';
+    }
+    return selectEl.value;
+}
+
+function getResolvedHeadBenefits() {
+    return getResolvedBenefitsFromSelect(
+        document.getElementById('censusBenefitsSelect'),
+        document.getElementById('censusBenefitsOther')
+    );
+}
+
+function getResolvedMemberBenefits(memberIndex) {
+    return getResolvedBenefitsFromSelect(
+        document.getElementById(`memberBenefitsSelect_${memberIndex}`),
+        document.getElementById(`memberBenefitsOther_${memberIndex}`)
+    );
+}
+
+function bindCensusBenefitsHeadControls() {
+    const sel = document.getElementById('censusBenefitsSelect');
+    if (!sel) return;
+    if (sel.dataset.benefitsOtherBound !== '1') {
+        sel.dataset.benefitsOtherBound = '1';
+        sel.addEventListener('change', syncCensusHeadBenefitsOtherVisibility);
+    }
+    syncCensusHeadBenefitsOtherVisibility();
+}
+
+function resetCensusIndigenousHeadControls() {
+    const yes = document.getElementById('censusIndigenousYes');
+    const no = document.getElementById('censusIndigenousNo');
+    const hidden = document.getElementById('censusIndigenous');
+    if (yes) yes.checked = false;
+    if (no) no.checked = false;
+    if (hidden) hidden.value = '';
+}
+
+/** Oo = 1, Hindi = 0 — mutually exclusive checkboxes, value sa hidden #censusIndigenous */
+function bindCensusIndigenousHeadControls() {
+    const yes = document.getElementById('censusIndigenousYes');
+    const no = document.getElementById('censusIndigenousNo');
+    const hidden = document.getElementById('censusIndigenous');
+    if (!yes || !no || !hidden) return;
+    if (yes.dataset.indigenousBound === '1') return;
+    yes.dataset.indigenousBound = '1';
+    no.dataset.indigenousBound = '1';
+    yes.addEventListener('change', function () {
+        if (yes.checked) {
+            no.checked = false;
+            hidden.value = '1';
+        } else if (!no.checked) {
+            hidden.value = '';
+        }
+    });
+    no.addEventListener('change', function () {
+        if (no.checked) {
+            yes.checked = false;
+            hidden.value = '0';
+        } else if (!yes.checked) {
+            hidden.value = '';
+        }
+    });
+}
+
+/** Household member: Oo = 1, Hindi = 0 — pareho ng head */
+function bindCensusIndigenousMemberControls(memberIndex) {
+    const yes = document.getElementById(`memberIndigenousYes_${memberIndex}`);
+    const no = document.getElementById(`memberIndigenousNo_${memberIndex}`);
+    const hidden = document.getElementById(`memberIndigenous_${memberIndex}`);
+    if (!yes || !no || !hidden) return;
+    if (yes.dataset.indigenousBound === '1') return;
+    yes.dataset.indigenousBound = '1';
+    no.dataset.indigenousBound = '1';
+    yes.addEventListener('change', function () {
+        if (yes.checked) {
+            no.checked = false;
+            hidden.value = '1';
+        } else if (!no.checked) {
+            hidden.value = '';
+        }
+    });
+    no.addEventListener('change', function () {
+        if (no.checked) {
+            yes.checked = false;
+            hidden.value = '0';
+        } else if (!yes.checked) {
+            hidden.value = '';
+        }
+    });
+}
+
+function wireMemberBenefitsControls(memberIndex) {
+    const sel = document.getElementById(`memberBenefitsSelect_${memberIndex}`);
+    const wrap = document.getElementById(`memberBenefitsOtherWrap_${memberIndex}`);
+    const other = document.getElementById(`memberBenefitsOther_${memberIndex}`);
+    if (!sel || !wrap || !other) return;
+    function syncMemberBenefitsOther() {
+        const show = sel.value === CENSUS_BENEFITS_OTHER;
+        wrap.hidden = !show;
+        other.toggleAttribute('required', show);
+        if (!show) {
+            other.value = '';
+        }
+    }
+    sel.addEventListener('change', syncMemberBenefitsOther);
+    syncMemberBenefitsOther();
+}
+
+function syncCensusHeadDisabilityOtherVisibility() {
+    const sel = document.getElementById('censusDisabilitySelect');
+    const wrap = document.getElementById('censusDisabilityOtherWrap');
+    const other = document.getElementById('censusDisabilityOther');
+    if (!sel || !wrap || !other) return;
+    const show = sel.value === CENSUS_DISABILITY_OTHER;
+    wrap.hidden = !show;
+    other.toggleAttribute('required', show);
+    if (!show) {
+        other.value = '';
+    }
+}
+
+function getResolvedDisabilityFromSelect(selectEl, otherEl) {
+    if (!selectEl || !selectEl.value) return '';
+    if (selectEl.value === CENSUS_DISABILITY_OTHER) {
+        return otherEl && otherEl.value.trim() ? otherEl.value.trim() : '';
+    }
+    return selectEl.value;
+}
+
+function getResolvedHeadDisability() {
+    return getResolvedDisabilityFromSelect(
+        document.getElementById('censusDisabilitySelect'),
+        document.getElementById('censusDisabilityOther')
+    );
+}
+
+function getResolvedMemberDisability(memberIndex) {
+    return getResolvedDisabilityFromSelect(
+        document.getElementById(`memberDisabilitySelect_${memberIndex}`),
+        document.getElementById(`memberDisabilityOther_${memberIndex}`)
+    );
+}
+
+function bindCensusDisabilityHeadControls() {
+    const sel = document.getElementById('censusDisabilitySelect');
+    if (!sel) return;
+    if (sel.dataset.disabilityOtherBound !== '1') {
+        sel.dataset.disabilityOtherBound = '1';
+        sel.addEventListener('change', syncCensusHeadDisabilityOtherVisibility);
+    }
+    syncCensusHeadDisabilityOtherVisibility();
+}
+
+function syncCensusHeadOccupationOtherVisibility() {
+    const sel = document.getElementById('censusOccupationSelect');
+    const wrap = document.getElementById('censusOccupationOtherWrap');
+    const other = document.getElementById('censusOccupationOther');
+    if (!sel || !wrap || !other) return;
+    const show = sel.value === CENSUS_OCCUPATION_EMPLOYED;
+    wrap.hidden = !show;
+    other.toggleAttribute('required', show);
+    if (!show) {
+        other.value = '';
+    }
+}
+
+/** Place of work: editable only when occupation is Employed; otherwise disabled with value "None" (saved to place_of_work). */
+function syncCensusHeadPlaceOfWorkState() {
+    const sel = document.getElementById('censusOccupationSelect');
+    const pow = document.getElementById('censusPlaceOfWork');
+    const mark = document.getElementById('censusPlaceOfWorkRequiredMark');
+    if (!sel || !pow) return;
+    const employed = sel.value === CENSUS_OCCUPATION_EMPLOYED;
+    if (employed) {
+        pow.disabled = false;
+        pow.classList.remove('census-field-readonly');
+        if (pow.value === 'None') {
+            pow.value = '';
+        }
+        pow.setAttribute('required', 'required');
+        pow.placeholder = 'Company name';
+        if (mark) {
+            mark.hidden = false;
+        }
+    } else {
+        pow.disabled = true;
+        pow.classList.add('census-field-readonly');
+        pow.value = 'None';
+        pow.removeAttribute('required');
+        pow.placeholder = 'None';
+        if (mark) {
+            mark.hidden = true;
+        }
+    }
+}
+
+function getResolvedHeadPlaceOfWork() {
+    const sel = document.getElementById('censusOccupationSelect');
+    const pow = document.getElementById('censusPlaceOfWork');
+    if (!sel || sel.value !== CENSUS_OCCUPATION_EMPLOYED) {
+        return 'None';
+    }
+    const v = pow && typeof pow.value === 'string' ? pow.value.trim() : '';
+    return v !== '' ? v : '';
+}
+
+function getResolvedOccupationFromSelect(selectEl, otherEl) {
+    if (!selectEl || !selectEl.value) return '';
+    if (selectEl.value === CENSUS_OCCUPATION_EMPLOYED) {
+        const detail = otherEl && typeof otherEl.value === 'string' ? otherEl.value.trim() : '';
+        if (!detail) return '';
+        return CENSUS_OCCUPATION_EMPLOYED + ' - ' + detail;
+    }
+    return selectEl.value;
+}
+
+function getResolvedHeadOccupation() {
+    return getResolvedOccupationFromSelect(
+        document.getElementById('censusOccupationSelect'),
+        document.getElementById('censusOccupationOther')
+    );
+}
+
+function getResolvedMemberOccupation(memberIndex) {
+    return getResolvedOccupationFromSelect(
+        document.getElementById(`memberOccupationSelect_${memberIndex}`),
+        document.getElementById(`memberOccupationOther_${memberIndex}`)
+    );
+}
+
+/** Same rules as syncCensusHeadPlaceOfWorkState: only Employed edits place of work; else "None" and disabled. */
+function syncMemberPlaceOfWorkState(memberIndex) {
+    const sel = document.getElementById(`memberOccupationSelect_${memberIndex}`);
+    const pow = document.getElementById(`memberPlaceOfWork_${memberIndex}`);
+    const mark = document.getElementById(`memberPlaceOfWorkRequiredMark_${memberIndex}`);
+    if (!sel || !pow) return;
+    const employed = sel.value === CENSUS_OCCUPATION_EMPLOYED;
+    if (employed) {
+        pow.disabled = false;
+        pow.classList.remove('census-field-readonly');
+        if (pow.value === 'None') {
+            pow.value = '';
+        }
+        pow.setAttribute('required', 'required');
+        pow.placeholder = 'Company name';
+        if (mark) {
+            mark.hidden = false;
+        }
+    } else {
+        pow.disabled = true;
+        pow.classList.add('census-field-readonly');
+        pow.value = 'None';
+        pow.removeAttribute('required');
+        pow.placeholder = 'None';
+        if (mark) {
+            mark.hidden = true;
+        }
+    }
+}
+
+function getResolvedMemberPlaceOfWork(memberIndex) {
+    const sel = document.getElementById(`memberOccupationSelect_${memberIndex}`);
+    const pow = document.getElementById(`memberPlaceOfWork_${memberIndex}`);
+    if (!sel || sel.value !== CENSUS_OCCUPATION_EMPLOYED) {
+        return 'None';
+    }
+    const v = pow && typeof pow.value === 'string' ? pow.value.trim() : '';
+    return v !== '' ? v : '';
+}
+
+function bindCensusOccupationHeadControls() {
+    const sel = document.getElementById('censusOccupationSelect');
+    if (!sel) return;
+    function onHeadOccupationChange() {
+        syncCensusHeadOccupationOtherVisibility();
+        syncCensusHeadPlaceOfWorkState();
+    }
+    if (sel.dataset.occupationOtherBound !== '1') {
+        sel.dataset.occupationOtherBound = '1';
+        sel.addEventListener('change', onHeadOccupationChange);
+    }
+    onHeadOccupationChange();
+}
+
+function wireMemberOccupationControls(memberIndex) {
+    const sel = document.getElementById(`memberOccupationSelect_${memberIndex}`);
+    const wrap = document.getElementById(`memberOccupationOtherWrap_${memberIndex}`);
+    const other = document.getElementById(`memberOccupationOther_${memberIndex}`);
+    if (!sel || !wrap || !other) return;
+    function syncMemberOccupationOther() {
+        const show = sel.value === CENSUS_OCCUPATION_EMPLOYED;
+        wrap.hidden = !show;
+        other.toggleAttribute('required', show);
+        if (!show) {
+            other.value = '';
+        }
+    }
+    function onMemberOccupationChange() {
+        syncMemberOccupationOther();
+        syncMemberPlaceOfWorkState(memberIndex);
+    }
+    sel.addEventListener('change', onMemberOccupationChange);
+    onMemberOccupationChange();
+}
+
+function wireMemberDisabilityControls(memberIndex) {
+    const sel = document.getElementById(`memberDisabilitySelect_${memberIndex}`);
+    const wrap = document.getElementById(`memberDisabilityOtherWrap_${memberIndex}`);
+    const other = document.getElementById(`memberDisabilityOther_${memberIndex}`);
+    if (!sel || !wrap || !other) return;
+    function syncMemberDisabilityOther() {
+        const show = sel.value === CENSUS_DISABILITY_OTHER;
+        wrap.hidden = !show;
+        other.toggleAttribute('required', show);
+        if (!show) {
+            other.value = '';
+        }
+    }
+    sel.addEventListener('change', syncMemberDisabilityOther);
+    syncMemberDisabilityOther();
+}
 
 // Add a new household member form
 function addHouseholdMember() {
@@ -2690,18 +3522,16 @@ function addHouseholdMember() {
                     <label for="memberMiddleName_${householdMemberCounter}">Middle Name</label>
                     <input type="text" id="memberMiddleName_${householdMemberCounter}" name="memberMiddleName_${householdMemberCounter}" placeholder="Enter middle name (optional)">
                 </div>
+                <div class="form-group" style="flex: 0.5; max-width: 120px;">
+                    <label for="memberSuffix_${householdMemberCounter}">Suffix</label>
+                    <select id="memberSuffix_${householdMemberCounter}" name="memberSuffix_${householdMemberCounter}">
+                        ${CENSUS_SUFFIX_OPTIONS_HTML}
+                    </select>
+                </div>
                 <div class="form-group" style="flex: 1.5;">
                     <label for="memberRelation_${householdMemberCounter}">Family Occupation <span class="required-indicator">*</span></label>
                     <select id="memberRelation_${householdMemberCounter}" name="memberRelation_${householdMemberCounter}" required>
-                        <option value="">Select family occupation</option>
-                        <option value="Mother">Mother</option>
-                        <option value="Father">Father</option>
-                        <option value="Son">Son</option>
-                        <option value="Daughter">Daughter</option>
-                        <option value="Grandparent">Grandparent</option>
-                        <option value="Cousin">Cousin</option>
-                        <option value="Other Relative">Other Relative</option>
-                        <option value="Non-Relative">Non-Relative</option>
+                        ${CENSUS_FAMILY_OCCUPATION_OPTIONS_HTML}
                     </select>
                 </div>
             </div>
@@ -2717,9 +3547,7 @@ function addHouseholdMember() {
                 <div class="form-group">
                     <label for="memberSex_${householdMemberCounter}">Sex <span class="required-indicator">*</span></label>
                     <select id="memberSex_${householdMemberCounter}" name="memberSex_${householdMemberCounter}" required>
-                        <option value="">Select sex</option>
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
+                        ${CENSUS_SEX_OPTIONS_HTML}
                     </select>
                 </div>
             </div>
@@ -2727,31 +3555,63 @@ function addHouseholdMember() {
                 <div class="form-group">
                     <label for="memberCivilStatus_${householdMemberCounter}">Civil Status <span class="required-indicator">*</span></label>
                     <select id="memberCivilStatus_${householdMemberCounter}" name="memberCivilStatus_${householdMemberCounter}" required>
-                        <option value="">Select status</option>
-                        <option value="Single">Single</option>
-                        <option value="Married">Married</option>
-                        <option value="Divorced">Divorced</option>
-                        <option value="Widowed">Widowed</option>
+                        ${CENSUS_CIVIL_STATUS_OPTIONS_HTML}
                     </select>
                 </div>
             </div>
-            <div class="form-group">
-                <label for="memberDisability_${householdMemberCounter}">Disability <span class="required-indicator">*</span></label>
-                <input type="text" id="memberDisability_${householdMemberCounter}" name="memberDisability_${householdMemberCounter}" placeholder="e.g., None, Visual Impairment, Physical Disability" required>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="memberDisabilitySelect_${householdMemberCounter}">Disability <span class="required-indicator">*</span></label>
+                    <select id="memberDisabilitySelect_${householdMemberCounter}" class="census-select-long" required>
+                        ${CENSUS_DISABILITY_OPTIONS_HTML}
+                    </select>
+                    <div id="memberDisabilityOtherWrap_${householdMemberCounter}" class="census-occupation-other-wrap" hidden>
+                        <label for="memberDisabilityOther_${householdMemberCounter}" class="census-occupation-other-label">Specify disability <span class="required-indicator">*</span></label>
+                        <input type="text" id="memberDisabilityOther_${householdMemberCounter}" placeholder="Ilarawan ang kapansanan" maxlength="100" autocomplete="off">
+                    </div>
+                </div>
+                <div class="form-group census-occupation-field">
+                    <label for="memberOccupationSelect_${householdMemberCounter}">Occupation/Work <span class="required-indicator">*</span></label>
+                    <select id="memberOccupationSelect_${householdMemberCounter}" required>
+                        ${CENSUS_OCCUPATION_OPTIONS_HTML}
+                    </select>
+                    <div id="memberOccupationOtherWrap_${householdMemberCounter}" class="census-occupation-other-wrap" hidden>
+                        <label for="memberOccupationOther_${householdMemberCounter}" class="census-occupation-other-label">Job / type of work <span class="required-indicator">*</span></label>
+                        <input type="text" id="memberOccupationOther_${householdMemberCounter}" placeholder="e.g., Sales clerk, teacher" autocomplete="off">
+                    </div>
+                </div>
             </div>
             <div class="form-row">
                 <div class="form-group">
-                    <label for="memberWork_${householdMemberCounter}">Occupation/Work <span class="required-indicator">*</span></label>
-                    <input type="text" id="memberWork_${householdMemberCounter}" name="memberWork_${householdMemberCounter}" placeholder="e.g., Student, Teacher, None" required>
+                    <label for="memberPlaceOfWork_${householdMemberCounter}">Place of Work <span id="memberPlaceOfWorkRequiredMark_${householdMemberCounter}" class="required-indicator" hidden>*</span></label>
+                    <input type="text" id="memberPlaceOfWork_${householdMemberCounter}" name="memberPlaceOfWork_${householdMemberCounter}" placeholder="None" autocomplete="off">
                 </div>
                 <div class="form-group">
-                    <label for="memberPlaceOfWork_${householdMemberCounter}">Place of Work</label>
-                    <input type="text" id="memberPlaceOfWork_${householdMemberCounter}" name="memberPlaceOfWork_${householdMemberCounter}" placeholder="Company or school name">
+                    <label for="memberBenefitsSelect_${householdMemberCounter}">Supported Benefits from Barangay <span class="required-indicator">*</span></label>
+                    <select id="memberBenefitsSelect_${householdMemberCounter}" required>
+                        ${CENSUS_BENEFITS_OPTIONS_HTML}
+                    </select>
+                    <div id="memberBenefitsOtherWrap_${householdMemberCounter}" class="census-occupation-other-wrap" hidden>
+                        <label for="memberBenefitsOther_${householdMemberCounter}" class="census-occupation-other-label">Specify benefit <span class="required-indicator">*</span></label>
+                        <input type="text" id="memberBenefitsOther_${householdMemberCounter}" placeholder="Ilarawan ang benepisyo" autocomplete="off">
+                    </div>
                 </div>
             </div>
-            <div class="form-group">
-                <label for="memberBenefits_${householdMemberCounter}">Supported Benefits from Barangay <span class="required-indicator">*</span></label>
-                <input type="text" id="memberBenefits_${householdMemberCounter}" name="memberBenefits_${householdMemberCounter}" placeholder="List any benefits received" required>
+            <div class="form-row census-indigenous-row">
+                <div class="form-group census-indigenous-group">
+                    <span class="census-indigenous-label" id="memberIndigenousLabel_${householdMemberCounter}">Kayo po ba ay kabilang sa Indigenous People? <span class="required-indicator">*</span></span>
+                    <div class="census-indigenous-checks" role="group" aria-labelledby="memberIndigenousLabel_${householdMemberCounter}">
+                        <label class="census-indigenous-option">
+                            <input type="checkbox" id="memberIndigenousYes_${householdMemberCounter}" autocomplete="off">
+                            Oo
+                        </label>
+                        <label class="census-indigenous-option">
+                            <input type="checkbox" id="memberIndigenousNo_${householdMemberCounter}" autocomplete="off">
+                            Hindi
+                        </label>
+                    </div>
+                    <input type="hidden" id="memberIndigenous_${householdMemberCounter}" name="memberIndigenous_${householdMemberCounter}" value="">
+                </div>
             </div>
         </div>
     `;
@@ -2759,6 +3619,11 @@ function addHouseholdMember() {
     container.appendChild(memberCard);
 
     wireMemberBirthdayToAge(householdMemberCounter);
+    wireMemberOccupationControls(householdMemberCounter);
+    wireMemberDisabilityControls(householdMemberCounter);
+    wireMemberBenefitsControls(householdMemberCounter);
+    bindCensusIndigenousMemberControls(householdMemberCounter);
+    bindHouseholdMemberCardAutoCapitalize(memberCard);
 
     // Scroll to the new member card
     memberCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -2800,9 +3665,61 @@ function updateMemberNumbers() {
 function handleCensusSubmission(e) {
     e.preventDefault();
     const form = e.target;
+    const tel = getCensusContactDigitsForSubmit();
+    if (tel.length !== 11 || !/^09\d{9}$/.test(tel)) {
+        const el = document.getElementById('censusContactNumber');
+        if (el) el.focus();
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Contact number',
+                text: 'Maglagay ng wastong 11-digit na mobile number (09XX-XXX-XXXX).'
+            });
+        } else {
+            alert('Maglagay ng wastong 11-digit na mobile number (09XX-XXX-XXXX).');
+        }
+        return;
+    }
     if (!form.checkValidity()) {
         form.reportValidity();
         return;
+    }
+    const indHidden = document.getElementById('censusIndigenous');
+    if (!indHidden || (indHidden.value !== '0' && indHidden.value !== '1')) {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Indigenous People',
+                text: 'Pumili po ng Oo o Hindi sa tanong tungkol sa Indigenous People.'
+            });
+        } else {
+            alert('Pumili po ng Oo o Hindi sa tanong tungkol sa Indigenous People.');
+        }
+        return;
+    }
+    const memberCardsForInd = document.querySelectorAll('.household-member-card');
+    for (let mi = 0; mi < memberCardsForInd.length; mi++) {
+        const card = memberCardsForInd[mi];
+        const memberIndex = card.dataset.memberIndex;
+        const fnEl = document.getElementById(`memberFirstName_${memberIndex}`);
+        const lnEl = document.getElementById(`memberLastName_${memberIndex}`);
+        const fn = fnEl && fnEl.value ? fnEl.value.trim() : '';
+        const ln = lnEl && lnEl.value ? lnEl.value.trim() : '';
+        if (!fn || !ln) continue;
+        const mInd = document.getElementById(`memberIndigenous_${memberIndex}`);
+        if (!mInd || (mInd.value !== '0' && mInd.value !== '1')) {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Indigenous People',
+                    text: 'Pumili po ng Oo o Hindi sa tanong tungkol sa Indigenous People (household member).'
+                });
+            } else {
+                alert('Pumili po ng Oo o Hindi sa tanong tungkol sa Indigenous People (household member).');
+            }
+            if (fnEl) fnEl.focus();
+            return;
+        }
     }
     censusSubmitPendingForm = form;
     openCensusConsentOverlay();
@@ -2820,6 +3737,15 @@ async function executeCensusSubmission(form) {
     submitBtn.disabled = true;
     submitBtn.classList.add('loading');
     submitBtn.innerHTML = '';
+
+    // Ensure place-of-work fields match occupation (None + disabled when not Employed) before read
+    syncCensusHeadPlaceOfWorkState();
+    document.querySelectorAll('.household-member-card').forEach((card) => {
+        const idx = card.dataset.memberIndex;
+        if (idx != null && idx !== '') {
+            syncMemberPlaceOfWorkState(idx);
+        }
+    });
     
     // Get form data
     const formData = new FormData(form);
@@ -2832,20 +3758,28 @@ async function executeCensusSubmission(form) {
         const firstName = formData.get(`memberFirstName_${memberIndex}`);
         const lastName = formData.get(`memberLastName_${memberIndex}`);
         const middleName = formData.get(`memberMiddleName_${memberIndex}`) || '';
-        
+        const memberSuffixRaw = formData.get(`memberSuffix_${memberIndex}`);
+        const memberSuffix =
+            memberSuffixRaw != null && String(memberSuffixRaw).trim() !== ''
+                ? String(memberSuffixRaw).trim()
+                : null;
+
+        const memberIndEl = document.getElementById(`memberIndigenous_${memberIndex}`);
         const member = {
             firstName: firstName,
             middleName: middleName,
             lastName: lastName,
+            suffix: memberSuffix,
             relation: formData.get(`memberRelation_${memberIndex}`),
             age: formData.get(`memberAge_${memberIndex}`),
             sex: formData.get(`memberSex_${memberIndex}`),
             birthday: formData.get(`memberBirthday_${memberIndex}`),
             civilStatus: formData.get(`memberCivilStatus_${memberIndex}`),
-            disability: formData.get(`memberDisability_${memberIndex}`),
-            work: formData.get(`memberWork_${memberIndex}`) || '',
-            placeOfWork: formData.get(`memberPlaceOfWork_${memberIndex}`) || '',
-            benefits: formData.get(`memberBenefits_${memberIndex}`) || ''
+            disability: getResolvedMemberDisability(memberIndex),
+            work: getResolvedMemberOccupation(memberIndex),
+            placeOfWork: getResolvedMemberPlaceOfWork(memberIndex),
+            benefits: getResolvedMemberBenefits(memberIndex),
+            indigenous: memberIndEl && memberIndEl.value === '1' ? 1 : 0
         };
         
         // Only add if first name and last name are provided (required fields)
@@ -2869,12 +3803,18 @@ async function executeCensusSubmission(form) {
         sex: formData.get('sex'),
         birthday: formData.get('birthday'),
         civilStatus: formData.get('civilStatus'),
-        contactNumber: formData.get('contactNumber'),
+        contactNumber: getCensusContactDigitsForSubmit(),
+        disability: getResolvedHeadDisability(),
         address: formData.get('address'),
         unitHouseNumber: formData.get('unitHouseNumber') || '',
-        occupation: formData.get('occupation'),
-        placeOfWork: formData.get('placeOfWork'),
-        claimedBenefits: formData.get('claimedBenefits'),
+        occupation: getResolvedHeadOccupation(),
+        placeOfWork: getResolvedHeadPlaceOfWork(),
+        claimedBenefits: getResolvedHeadBenefits(),
+        indigenous: (function () {
+            const el = document.getElementById('censusIndigenous');
+            if (!el) return 0;
+            return el.value === '1' ? 1 : 0;
+        })(),
         householdMembers: householdMembers,
         totalHouseholdMembers: householdMembers.length + 1 // +1 for the person filling the form
     };

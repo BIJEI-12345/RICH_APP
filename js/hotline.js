@@ -41,6 +41,43 @@ function makeCall(phoneNumber) {
     }
 }
 
+/** Copy displayed hotline text (for copy button beside call). */
+function copyHotlineNumber(text) {
+    const t = String(text ?? '').trim();
+    if (!t) {
+        return;
+    }
+    const notifyOk = function () {
+        showCarouselToast('Copied!', 'success');
+    };
+    const notifyFail = function () {
+        showCarouselToast('Could not copy. Long-press the number.', 'info');
+    };
+
+    function tryModernClipboard() {
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+            return navigator.clipboard.writeText(t).then(function () {
+                return true;
+            }).catch(function () {
+                return false;
+            });
+        }
+        return Promise.resolve(false);
+    }
+
+    tryModernClipboard().then(function (ok) {
+        if (ok) {
+            notifyOk();
+            return;
+        }
+        if (fallbackCopyToClipboard(t)) {
+            notifyOk();
+        } else {
+            notifyFail();
+        }
+    });
+}
+
 // Initialize carousel
 function initializeCarousel() {
     const track = document.getElementById('carouselTrack');
@@ -268,25 +305,24 @@ function pauseCarouselOnTap() {
         
         // Add tap/click event listener
         newItem.addEventListener('click', function(e) {
-            // Don't pause if clicking the call button
-            if (e.target.closest('.call-btn')) {
+            // Don't pause if using call / copy (whole action row)
+            if (e.target.closest('.item-action-buttons')) {
                 return;
             }
-            
+
             // Pause the carousel
             pauseCarousel();
         });
-        
+
         // Also handle touch events for mobile
         newItem.addEventListener('touchend', function(e) {
-            // Don't pause if tapping the call button
-            if (e.target.closest('.call-btn')) {
+            // preventDefault on touchend blocks the follow-up click — skip for action buttons
+            if (e.target.closest('.item-action-buttons')) {
                 return;
             }
-            
-            // Prevent default to avoid triggering click
+
             e.preventDefault();
-            
+
             // Pause the carousel
             pauseCarousel();
         });
@@ -446,25 +482,68 @@ function copyToClipboard(text) {
     }
 }
 
-// Fallback copy function for older browsers
+// Fallback copy function for older browsers / blocked Clipboard API
 function fallbackCopyToClipboard(text) {
     const textArea = document.createElement('textarea');
     textArea.value = text;
+    textArea.setAttribute('readonly', '');
     textArea.style.position = 'fixed';
-    textArea.style.left = '-999999px';
-    textArea.style.top = '-999999px';
+    textArea.style.left = '0';
+    textArea.style.top = '0';
+    textArea.style.opacity = '0';
+    textArea.style.pointerEvents = 'none';
     document.body.appendChild(textArea);
     textArea.focus();
     textArea.select();
-    
+    textArea.setSelectionRange(0, text.length);
+
+    var ok = false;
     try {
-        document.execCommand('copy');
-        console.log('Phone number copied to clipboard (fallback)');
+        ok = document.execCommand('copy');
     } catch (err) {
         console.error('Fallback copy failed: ', err);
     }
-    
+
     document.body.removeChild(textArea);
+    return ok;
+}
+
+/** Toast between carousel prev/next buttons (#hotlineToastHost); falls back to fixed notification. */
+function showCarouselToast(message, type) {
+    const host = document.getElementById('hotlineToastHost');
+    if (!host) {
+        showNotification(message, type);
+        return;
+    }
+    host.innerHTML = '';
+    const wrap = document.createElement('div');
+    const isSuccess = type === 'success';
+    wrap.className = 'hotline-copy-toast hotline-copy-toast--' + (isSuccess ? 'success' : 'info');
+    wrap.setAttribute('role', 'status');
+
+    const icon = document.createElement('i');
+    icon.setAttribute('aria-hidden', 'true');
+    icon.className = isSuccess ? 'fas fa-check' : 'fas fa-info-circle';
+
+    const text = document.createElement('span');
+    text.textContent = message;
+
+    wrap.appendChild(icon);
+    wrap.appendChild(text);
+    host.appendChild(wrap);
+
+    requestAnimationFrame(function () {
+        wrap.classList.add('hotline-copy-toast--visible');
+    });
+
+    setTimeout(function () {
+        wrap.classList.remove('hotline-copy-toast--visible');
+        setTimeout(function () {
+            if (wrap.parentNode) {
+                wrap.remove();
+            }
+        }, 220);
+    }, 2600);
 }
 
 // Function to show notification

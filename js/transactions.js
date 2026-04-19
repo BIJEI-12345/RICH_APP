@@ -516,6 +516,58 @@ function getTransactionCardRatingHtml(transaction) {
     return '<div class="transaction-card-rating" title="Rating: ' + v + '/5" aria-label="Rating ' + v + ' out of 5 stars">' + stars + '</div>';
 }
 
+/** Purpose line on list cards (certification, indigency, clearance, COE). */
+function formatTransactionPurposeDisplay(raw) {
+    if (raw == null) {
+        return '';
+    }
+    const s = String(raw).trim();
+    if (s === '') {
+        return '';
+    }
+    const lower = s.toLowerCase();
+    const map = {
+        'barangay-clearance': 'Barangay Clearance',
+        'business-clearance': 'Business Clearance',
+        'proof-of-residency': 'Proof of Residency',
+        jobseeker: 'Job Seeker',
+        'job seeker': 'Job Seeker'
+    };
+    if (map[lower]) {
+        return map[lower];
+    }
+    return escapeHtmlTransactions(s);
+}
+
+function getTransactionCardPurposeBlock(transaction) {
+    const types = ['certification', 'indigency', 'clearance', 'coe'];
+    if (!transaction || types.indexOf(transaction.request_type) === -1) {
+        return '';
+    }
+    let raw =
+        transaction.purpose != null && String(transaction.purpose).trim() !== ''
+            ? String(transaction.purpose).trim()
+            : '';
+    if (!raw && transaction.request_type !== 'coe') {
+        raw = transaction.notes != null ? String(transaction.notes).trim() : '';
+    }
+    if (!raw) {
+        return '';
+    }
+    const display = formatTransactionPurposeDisplay(raw);
+    if (!display) {
+        return '';
+    }
+    return (
+        '<div class="detail-item detail-item-purpose">' +
+        '<span class="detail-label">Purpose:</span>' +
+        '<span class="detail-value">' +
+        display +
+        '</span>' +
+        '</div>'
+    );
+}
+
 // Create transaction card HTML
 function createTransactionCard(transaction) {
     // Map status for display purposes
@@ -563,7 +615,13 @@ function createTransactionCard(transaction) {
     // Get request type icon
     const requestTypeIcon = getRequestTypeIcon(transaction.request_type);
 
-    const clearancePurpose = (transaction.notes != null ? String(transaction.notes) : '').trim();
+    const clearancePurpose = (
+        transaction.purpose != null && String(transaction.purpose).trim() !== ''
+            ? String(transaction.purpose).trim()
+            : transaction.notes != null
+              ? String(transaction.notes).trim()
+              : ''
+    );
     const showBarangayClaimingFee =
         transaction.request_type === 'barangay_id' && displayStatus === 'finished';
     const clearanceFinished =
@@ -608,8 +666,9 @@ function createTransactionCard(transaction) {
             
             <div class="transaction-details">
                 <div class="transaction-details-top">
-                    <div class="transaction-details-main">
-                        <div class="detail-item">
+                    <div class="transaction-details-main transaction-card-meta-row">
+                        ${getTransactionCardPurposeBlock(transaction)}
+                        <div class="detail-item detail-item-submitted">
                             <span class="detail-label">Submitted at:</span>
                             <span class="detail-value">${formatDateTime(transaction.request_date)}</span>
                         </div>
@@ -655,20 +714,6 @@ function getRequestTypeTitle(requestType) {
         'clearance': 'Clearance'
     };
     return titles[requestType] || 'Document Request';
-}
-
-// Get request type description for modal
-function getRequestTypeDescription(requestType) {
-    const descriptions = {
-        'concern': 'Community issue or concern reported',
-        'emergency': 'Emergency situation reported',
-        'indigency': 'Request for indigency certificate',
-        'barangay_id': 'Request for barangay identification',
-        'certification': 'Request for certification document',
-        'coe': 'Request for certificate of employment',
-        'clearance': 'Request for clearance document'
-    };
-    return descriptions[requestType] || 'Official document request';
 }
 
 // Create action buttons based on transaction status
@@ -764,7 +809,6 @@ function viewTransactionDetails(transactionId) {
                 </div>
                 <div class="request-type-info">
                     <h3>${getRequestTypeTitle(transaction.request_type)}</h3>
-                    <p class="request-type-subtitle">${getRequestTypeDescription(transaction.request_type)}</p>
                     <div class="status-badge-large ${displayStatus}">${statusBadgeContent}</div>
                 </div>
             </div>
@@ -795,11 +839,11 @@ function viewTransactionDetails(transactionId) {
             
             ${getConcernRatingSectionHtml(transaction)}
             
-            ${transaction.notes && transaction.request_type !== 'concern' ? `
+            ${transaction.notes && transaction.request_type !== 'concern' && ['certification', 'indigency', 'clearance', 'coe'].indexOf(transaction.request_type) === -1 ? `
             <div class="detail-section">
                 <h4>Statement of Concern</h4>
                 <div class="notes-content">
-                    <p>${transaction.notes}</p>
+                    <p>${escapeHtmlTransactions(String(transaction.notes))}</p>
                 </div>
             </div>
             ` : ''}

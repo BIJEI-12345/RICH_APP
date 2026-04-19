@@ -372,13 +372,13 @@ function sendOTPToEmail($firstName, $middleName, $lastName, $suffix, $email, $ag
         }
         $errorMsg .= 'Please check your .env file. Run diagnostic: /php/env_diagnostic.php';
         
-        return ['success' => false, 'message' => $errorMsg];
+        return ['success' => false, 'message' => $errorMsg, 'error_code' => 'db_config'];
     }
     
     try {
         // Check if email already exists in resident_information
         if (emailExists($email)) {
-            return ['success' => false, 'message' => 'Email address already registered'];
+            return ['success' => false, 'message' => 'Email address already registered', 'error_code' => 'email_taken'];
         }
         
         // Generate 6-digit verification code
@@ -420,9 +420,10 @@ function sendOTPToEmail($firstName, $middleName, $lastName, $suffix, $email, $ag
             
             // Return error with OTP for development/testing
             return [
-                'success' => false, 
+                'success' => false,
                 'message' => 'Failed to send verification email: ' . ($emailResult['message'] ?? 'Unknown error'),
                 'error_details' => $emailResult['error'] ?? null,
+                'error_code' => 'email_delivery_failed',
                 'otp_code' => $verificationCode // Include OTP for testing if email fails
             ];
         }
@@ -454,7 +455,7 @@ function sendOTPToEmail($firstName, $middleName, $lastName, $suffix, $email, $ag
         
     } catch (PDOException $e) {
         error_log("OTP sending failed: " . $e->getMessage());
-        return ['success' => false, 'message' => 'Failed to send verification code. Please try again.'];
+        return ['success' => false, 'message' => 'Failed to send verification code. Please try again.', 'error_code' => 'database_error'];
     }
 }
 
@@ -504,7 +505,8 @@ function sendVerificationEmail($email, $code, $fullName) {
         
         return [
             'success' => false,
-            'message' => 'Email sending failed: ' . $e->getMessage()
+            'message' => 'Email sending failed: ' . $e->getMessage(),
+            'error_code' => 'email_delivery_failed',
         ];
     }
 }
@@ -521,7 +523,19 @@ try {
         http_response_code(201);
         echo json_encode($result);
     } else {
-        http_response_code(400);
+        // HTTP semantics: 400 = validation/missing fields. 409 = email already registered.
+        // 200 + success:false for email_delivery_failed so fetch() is not flagged as HTTP error in browser console (SMTP issue, not bad request).
+        // 503 = DB unreachable / missing .env DB config (infrastructure).
+        $ec = $result['error_code'] ?? '';
+        if ($ec === 'email_delivery_failed') {
+            http_response_code(200);
+        } elseif ($ec === 'email_taken') {
+            http_response_code(409);
+        } elseif ($ec === 'db_config' || $ec === 'database_error') {
+            http_response_code(503);
+        } else {
+            http_response_code(400);
+        }
         echo json_encode($result);
     }
 

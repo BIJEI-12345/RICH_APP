@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/jpg" href="Images/logo app 2.jpg">
+    <title>RICH - Full Disclosure Policy Board</title>
+    <link rel="stylesheet" href="styles/announcements.css">
+    <link rel="stylesheet" href="styles/full_disclosure.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+    <div class="mobile-container full-disclosure-page">
+        <header class="header">
+            <div class="header-top">
+                <div class="header-left">
+                    <div class="back-btn" onclick="goBackToMain()">
+                        <i class="fas fa-home"></i>
+                        <span>Back</span>
+                    </div>
+                    <div class="logo">
+                        <img src="Images/no_bg_logo.png" alt="Logo" class="logo-image">
+                    </div>
+                </div>
+            </div>
+            <div class="header-bottom">
+                <div class="page-title">
+                    <h1>Full Disclosure Policy Board</h1>
+                    <p>Transparency and accountability information for the barangay</p>
+                </div>
+            </div>
+        </header>
+
+        <div class="main-container">
+            <section class="all-news-section" id="full-disclosure-section">
+                <div class="policy-board-loading policy-board-loading--png" role="status" aria-live="polite">
+                    <div class="policy-board-loading__spin-wrap policy-board-loading__spin-wrap--png">
+                        <img src="Images/circle-removebg.png" alt="" class="policy-board-loading__png" width="72" height="72" />
+                    </div>
+                    <span class="policy-board-loading__label">Loading</span>
+                </div>
+            </section>
+        </div>
+
+        <footer class="footer">
+            <p>&copy; 2026 RICH. All rights reserved.</p>
+        </footer>
+    </div>
+    <script>
+        function goBackToMain() {
+            window.location.href = 'main_UI.html';
+        }
+    </script>
+    <script src="js/policy_board_carousel.js"></script>
+    <script src="js/full_disclosure.js"></script>
+</body>
+</html>

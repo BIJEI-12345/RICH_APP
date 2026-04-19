@@ -763,6 +763,11 @@ body:has(.testing-mode-indicator) .main-container {
     margin-bottom: 18px;
 }
 
+/* Full Disclosure block sits above the News section container */
+.section-container-no-border:has(.news-card.full-disclosure-policy-board) {
+    margin-bottom: 18px;
+}
+
 /* Room below news card so bottom edge + shadow stay visible when scrolled to end */
 .section-container-no-border:has(.news-section) {
     margin-bottom: calc(28px + env(safe-area-inset-bottom, 0px));
@@ -815,6 +820,12 @@ body:has(.testing-mode-indicator) .main-container {
 .service-item:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 24px rgba(0, 0, 0, 0.2);
+}
+
+.service-item.service-item-disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    pointer-events: none;
 }
 
 .service-icon {
@@ -1020,6 +1031,145 @@ body:has(.testing-mode-indicator) .main-container {
     color: #666;
     font-size: 14px;
     margin-bottom: 5px;
+}
+
+/* Full Disclosure Policy Board — preview carousel (edge-to-edge sa teal card; walang caption) */
+.news-card.full-disclosure-policy-board {
+    cursor: default;
+    margin-bottom: 15px;
+    gap: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 12px 0 10px;
+    overflow: hidden;
+}
+
+.news-card.full-disclosure-policy-board .news-content {
+    padding: 0 15px 10px;
+    flex: 0 0 auto;
+}
+
+.news-card.full-disclosure-policy-board .news-content h4 {
+    font-size: 15px;
+    margin-bottom: 3px;
+    line-height: 1.2;
+}
+
+.news-card.full-disclosure-policy-board .news-content p {
+    font-size: 11px;
+    line-height: 1.25;
+    opacity: 0.92;
+}
+
+.news-card.full-disclosure-policy-board .announcements.announcements--policy-board {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 220px;
+    height: auto;
+    max-height: none;
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    box-shadow: none;
+    border-radius: 0;
+}
+
+.news-card.full-disclosure-policy-board #main-ui-policy-board-root {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    width: 100%;
+}
+
+.news-card.full-disclosure-policy-board .main-ui-policy-board-shell.policy-board-shell {
+    flex: 1 1 auto;
+    min-height: 200px;
+    height: 100%;
+    width: 100%;
+    align-items: stretch;
+    gap: 0;
+}
+
+.news-card.full-disclosure-policy-board .main-ui-policy-board-shell .policy-board-viewport {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 200px;
+    height: clamp(200px, 48vw, 300px);
+    border-radius: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.news-card.full-disclosure-policy-board .main-ui-policy-board-shell .policy-board-track {
+    height: 100%;
+    align-items: stretch;
+}
+
+.news-card.full-disclosure-policy-board .main-ui-policy-board-slide.policy-board-card {
+    align-self: stretch;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    border-radius: 0;
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.news-card.full-disclosure-policy-board .main-ui-policy-board-slide .policy-board-card__media {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    width: 100%;
+    margin: 0;
+    padding: 0 4px;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: auto;
+    position: relative;
+}
+
+.news-card.full-disclosure-policy-board .main-ui-policy-board-slide .policy-board-card__media img {
+    max-height: none;
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    object-fit: contain;
+    object-position: center center;
+}
+
+.news-card.full-disclosure-policy-board .policy-board-shell {
+    align-items: stretch;
+}
+
+.news-card.full-disclosure-policy-board .policy-board-arrow {
+    flex: 0 0 36px;
+    width: 36px;
+    min-width: 36px;
+    height: 36px;
+    margin: auto 4px;
+    font-size: 0.85rem;
+    background: rgba(255, 255, 255, 0.95);
+    border-color: rgba(255, 255, 255, 0.65);
+}
+
+.news-card.full-disclosure-policy-board .main-ui-policy-board-dots {
+    flex: 0 0 auto;
+    padding: 8px 8px 4px;
+}
+
+.announcements-no-carousel-placeholder {
+    margin: 0;
+    padding: 0 12px;
+    font-size: 14px;
+    color: #888;
+    text-align: center;
+    line-height: 1.45;
 }
 
 .powered-by {
@@ -1532,6 +1682,43 @@ body:has(.testing-mode-indicator) .main-container {
 
 .census-household-row .form-group:last-child {
     padding-left: 8px;
+}
+
+.census-indigenous-row .census-indigenous-group {
+    grid-column: 1 / -1;
+}
+
+.census-indigenous-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #333;
+    font-size: 0.95rem;
+}
+
+.census-indigenous-checks {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1.25rem;
+}
+
+.census-indigenous-option {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-weight: 500;
+    cursor: pointer;
+    margin: 0;
+    user-select: none;
+}
+
+.census-indigenous-option input[type='checkbox'] {
+    width: auto;
+    min-width: 1rem;
+    margin: 0;
+    accent-color: #4f46e5;
 }
 
 .form-group {
@@ -3497,6 +3684,30 @@ body:has(.testing-mode-indicator) .main-container {
         font-size: 12px;
     }
     
+    .news-card.full-disclosure-policy-board {
+        margin-bottom: 12px;
+        gap: 4px;
+    }
+
+    .news-card.full-disclosure-policy-board .news-content h4 {
+        font-size: 14px;
+        margin-bottom: 2px;
+    }
+
+    .news-card.full-disclosure-policy-board .news-content p {
+        font-size: 10px;
+        line-height: 1.2;
+    }
+
+    .news-card.full-disclosure-policy-board .main-ui-policy-board-slide .policy-board-card__media,
+    .news-card.full-disclosure-policy-board .main-ui-policy-board-slide .policy-board-card__media img {
+        max-height: 178px;
+    }
+    
+    .announcements-no-carousel-placeholder {
+        font-size: 12px;
+    }
+    
     .news-card {
         padding: 12px;
         display: flex;
@@ -3837,24 +4048,37 @@ body:has(.testing-mode-indicator) .main-container {
 }
 
 .see-all-container {
-    display: flex;
-    justify-content: center;
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
     margin-top: 20px;
-    padding: 0 20px;
+    padding: 0;
+}
+
+.see-all-container--full-disclosure {
+    margin-top: 15px;
+    margin-bottom: 18px;
 }
 
 .see-all-btn {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     background: linear-gradient(135deg, #007bff, #0056b3);
     color: white;
     border: none;
-    padding: 10px 10px;
-    border-radius: 25px;
-    font-size: 9px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    font-size: 14px;
     font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
     cursor: pointer;
     transition: all 0.3s ease;
     box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
-    letter-spacing: 0.2px;
 }
 
 .see-all-btn:hover {
@@ -3877,12 +4101,13 @@ body:has(.testing-mode-indicator) .main-container {
 @media screen and (min-width: 300px) and (max-width: 574px) {
     .see-all-container {
         margin-top: 15px;
-        padding: 0 15px;
+        padding: 0;
     }
     
     .see-all-btn {
-        padding: 10px 25px;
+        padding: 12px 14px;
         font-size: 14px;
+        border-radius: 12px;
     }
     
     /* Notification dropdown mobile responsive */
@@ -3925,13 +4150,13 @@ body:has(.testing-mode-indicator) .main-container {
 @media screen and (min-width: 300px) and (max-width: 480px) {
     .see-all-container {
         margin-top: 10px;
-        padding: 0 10px;
+        padding: 0;
     }
     
     .see-all-btn {
-        padding: 8px 20px;
+        padding: 11px 12px;
         font-size: 13px;
-        border-radius: 20px;
+        border-radius: 12px;
     }
     
     /* Notification dropdown small mobile responsive */
@@ -3974,12 +4199,13 @@ body:has(.testing-mode-indicator) .main-container {
 @media screen and (min-width: 575px) and (max-width: 767px) {
     .see-all-container {
         margin-top: 15px;
-        padding: 0 15px;
+        padding: 0;
     }
     
     .see-all-btn {
-        padding: 10px 25px;
+        padding: 12px 14px;
         font-size: 14px;
+        border-radius: 12px;
     }
     
     /* Notification dropdown mobile responsive */
@@ -4559,6 +4785,11 @@ html {
     transition: box-shadow 0.3s ease;
 }
 
+/* Step 2: household member <select> lists must paint outside the section edge on small screens */
+#censusForm .census-section-household {
+    overflow: visible;
+}
+
 .census-section:hover {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
@@ -4603,7 +4834,8 @@ html {
     border-radius: 10px;
     margin-bottom: 20px;
     padding: 0;
-    overflow: hidden;
+    /* visible: native <select> menus must not be clipped on narrow viewports (matches Step 1 behavior) */
+    overflow: visible;
     transition: all 0.3s ease;
     animation: slideIn 0.3s ease;
 }
@@ -4668,6 +4900,14 @@ html {
 
 .member-card-body {
     padding: 20px;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+/* Same grid behavior as Step 1: two columns collapse to one on small screens via existing .form-row media rules */
+#censusForm .household-member-card .form-row .form-group {
+    min-width: 0;
+    max-width: 100%;
 }
 
 /* Add Member Button */
@@ -4780,6 +5020,102 @@ html {
     background-position: right 15px center;
     padding-right: 40px;
     appearance: none;
+}
+
+#censusForm .form-group input.census-field-readonly,
+#censusForm .form-group textarea.census-field-readonly {
+    background: #f4f6f9;
+    cursor: default;
+    border-color: #d8dde6;
+    color: #333;
+}
+
+#censusForm .form-group input.census-field-readonly:focus,
+#censusForm .form-group textarea.census-field-readonly:focus {
+    box-shadow: none;
+    border-color: #d8dde6;
+}
+
+#censusForm #censusPlaceOfWork:disabled {
+    background: #f4f6f9;
+    cursor: not-allowed;
+    border-color: #d8dde6;
+    color: #555;
+    opacity: 1;
+}
+
+.census-occupation-other-wrap {
+    margin-top: 0.75rem;
+}
+
+.census-occupation-other-label {
+    display: block;
+    margin-bottom: 0.35rem;
+    font-size: 0.9em;
+    font-weight: 500;
+}
+
+/* Census modal: avoid horizontal overflow on narrow screens (long <select> labels) */
+#censusModal.modal-overlay {
+    overflow-x: hidden;
+}
+
+#censusModal .modal-body {
+    overflow-x: hidden;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+#censusForm .form-group {
+    min-width: 0;
+}
+
+/* Disability dropdown: bilingual labels — constrain to column; smaller text on mobile */
+#censusForm select.census-select-long {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+@media screen and (max-width: 768px) {
+    #censusModal .modal-container.census-modal {
+        width: min(100%, 100vw);
+        max-width: 100%;
+    }
+
+    #censusModal .section-content {
+        padding-left: 14px;
+        padding-right: 14px;
+    }
+
+    /* Closed state: stay in column; full label visible when list opens */
+    #censusForm select.census-select-long {
+        font-size: 16px;
+        line-height: 1.3;
+        padding: 8px 36px 8px 10px;
+        background-position: right 12px center;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    /* Open list: allow wrapping where the browser supports it */
+    #censusForm select.census-select-long option {
+        white-space: normal;
+        word-wrap: break-word;
+        overflow-wrap: anywhere;
+        padding: 0.5rem 0.4rem;
+        font-size: 14px;
+        line-height: 1.35;
+    }
+}
+
+@media screen and (max-width: 400px) {
+    #censusForm select.census-select-long {
+        padding-left: 8px;
+        padding-right: 34px;
+    }
 }
 
 /* Loading state for census submit */
@@ -5290,7 +5626,7 @@ html {
     height: min(92dvh, 900px);
     max-height: min(92dvh, 900px);
     margin: 0 auto;
-    background: linear-gradient(165deg, #797c80 0%, #ffffff 45%, #687d90 100%);
+    background: linear-gradient(165deg, #0f4b9a 0%, #a8e7bf 45%, #1e262d 100%);
     border-radius: 16px 16px 0 0;
     box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.35);
     display: flex;
@@ -5326,14 +5662,14 @@ html {
     margin: 0;
     font-size: 17px;
     font-weight: 700;
-    color: #fff;
+    color: #000000;
     letter-spacing: 0.02em;
 }
 
 .ordinance-gallery-sub {
     margin: 4px 0 0;
     font-size: 11px;
-    color: rgba(255, 255, 255, 0.75);
+    color: rgba(1, 1, 1, 0.75);
     line-height: 1.35;
 }
 
@@ -5391,20 +5727,20 @@ html {
     touch-action: pan-x pinch-zoom;
 }
 
-/* Track = 4× viewport width; each slide = 25% → exactly one slide visible */
+/* Track width & slide flex set in JS from DB slide count (N× viewport; each slide 100/N of track) */
 .ordinance-carousel-track {
     display: flex;
-    width: 400%;
+    width: 100%;
     height: 100%;
     transition: transform 0.48s cubic-bezier(0.22, 1, 0.36, 1);
     will-change: transform;
 }
 
 .ordinance-slide {
-    flex: 0 0 25%;
-    width: 25%;
-    max-width: 25%;
-    min-width: 25%;
+    flex: 0 0 100%;
+    width: 100%;
+    max-width: 100%;
+    min-width: 100%;
     box-sizing: border-box;
     margin: 0;
     padding: 0 6px;
@@ -5456,6 +5792,22 @@ html {
     max-width: 100%;
 }
 
+.ordinance-carousel-loading,
+.ordinance-carousel-empty {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 1rem 1.25rem;
+    margin: 0;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.88);
+    line-height: 1.45;
+    width: 100%;
+    box-sizing: border-box;
+}
+
 .ordinance-carousel-dots {
     display: flex;
     justify-content: center;
@@ -5480,24 +5832,6 @@ html {
     transform: scale(1.15);
     width: 22px;
     border-radius: 6px;
-}
-
-.ordinance-gallery-cta {
-    display: block;
-    text-align: center;
-    font-size: 12px;
-    font-weight: 600;
-    color: #7ecbff;
-    text-decoration: none;
-    padding: 6px 8px;
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.06);
-    transition: background 0.2s ease, color 0.2s ease;
-}
-
-.ordinance-gallery-cta:hover {
-    background: rgba(255, 255, 255, 0.12);
-    color: #fff;
 }
 
 @media screen and (min-width: 480px) {
