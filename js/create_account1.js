@@ -302,6 +302,27 @@ document.addEventListener('DOMContentLoaded', function() {
         return value.trim().length > 0;
     }
 
+    async function checkEmailAvailability(email) {
+        const response = await fetch('php/check_email_availability.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+
+        let data = null;
+        try {
+            data = await response.json();
+        } catch (_) {
+            throw new Error('Unable to validate email right now. Please try again.');
+        }
+
+        if (!response.ok || !data || !data.success) {
+            throw new Error((data && data.message) ? data.message : 'Unable to validate email right now. Please try again.');
+        }
+
+        return !!data.available;
+    }
+
     // New validation functions
     function validateAge(age) {
         const ageNum = parseInt(age);
@@ -1063,10 +1084,41 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     if (btnRegStepContinue && regStepPersonal && regStepId) {
-        btnRegStepContinue.addEventListener('click', function () {
+        btnRegStepContinue.addEventListener('click', async function () {
             if (!validatePersonalInfoFieldsOnly()) {
                 return;
             }
+
+            const normalizedEmail = emailInput.value.trim().toLowerCase();
+            clearError(emailInput);
+            btnRegStepContinue.disabled = true;
+
+            try {
+                const isEmailAvailable = await checkEmailAvailability(normalizedEmail);
+                if (!isEmailAvailable) {
+                    showError(emailInput, 'Email address is already registered');
+                    await Swal.fire({
+                        icon: 'error',
+                        title: 'Email already used',
+                        text: 'This email is already registered. Please use a different email address.',
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: '#dc3545'
+                    });
+                    return;
+                }
+            } catch (error) {
+                await Swal.fire({
+                    icon: 'error',
+                    title: 'Email check failed',
+                    text: (error && error.message) ? error.message : 'Unable to validate email right now. Please try again.',
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#dc3545'
+                });
+                return;
+            } finally {
+                btnRegStepContinue.disabled = false;
+            }
+
             regStepPersonal.hidden = true;
             regStepId.hidden = false;
             setRegistrationProgress('id');
