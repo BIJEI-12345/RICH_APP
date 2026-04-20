@@ -4,7 +4,7 @@
  *
  * - GET  php/policy_board.php?image_id=N  — serve bytes from `policy_board`.`image`
  * - GET  php/policy_board.php[?email=...] — JSON items + community average; per-user `my_feedback` only (private)
- * - POST php/policy_board.php — { action: "submit_feedback", email, policy_board_id, rating, comment, name }
+ * - POST php/policy_board.php — { action: "submit_feedback", email, policy_board_id, comment, name }
  *   `comment_policy`: isang row bawat (policy_id, resident_email); column `name` kung may migration
  */
 if (!ob_get_level()) {
@@ -413,9 +413,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        if (!$hasCommentCol || !$hasRatingCol) {
+        if (!$hasCommentCol) {
             http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'Kulang ang column sa comment_policy (kailangan: rating, comment).']);
+            echo json_encode(['success' => false, 'message' => 'Kulang ang column sa comment_policy (kailangan: comment).']);
             exit;
         }
         if (!$hasResidentEmail && !$hasNameCol) {
@@ -424,13 +424,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'success' => false,
                 'message' => 'Kulang ang column sa comment_policy: magdagdag ng `name` o `resident_email`.',
             ]);
-            exit;
-        }
-
-        $rating = isset($input['rating']) ? (int) $input['rating'] : 0;
-        if ($rating < 1 || $rating > 5) {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'Pumili ng rating 1–5.']);
             exit;
         }
 
@@ -459,20 +452,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (pb_feedback_row_exists($pdo, $cpCols, $pid, $email)) {
             http_response_code(409);
-            echo json_encode(['success' => false, 'message' => 'Nakapagpadala ka na ng rating at komento para sa disclosure na ito.']);
+            echo json_encode(['success' => false, 'message' => 'Nakapagpadala ka na ng komento para sa disclosure na ito.']);
             exit;
         }
 
         if ($hasResidentEmail) {
-            $fields = ['policy_id', 'resident_email', 'rating', 'comment'];
-            $params = [$pid, $email, $rating, $text];
+            $fields = ['policy_id', 'resident_email', 'comment'];
+            $params = [$pid, $email, $text];
+            if ($hasRatingCol) {
+                $fields[] = 'rating';
+                $params[] = null;
+            }
             if ($hasNameCol) {
                 $fields[] = 'name';
                 $params[] = $nameFromProfile;
             }
         } else {
-            $fields = ['policy_id', 'name', 'rating', 'comment'];
-            $params = [$pid, $nameFromProfile, $rating, $text];
+            $fields = ['policy_id', 'name', 'comment'];
+            $params = [$pid, $nameFromProfile, $text];
+            if ($hasRatingCol) {
+                $fields[] = 'rating';
+                $params[] = null;
+            }
         }
 
         $sql = 'INSERT INTO comment_policy (' . implode(', ', array_map('pb_cp_ident', $fields)) . ') VALUES (' .
@@ -513,7 +514,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'policy_board_id' => $pid,
             'average_rating' => $avgOut,
             'ratings_count' => $cntOut,
-            'my_rating' => $rating,
+            'my_rating' => null,
             'my_feedback' => $myFeedback,
         ];
         $flags = JSON_UNESCAPED_UNICODE;

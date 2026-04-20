@@ -26,31 +26,6 @@
         }
     }
 
-    /** Interactive stars for form (pumili bago mag-submit). */
-    function starPickerHtml(itemId, selected) {
-        const active = selected != null ? Number(selected) : 0;
-        let html =
-            '<div class="policy-board-stars policy-board-stars--picker" data-board-id="' +
-            itemId +
-            '" data-selected="' +
-            active +
-            '" role="group" aria-label="Pumili ng rating 1 hanggang 5">';
-        for (let s = 1; s <= 5; s++) {
-            const on = s <= active ? ' is-on' : '';
-            const label = s + (s === 1 ? ' star' : ' stars');
-            html +=
-                '<button type="button" class="policy-board-star' +
-                on +
-                '" data-star="' +
-                s +
-                '" aria-label="Rate ' +
-                label +
-                '">★</button>';
-        }
-        html += '</div>';
-        return html;
-    }
-
     /** Paalala (Note) — privacy text; hiwalay sa form */
     function renderNoteBlock() {
         return (
@@ -61,24 +36,9 @@
         );
     }
 
-    function starReadonlyHtml(rating) {
-        const n = Math.min(5, Math.max(0, Number(rating) || 0));
-        let html =
-            '<div class="policy-board-stars policy-board-stars--readonly" aria-label="Rating ' +
-            n +
-            ' sa 5">';
-        for (let s = 1; s <= 5; s++) {
-            const on = s <= n ? ' is-on' : '';
-            html += '<span class="policy-board-star' + on + '" aria-hidden="true">★</span>';
-        }
-        html += '</div>';
-        return html;
-    }
-
     function renderMyFeedbackReadonly(fb) {
         if (!fb) return '';
         const name = esc(fb.name || 'Resident');
-        const stars = fb.rating != null ? starReadonlyHtml(fb.rating) : '';
         const comment = esc(fb.comment || '');
         const t = formatTime(fb.created_at);
         return (
@@ -87,7 +47,6 @@
             '<div class="policy-board-comment__author">' +
             name +
             '</div>' +
-            stars +
             (comment
                 ? '<div class="policy-board-comment__text">' + comment + '</div>'
                 : '') +
@@ -110,8 +69,6 @@
             '">' +
             profileBlock +
             '<div class="policy-board-rate-comment-block">' +
-            '<div class="policy-board-stars-label">Pumili ng rating <span class="required-indicator">*</span></div>' +
-            starPickerHtml(itemId, 0) +
             '<label class="policy-board-comment-label" for="policyBoardComment_' +
             itemId +
             '">Komento <span class="required-indicator">*</span></label>' +
@@ -122,7 +79,7 @@
             '></textarea>' +
             '<button type="submit" class="policy-board-btn policy-board-btn--full"' +
             submitDisabled +
-            '>Ipadala ang rating at komento</button>' +
+            '>Ipadala ang komento</button>' +
             '</div>' +
             '<div class="policy-board-msg" aria-live="polite"></div>' +
             '</form>'
@@ -204,29 +161,6 @@
         const rawCaption = item.caption && String(item.caption).trim() ? String(item.caption).trim() : '';
         const imgAlt = rawCaption ? esc(rawCaption) : 'Disclosure ng barangay';
         const imgSrc = resolveImageUrl(item);
-        const avg = item.average_rating != null ? Number(item.average_rating) : null;
-        const rc = item.ratings_count != null ? Number(item.ratings_count) : 0;
-        let avgLine = '';
-        if (avg != null && !Number.isNaN(avg)) {
-            avgLine =
-                '<span class="policy-board-rating-meta policy-board-rating-meta--fd">' +
-                '<span class="policy-board-rating-line1">' +
-                '<span class="policy-board-rating-highlight">' +
-                avg.toFixed(1) +
-                ' <span class="policy-board-rating-highlight__star" aria-hidden="true">★</span>' +
-                '</span>' +
-                '<span class="policy-board-rating-avg-label">Average rating</span>' +
-                '</span>' +
-                '<span class="policy-board-rating-line2">' +
-                '(mula sa lahat ng residente na tumugon)' +
-                (rc > 0 ? ' ' + rc + ' tumugon' : '') +
-                '</span>' +
-                '</span>';
-        } else {
-            avgLine =
-                '<span class="policy-board-rating-meta policy-board-rating-meta--fd policy-board-rating-meta--empty">Walang rating pa</span>';
-        }
-
         let feedbackSection = '';
         if (userEmail) {
             if (item.my_feedback) {
@@ -244,7 +178,7 @@
             }
         } else {
             feedbackSection =
-                '<p class="policy-board-login-hint">Mag-sign in sa RICH app (main screen) para makapagpadala ng rating at komento.</p>';
+                '<p class="policy-board-login-hint">Mag-sign in sa RICH app (main screen) para makapagpadala ng komento.</p>';
         }
 
         return (
@@ -269,11 +203,6 @@
             '</button>' +
             '</div>' +
             '<div class="policy-board-card__body">' +
-            '<div class="policy-board-rating-row">' +
-            '<div class="policy-board-stat-pill">' +
-            avgLine +
-            '</div>' +
-            '</div>' +
             feedbackSection +
             '</div>' +
             '</article>'
@@ -318,31 +247,12 @@
         });
     }
 
-    function wireStarPicker(wrap) {
-        if (!wrap || wrap.dataset.wired === '1') return;
-        wrap.dataset.wired = '1';
-        wrap.querySelectorAll('.policy-board-star').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                const star = parseInt(btn.getAttribute('data-star'), 10);
-                if (star < 1 || star > 5) return;
-                wrap.setAttribute('data-selected', String(star));
-                wrap.querySelectorAll('.policy-board-star').forEach(function (b, i) {
-                    if (i < star) b.classList.add('is-on');
-                    else b.classList.remove('is-on');
-                });
-            });
-        });
-    }
-
     function wireInteractions(root) {
-        root.querySelectorAll('.policy-board-stars--picker').forEach(wireStarPicker);
-
         root.querySelectorAll('.policy-board-comment-form').forEach(function (form) {
             const boardId = parseInt(form.getAttribute('data-board-id'), 10);
             const ta = form.querySelector('textarea');
             const msg = form.querySelector('.policy-board-msg');
             const submitBtn = form.querySelector('button[type="submit"]');
-            const starWrap = form.querySelector('.policy-board-stars--picker');
 
             form.addEventListener('submit', function (e) {
                 e.preventDefault();
@@ -355,15 +265,6 @@
                     return;
                 }
                 const text = ta && ta.value ? ta.value.trim() : '';
-                const sel = starWrap ? parseInt(starWrap.getAttribute('data-selected') || '0', 10) : 0;
-
-                if (sel < 1 || sel > 5) {
-                    if (msg) {
-                        msg.textContent = 'Pumili muna ng rating (1–5 stars).';
-                        msg.className = 'policy-board-msg is-error';
-                    }
-                    return;
-                }
                 if (!text) {
                     if (msg) {
                         msg.textContent = 'Maglagay ng komento.';
@@ -380,7 +281,6 @@
                     action: 'submit_feedback',
                     email: userEmail,
                     policy_board_id: boardId,
-                    rating: sel,
                     comment: text,
                 })
                     .then(function () {
@@ -391,7 +291,7 @@
                             return Swal.fire({
                                 icon: 'success',
                                 title: 'Naipadala na',
-                                text: 'Naipadala na ang iyong rating at komento.',
+                                text: 'Naipadala na ang iyong komento.',
                                 confirmButtonText: 'OK',
                             });
                         }
