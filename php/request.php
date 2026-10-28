@@ -71,18 +71,11 @@ function validateRequesterAgainstCensus($email, $firstName, $lastName, $address 
         $censusLinkId = census_id_for_resident_pk($residentId);
         $residentAddress = trim((string)($user['address'] ?? ''));
 
-        $tableCheck = $pdo->query("SHOW TABLES LIKE 'census_form'");
-        if ($tableCheck->rowCount() === 0) {
+        if (!db_table_exists($pdo, 'census_form')) {
             return ['success' => false, 'allowed' => false, 'message' => 'Census table not found'];
         }
 
-        $hasStatusColumn = false;
-        try {
-            $sc = $pdo->query("SHOW COLUMNS FROM census_form LIKE 'status'");
-            $hasStatusColumn = $sc && $sc->rowCount() > 0;
-        } catch (PDOException $e) {
-            $hasStatusColumn = false;
-        }
+        $hasStatusColumn = db_column_exists($pdo, 'census_form', 'status');
         $statusSelect = $hasStatusColumn ? ', status' : '';
 
         $blockedMsg = [
@@ -280,9 +273,9 @@ function insertIndigencyForm($data) {
             return ['success' => false, 'message' => 'Missing required field: Para Kay'];
         }
 
-        $hasParaKayCol = $pdo->query("SHOW COLUMNS FROM indigency_forms LIKE 'para_kay'")->rowCount() > 0;
-        $hasPositionCol = $pdo->query("SHOW COLUMNS FROM indigency_forms LIKE 'position'")->rowCount() > 0;
-        $hasHallAddressCol = $pdo->query("SHOW COLUMNS FROM indigency_forms LIKE 'hall_address'")->rowCount() > 0;
+        $hasParaKayCol = db_column_exists($pdo, 'indigency_forms', 'para_kay');
+        $hasPositionCol = db_column_exists($pdo, 'indigency_forms', 'position');
+        $hasHallAddressCol = db_column_exists($pdo, 'indigency_forms', 'hall_address');
         $purposeSuffix = ' [Para Kay: ' . $paraKay . ']';
         if ($positionCell) {
             $purposeSuffix .= ' [Position: ' . $positionCell . ']';
@@ -302,7 +295,11 @@ function insertIndigencyForm($data) {
         $idImage = null;
         if (!empty($data['id_image'])) {
             // Decode base64 image data
-            $idImage = base64_decode($data['id_image']);
+            $decodedIdImage = base64_decode($data['id_image'], true);
+            if ($decodedIdImage === false) {
+                return ['success' => false, 'message' => 'Invalid ID image data'];
+            }
+            $idImage = db_bytea_parameter($decodedIdImage);
         }
         
         // Set Philippine Time for timestamp
@@ -330,14 +327,14 @@ function insertIndigencyForm($data) {
         }
         
         // Check if email column exists, if not, we'll skip it
-        $checkColumn = $pdo->query("SHOW COLUMNS FROM indigency_forms LIKE 'email'");
+        $checkColumn = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'indigency_forms' AND column_name = 'email'");
         $emailColumnExists = $checkColumn->rowCount() > 0;
         
         if ($emailColumnExists && $email) {
             if ($hasParaKayCol && $hasPositionCol && $hasHallAddressCol) {
                 $stmt = $pdo->prepare("
                     INSERT INTO indigency_forms 
-                    (email, first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, age, gender, purpose, para_kay, `position`, hall_address, valid_id, id_image, status, submitted_at) 
+                    (email, first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, age, gender, purpose, para_kay, \"position\", hall_address, valid_id, id_image, status, submitted_at)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ");
                 $result = $stmt->execute([
@@ -363,7 +360,7 @@ function insertIndigencyForm($data) {
             } elseif ($hasParaKayCol && $hasPositionCol) {
                 $stmt = $pdo->prepare("
                     INSERT INTO indigency_forms 
-                    (email, first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, age, gender, purpose, para_kay, `position`, valid_id, id_image, status, submitted_at) 
+                    (email, first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, age, gender, purpose, para_kay, \"position\", valid_id, id_image, status, submitted_at)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ");
                 $result = $stmt->execute([
@@ -462,7 +459,7 @@ function insertIndigencyForm($data) {
             if ($hasParaKayCol && $hasPositionCol && $hasHallAddressCol) {
                 $stmt = $pdo->prepare("
                     INSERT INTO indigency_forms 
-                    (first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, age, gender, purpose, para_kay, `position`, hall_address, valid_id, id_image, status, submitted_at) 
+                    (first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, age, gender, purpose, para_kay, \"position\", hall_address, valid_id, id_image, status, submitted_at)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ");
                 $result = $stmt->execute([
@@ -487,7 +484,7 @@ function insertIndigencyForm($data) {
             } elseif ($hasParaKayCol && $hasPositionCol) {
                 $stmt = $pdo->prepare("
                     INSERT INTO indigency_forms 
-                    (first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, age, gender, purpose, para_kay, `position`, valid_id, id_image, status, submitted_at) 
+                    (first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, age, gender, purpose, para_kay, \"position\", valid_id, id_image, status, submitted_at)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ");
                 $result = $stmt->execute([
@@ -629,6 +626,17 @@ function insertBarangayIdForm($data) {
             $nationality = $data['other_nationality'];
         }
         
+        // Normalize constrained values to the uppercase values stored in barangay_id_forms
+        $civilStatus = strtoupper(trim((string) ($data['civil_status'] ?? '')));
+        $gender = strtoupper(trim((string) ($data['gender'] ?? '')));
+
+        if (!in_array($civilStatus, ['SINGLE', 'MARRIED', 'WIDOW'], true)) {
+            return ['success' => false, 'message' => 'Invalid civil status value'];
+        }
+        if (!in_array($gender, ['MALE', 'FEMALE'], true)) {
+            return ['success' => false, 'message' => 'Invalid gender value'];
+        }
+
         // Handle valid_id - use custom value if "other" is selected
         $validId = $data['valid_id'];
         if ($validId === 'other' && !empty($data['other_valid_id'])) {
@@ -639,14 +647,22 @@ function insertBarangayIdForm($data) {
         $idImage = null;
         if (!empty($data['id_image'])) {
             // Decode base64 image data
-            $idImage = base64_decode($data['id_image']);
+            $decodedIdImage = base64_decode($data['id_image'], true);
+            if ($decodedIdImage === false) {
+                return ['success' => false, 'message' => 'Invalid ID image data'];
+            }
+            $idImage = db_bytea_parameter($decodedIdImage);
         }
         
         // Handle 1x1 picture upload (res_picture)
         $resPicture = null;
         if (!empty($data['res_picture'])) {
             // Decode base64 image data
-            $resPicture = base64_decode($data['res_picture']);
+            $decodedResPicture = base64_decode($data['res_picture'], true);
+            if ($decodedResPicture === false) {
+                return ['success' => false, 'message' => 'Invalid resident picture data'];
+            }
+            $resPicture = db_bytea_parameter($decodedResPicture);
         }
         
         // Set Philippine Time for timestamp
@@ -667,7 +683,7 @@ function insertBarangayIdForm($data) {
         }
         
         // Check if email column exists
-        $checkColumn = $pdo->query("SHOW COLUMNS FROM barangay_id_forms LIKE 'email'");
+        $checkColumn = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'barangay_id_forms' AND column_name = 'email'");
         $emailColumnExists = $checkColumn->rowCount() > 0;
         
         if ($emailColumnExists && $email) {
@@ -686,10 +702,10 @@ function insertBarangayIdForm($data) {
                 $data['middle_name'] ?? null,
                 $data['birth_date'],
                 $data['address'],
-                $data['civil_status'],
+                $civilStatus,
                 $data['height'],
                 $data['weight'],
-                $data['gender'],
+                $gender,
                 $nationality,
                 $data['emergency_contact_name'],
                 $data['emergency_contact_number'],
@@ -715,10 +731,10 @@ function insertBarangayIdForm($data) {
                 $data['middle_name'] ?? null,
                 $data['birth_date'],
                 $data['address'],
-                $data['civil_status'],
+                $civilStatus,
                 $data['height'],
                 $data['weight'],
-                $data['gender'],
+                $gender,
                 $nationality,
                 $data['emergency_contact_name'],
                 $data['emergency_contact_number'],
@@ -755,7 +771,7 @@ function insertBarangayIdForm($data) {
  */
 function certificationJobSeekerAlreadyUsed($pdo, $email, $firstName, $lastName) {
     $purposeCond = "(LOWER(TRIM(c.purpose)) IN ('jobseeker', 'job seeker'))";
-    $checkEmailColumn = $pdo->query("SHOW COLUMNS FROM certification_forms LIKE 'email'");
+    $checkEmailColumn = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'certification_forms' AND column_name = 'email'");
     $emailColumnExists = $checkEmailColumn->rowCount() > 0;
 
     if ($emailColumnExists && $email) {
@@ -852,7 +868,11 @@ function insertCertificationForm($data) {
         $idImage = null;
         if (!empty($data['id_image'])) {
             // Decode base64 image data
-            $idImage = base64_decode($data['id_image']);
+            $decodedIdImage = base64_decode($data['id_image'], true);
+            if ($decodedIdImage === false) {
+                return ['success' => false, 'message' => 'Invalid ID image data'];
+            }
+            $idImage = db_bytea_parameter($decodedIdImage);
         }
         
         // Set Philippine Time for timestamp
@@ -873,19 +893,19 @@ function insertCertificationForm($data) {
         }
         
         // Check if optional columns exist
-        $checkEmailColumn = $pdo->query("SHOW COLUMNS FROM certification_forms LIKE 'email'");
+        $checkEmailColumn = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'certification_forms' AND column_name = 'email'");
         $emailColumnExists = $checkEmailColumn->rowCount() > 0;
         
-        $checkEducationalLevelColumn = $pdo->query("SHOW COLUMNS FROM certification_forms LIKE 'educational_level'");
+        $checkEducationalLevelColumn = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'certification_forms' AND column_name = 'educational_level'");
         $educationalLevelColumnExists = $checkEducationalLevelColumn->rowCount() > 0;
         
-        $checkCourseColumn = $pdo->query("SHOW COLUMNS FROM certification_forms LIKE 'course'");
+        $checkCourseColumn = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'certification_forms' AND column_name = 'course'");
         $courseColumnExists = $checkCourseColumn->rowCount() > 0;
         
-        $checkOutOfSchoolYouthColumn = $pdo->query("SHOW COLUMNS FROM certification_forms LIKE 'out_of_school_youth'");
+        $checkOutOfSchoolYouthColumn = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'certification_forms' AND column_name = 'out_of_school_youth'");
         $outOfSchoolYouthColumnExists = $checkOutOfSchoolYouthColumn->rowCount() > 0;
 
-        $checkIsPermanentColumn = $pdo->query("SHOW COLUMNS FROM certification_forms LIKE 'is_permanent'");
+        $checkIsPermanentColumn = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'certification_forms' AND column_name = 'is_permanent'");
         $isPermanentColumnExists = $checkIsPermanentColumn->rowCount() > 0;
 
         // is_permanent: 1 = Job Seeker (not deleted by interval cleanup); 0 = other purposes (deletable). Independent of OOSY.
@@ -1199,7 +1219,11 @@ function insertCoeForm($data) {
         $idImage = null;
         if (!empty($data['id_image'])) {
             // Decode base64 image data
-            $idImage = base64_decode($data['id_image']);
+            $decodedIdImage = base64_decode($data['id_image'], true);
+            if ($decodedIdImage === false) {
+                return ['success' => false, 'message' => 'Invalid ID image data'];
+            }
+            $idImage = db_bytea_parameter($decodedIdImage);
         }
         
         // Set Philippine Time for timestamp
@@ -1226,14 +1250,14 @@ function insertCoeForm($data) {
         }
 
         // Check if email column exists
-        $checkColumn = $pdo->query("SHOW COLUMNS FROM coe_forms LIKE 'email'");
+        $checkColumn = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'coe_forms' AND column_name = 'email'");
         $emailColumnExists = $checkColumn->rowCount() > 0;
         
         if ($emailColumnExists && $email) {
             // Prepare the insert statement with email
             $stmt = $pdo->prepare("
                 INSERT INTO coe_forms 
-                (email, first_name, middle_name, last_name, address, age, gender, civil_status, employment_type, position, date_started, monthly_salary, valid_id, id_image, status, submitted_at) 
+                (email, first_name, middle_name, last_name, address, age, gender, civil_status, employment_type, \"position\", date_started, monthly_salary, valid_id, id_image, status, submitted_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             
@@ -1260,7 +1284,7 @@ function insertCoeForm($data) {
             // Prepare the insert statement without email (backward compatibility)
             $stmt = $pdo->prepare("
                 INSERT INTO coe_forms 
-                (first_name, middle_name, last_name, address, age, gender, civil_status, employment_type, position, date_started, monthly_salary, valid_id, id_image, status, submitted_at) 
+                (first_name, middle_name, last_name, address, age, gender, civil_status, employment_type, \"position\", date_started, monthly_salary, valid_id, id_image, status, submitted_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             
@@ -1342,7 +1366,11 @@ function insertClearanceForm($data) {
         $idImage = null;
         if (!empty($data['id_image'])) {
             // Decode base64 image data
-            $idImage = base64_decode($data['id_image']);
+            $decodedIdImage = base64_decode($data['id_image'], true);
+            if ($decodedIdImage === false) {
+                return ['success' => false, 'message' => 'Invalid ID image data'];
+            }
+            $idImage = db_bytea_parameter($decodedIdImage);
         }
         
         // Set Philippine Time for timestamp
@@ -1363,7 +1391,7 @@ function insertClearanceForm($data) {
         }
         
         // Check if email column exists
-        $checkColumn = $pdo->query("SHOW COLUMNS FROM clearance_forms LIKE 'email'");
+        $checkColumn = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'clearance_forms' AND column_name = 'email'");
         $emailColumnExists = $checkColumn->rowCount() > 0;
         
         if ($emailColumnExists && $email) {

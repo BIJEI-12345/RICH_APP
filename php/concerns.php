@@ -61,7 +61,7 @@ function getConcernSubmissionEligibility($email) {
     }
 
     try {
-        $checkEmailColumn = $pdo->query("SHOW COLUMNS FROM concerns LIKE 'email'");
+        $checkEmailColumn = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'concerns' AND column_name = 'email'");
         $hasEmailColumn = $checkEmailColumn->rowCount() > 0;
 
         if ($hasEmailColumn) {
@@ -224,7 +224,11 @@ function insertConcern($data) {
         $imageData = null;
         if (!empty($data['image_data'])) {
             // Decode base64 image data
-            $imageData = base64_decode($data['image_data']);
+            $decodedImage = base64_decode($data['image_data'], true);
+            if ($decodedImage === false) {
+                return ['success' => false, 'message' => 'Invalid concern image data'];
+            }
+            $imageData = db_bytea_parameter($decodedImage);
         }
         
         // Set Philippine Time for timestamp
@@ -235,9 +239,9 @@ function insertConcern($data) {
         $email = $data['user_email'] ?? null;
         
         // Check if email column exists
-        $checkColumn = $pdo->query("SHOW COLUMNS FROM concerns LIKE 'email'");
+        $checkColumn = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'concerns' AND column_name = 'email'");
         $emailColumnExists = $checkColumn->rowCount() > 0;
-        $checkRating = $pdo->query("SHOW COLUMNS FROM concerns LIKE 'rating'");
+        $checkRating = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'concerns' AND column_name = 'rating'");
         $ratingColumnExists = $checkRating && $checkRating->rowCount() > 0;
         
         if ($emailColumnExists && $email) {
@@ -245,14 +249,14 @@ function insertConcern($data) {
             if ($ratingColumnExists) {
                 $stmt = $pdo->prepare("
                     INSERT INTO concerns 
-                    (email, concern_image, reporter_name, contact, date_and_time, location, statement, status, rating) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)
+                    (email, concern_image, resolved_image, reporter_name, contact, date_and_time, location, statement, status, rating)
+                    VALUES (?, ?, decode('', 'base64'), ?, ?, ?, ?, ?, ?, 0)
                 ");
             } else {
                 $stmt = $pdo->prepare("
                     INSERT INTO concerns 
-                    (email, concern_image, reporter_name, contact, date_and_time, location, statement, status) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    (email, concern_image, resolved_image, reporter_name, contact, date_and_time, location, statement, status)
+                    VALUES (?, ?, decode('', 'base64'), ?, ?, ?, ?, ?, ?)
                 ");
             }
             
@@ -272,14 +276,14 @@ function insertConcern($data) {
             if ($ratingColumnExists) {
                 $stmt = $pdo->prepare("
                     INSERT INTO concerns 
-                    (concern_image, reporter_name, contact, date_and_time, location, statement, status, rating) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, 0)
+                    (concern_image, resolved_image, reporter_name, contact, date_and_time, location, statement, status, rating)
+                    VALUES (?, decode('', 'base64'), ?, ?, ?, ?, ?, ?, 0)
                 ");
             } else {
                 $stmt = $pdo->prepare("
                     INSERT INTO concerns 
-                    (concern_image, reporter_name, contact, date_and_time, location, statement, status) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    (concern_image, resolved_image, reporter_name, contact, date_and_time, location, statement, status)
+                    VALUES (?, decode('', 'base64'), ?, ?, ?, ?, ?, ?)
                 ");
             }
             

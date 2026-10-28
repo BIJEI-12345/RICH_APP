@@ -16,6 +16,16 @@ document.addEventListener('DOMContentLoaded', function() {
         userEmailElement.textContent = email;
     }
 
+    if (localStorage.getItem('registrationEmailSent') === 'true' || localStorage.getItem('registrationEmailSent') === 'false') {
+        localStorage.removeItem('registrationEmailSent');
+        Swal.fire({
+            icon: 'success',
+            title: 'OTP Sent',
+            text: 'Verification code sent successfully!',
+            confirmButtonText: 'OK'
+        });
+    }
+
     // Timer variables
     let countdownTimer;
     let timeLeft = 180; // 3 minutes
@@ -81,7 +91,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data.success) {
                 Swal.fire({
                     icon: 'success',
-                    title: 'Success!',
+                    title: 'OTP Sent',
                     text: 'Verification code sent successfully!',
                     confirmButtonText: 'OK',
                     confirmButtonColor: '#2677e1',

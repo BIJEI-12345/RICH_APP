@@ -32,7 +32,7 @@ function transactions_resolve_request_user_email() {
     if (isset($_SESSION['user_email'])) {
         $userEmail = trim((string)$_SESSION['user_email']);
     }
-    if ($userEmail === '') {
+    if ($userEmail === null || $userEmail === '') {
         $userEmail = $_GET['user_email'] ?? $_POST['user_email'] ?? null;
         if ($userEmail !== null && $userEmail !== '') {
             $userEmail = trim((string)$userEmail);
@@ -82,7 +82,7 @@ function concern_rating_column_name(PDO $pdo) {
     }
     foreach (['rating', 'resident_rating'] as $col) {
         try {
-            $q = $pdo->query("SHOW COLUMNS FROM `concerns` LIKE " . $pdo->quote($col));
+            $q = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'concerns' AND column_name = " . $pdo->quote($col));
             if ($q && $q->rowCount() > 0) {
                 return $cache = $col;
             }
@@ -101,7 +101,7 @@ function concern_rating_select_fragment(PDO $pdo) {
     }
     $col = concern_rating_column_name($pdo);
     if ($col === 'rating') {
-        return $cache = 'c.`rating`';
+        return $cache = 'c.rating';
     }
     if ($col === 'resident_rating') {
         return $cache = 'c.resident_rating';
@@ -116,7 +116,7 @@ function concern_suggestions_select_fragment(PDO $pdo) {
         return $cache;
     }
     try {
-        $q = $pdo->query("SHOW COLUMNS FROM `concerns` LIKE 'suggestions'");
+        $q = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'concerns' AND column_name = 'suggestions'");
         return $cache = ($q && $q->rowCount() > 0) ? 'c.suggestions' : 'NULL';
     } catch (Throwable $e) {
         return $cache = 'NULL';
@@ -130,7 +130,7 @@ function concern_table_has_suggestions(PDO $pdo) {
         return $cache;
     }
     try {
-        $q = $pdo->query("SHOW COLUMNS FROM `concerns` LIKE 'suggestions'");
+        $q = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'concerns' AND column_name = 'suggestions'");
         return $cache = ($q && $q->rowCount() > 0);
     } catch (Throwable $e) {
         return $cache = false;
@@ -144,7 +144,7 @@ function concern_resolution_statement_select_fragment(PDO $pdo) {
         return $cache;
     }
     try {
-        $q = $pdo->query("SHOW COLUMNS FROM `concerns` LIKE 'resolution_statement'");
+        $q = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'concerns' AND column_name = 'resolution_statement'");
         return $cache = ($q && $q->rowCount() > 0) ? 'c.resolution_statement' : 'NULL';
     } catch (Throwable $e) {
         return $cache = 'NULL';
@@ -158,7 +158,7 @@ function concern_resolved_image_select_fragment(PDO $pdo) {
         return $cache;
     }
     try {
-        $q = $pdo->query("SHOW COLUMNS FROM `concerns` LIKE 'resolved_image'");
+        $q = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'concerns' AND column_name = 'resolved_image'");
         return $cache = ($q && $q->rowCount() > 0) ? 'c.resolved_image' : 'NULL';
     } catch (Throwable $e) {
         return $cache = 'NULL';
@@ -172,7 +172,7 @@ function concern_has_resolved_image_expression(PDO $pdo) {
         return $cache;
     }
     try {
-        $q = $pdo->query("SHOW COLUMNS FROM `concerns` LIKE 'resolved_image'");
+        $q = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'concerns' AND column_name = 'resolved_image'");
         if ($q && $q->rowCount() > 0) {
             return $cache = '(c.resolved_image IS NOT NULL AND LENGTH(c.resolved_image) > 0)';
         }
@@ -189,7 +189,7 @@ function concern_has_concern_image_expression(PDO $pdo) {
         return $cache;
     }
     try {
-        $q = $pdo->query("SHOW COLUMNS FROM `concerns` LIKE 'concern_image'");
+        $q = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'concerns' AND column_name = 'concern_image'");
         if ($q && $q->rowCount() > 0) {
             return $cache = '(c.concern_image IS NOT NULL AND LENGTH(c.concern_image) > 0)';
         }
@@ -215,7 +215,7 @@ function transactions_form_table_has_column(PDO $pdo, string $table, string $col
         return $cache[$key];
     }
     try {
-        $q = $pdo->query("SHOW COLUMNS FROM `{$table}` LIKE " . $pdo->quote($column));
+        $q = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = " . $pdo->quote($table) . " AND column_name = " . $pdo->quote($column));
         return $cache[$key] = ($q && $q->rowCount() > 0);
     } catch (Throwable $e) {
         return $cache[$key] = false;
@@ -292,7 +292,7 @@ function transactions_resolved_image_detect_mime_finfo(string $bin): ?string {
 
 /**
  * Make resolved_image safe for JSON: BLOB → data URL; base64 text → data URL; http(s)/data kept; paths normalized.
- * Handles PDO returning a stream for LONGBLOB on some setups.
+ * Handles PDO returning a stream for binary image columns on some setups.
  */
 function transactions_normalize_concern_resolved_image_for_api(array &$row) {
     if (!array_key_exists('resolved_image', $row)) {
@@ -321,7 +321,7 @@ function transactions_normalize_concern_resolved_image_for_api(array &$row) {
         return;
     }
 
-    // Raw binary image (LONGBLOB / BLOB); strip BOM/whitespace so magic bytes match
+    // Raw binary image; strip BOM/whitespace so magic bytes match
     $binary = transactions_resolved_image_strip_prefix_noise($v);
     $mime = transactions_resolved_image_detect_mime_from_bytes($binary);
     if ($mime !== null) {
@@ -371,7 +371,7 @@ function transactions_normalize_concern_resolved_image_for_api(array &$row) {
 }
 
 /**
- * Serve raw resolved_image for one concern (single-row SELECT; avoids empty LONGBLOB in large list queries).
+ * Serve raw resolved_image for one concern (single-row SELECT; avoids empty binary fields in large list queries).
  * GET: action=serve_concern_resolved_image&concern_ref=CONC-33&user_email= (optional if session set)
  */
 function serveConcernResolvedImage(PDO $pdo) {
@@ -393,7 +393,7 @@ function serveConcernResolvedImage(PDO $pdo) {
     $concernNumericId = (int)$m[1];
 
     try {
-        $q = $pdo->query("SHOW COLUMNS FROM `concerns` LIKE 'resolved_image'");
+        $q = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'concerns' AND column_name = 'resolved_image'");
         if (!$q || $q->rowCount() === 0) {
             http_response_code(404);
             header('Content-Type: application/json; charset=utf-8', true);
@@ -409,7 +409,7 @@ function serveConcernResolvedImage(PDO $pdo) {
 
     $userEmailTrim = trim((string)$userEmail);
     $userEmailLookup = strtolower($userEmailTrim);
-    $userStmt = $pdo->prepare('SELECT id, CONCAT(TRIM(first_name), " ", TRIM(last_name)) AS full_name FROM resident_information WHERE email = ? OR LOWER(TRIM(email)) = ?');
+    $userStmt = $pdo->prepare("SELECT id, CONCAT(TRIM(first_name), ' ', TRIM(last_name)) AS full_name FROM resident_information WHERE email = ? OR LOWER(TRIM(email)) = ?");
     $userStmt->execute([$userEmailTrim, $userEmailLookup]);
     $userRow = $userStmt->fetch(PDO::FETCH_ASSOC);
     if (!$userRow) {
@@ -420,7 +420,7 @@ function serveConcernResolvedImage(PDO $pdo) {
     }
     $fullName = trim((string)$userRow['full_name']);
 
-    $checkEmailColumn = $pdo->query("SHOW COLUMNS FROM concerns LIKE 'email'");
+    $checkEmailColumn = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'concerns' AND column_name = 'email'");
     $hasEmailColumn = $checkEmailColumn->rowCount() > 0;
 
     // Match listTransactions: email column path first; if no row, fallback to reporter_name join (legacy / mismatched c.email).
@@ -464,7 +464,7 @@ function serveConcernResolvedImage(PDO $pdo) {
     if (is_resource($v)) {
         $v = stream_get_contents($v);
     }
-    // LONGBLOB: use strlen, not === '' (binary-safe)
+    // Use strlen, not === '' (binary-safe)
     if (!is_string($v) || strlen($v) === 0) {
         http_response_code(404);
         header('Content-Type: application/json; charset=utf-8', true);
@@ -572,7 +572,7 @@ function serveConcernReportedImage(PDO $pdo) {
     $concernNumericId = (int)$m[1];
 
     try {
-        $q = $pdo->query("SHOW COLUMNS FROM `concerns` LIKE 'concern_image'");
+        $q = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'concerns' AND column_name = 'concern_image'");
         if (!$q || $q->rowCount() === 0) {
             http_response_code(404);
             header('Content-Type: application/json; charset=utf-8', true);
@@ -588,7 +588,7 @@ function serveConcernReportedImage(PDO $pdo) {
 
     $userEmailTrim = trim((string)$userEmail);
     $userEmailLookup = strtolower($userEmailTrim);
-    $userStmt = $pdo->prepare('SELECT id, CONCAT(TRIM(first_name), " ", TRIM(last_name)) AS full_name FROM resident_information WHERE email = ? OR LOWER(TRIM(email)) = ?');
+    $userStmt = $pdo->prepare("SELECT id, CONCAT(TRIM(first_name), ' ', TRIM(last_name)) AS full_name FROM resident_information WHERE email = ? OR LOWER(TRIM(email)) = ?");
     $userStmt->execute([$userEmailTrim, $userEmailLookup]);
     $userRow = $userStmt->fetch(PDO::FETCH_ASSOC);
     if (!$userRow) {
@@ -598,7 +598,7 @@ function serveConcernReportedImage(PDO $pdo) {
         return;
     }
 
-    $checkEmailColumn = $pdo->query("SHOW COLUMNS FROM concerns LIKE 'email'");
+    $checkEmailColumn = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'concerns' AND column_name = 'email'");
     $hasEmailColumn = $checkEmailColumn->rowCount() > 0;
 
     $emailForList = strtolower($userEmailTrim);
@@ -745,7 +745,7 @@ function transactions_table_has_reason_revoke(PDO $pdo, $tableName) {
         return $cache[$tableName] = false;
     }
     try {
-        $q = $pdo->query("SHOW COLUMNS FROM `{$tableName}` LIKE 'reason_revoke'");
+        $q = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = " . $pdo->quote($tableName) . " AND column_name = 'reason_revoke'");
         return $cache[$tableName] = ($q && $q->rowCount() > 0);
     } catch (Throwable $e) {
         return $cache[$tableName] = false;
@@ -797,7 +797,7 @@ function rateConcernTransaction(PDO $pdo) {
     }
     $concernNumericId = (int)$m[1];
 
-    $userStmt = $pdo->prepare('SELECT id, CONCAT(TRIM(first_name), " ", TRIM(last_name)) AS full_name FROM resident_information WHERE email = ?');
+    $userStmt = $pdo->prepare("SELECT id, CONCAT(TRIM(first_name), ' ', TRIM(last_name)) AS full_name FROM resident_information WHERE email = ?");
     $userStmt->execute([$userEmail]);
     $userRow = $userStmt->fetch(PDO::FETCH_ASSOC);
     if (!$userRow) {
@@ -806,11 +806,11 @@ function rateConcernTransaction(PDO $pdo) {
     }
     $fullName = trim((string)$userRow['full_name']);
 
-    $checkEmailColumn = $pdo->query("SHOW COLUMNS FROM concerns LIKE 'email'");
+    $checkEmailColumn = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'concerns' AND column_name = 'email'");
     $hasEmailColumn = $checkEmailColumn->rowCount() > 0;
 
     try {
-        $quotedCol = '`' . str_replace('`', '``', $ratingCol) . '`';
+        $quotedCol = '"' . str_replace('"', '""', $ratingCol) . '"';
         if ($hasEmailColumn) {
             $stmt = $pdo->prepare("SELECT id, status, {$quotedCol} AS concern_rating_val FROM concerns WHERE id = ? AND email = ?");
             $stmt->execute([$concernNumericId, $userEmail]);
@@ -843,7 +843,7 @@ function rateConcernTransaction(PDO $pdo) {
 
         $hasSuggestionsCol = concern_table_has_suggestions($pdo);
         if ($hasSuggestionsCol) {
-            $upd = $pdo->prepare("UPDATE concerns SET {$quotedCol} = ?, `suggestions` = ? WHERE id = ?");
+            $upd = $pdo->prepare("UPDATE concerns SET {$quotedCol} = ?, suggestions = ? WHERE id = ?");
             $upd->execute([$stars, $suggestionsRaw, $concernNumericId]);
         } else {
             $upd = $pdo->prepare("UPDATE concerns SET {$quotedCol} = ? WHERE id = ?");
@@ -937,7 +937,7 @@ function listTransactions($pdo) {
         $hasConcernExpr = concern_has_concern_image_expression($pdo);
         
         // Fetch concerns - Check if email column exists, if yes query directly by email, otherwise use JOIN
-        $checkEmailColumn = $pdo->query("SHOW COLUMNS FROM concerns LIKE 'email'");
+        $checkEmailColumn = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'concerns' AND column_name = 'email'");
         $hasEmailColumn = $checkEmailColumn->rowCount() > 0;
         
         if ($hasEmailColumn) {
@@ -945,7 +945,7 @@ function listTransactions($pdo) {
                 SELECT 
                     CONCAT('CONC-', c.id) as id,
                     'Community Concern' as document_type,
-                    CONCAT('CONC-', LPAD(c.id, 6, '0')) as reference_number,
+                    CONCAT('CONC-', LPAD(c.id::text, 6, '0')) as reference_number,
                     CASE 
                         WHEN c.status IS NULL OR c.status = '' THEN 'New'
                         WHEN c.status = 'pending' THEN 'New'
@@ -982,7 +982,7 @@ function listTransactions($pdo) {
                 SELECT 
                     CONCAT('CONC-', c.id) as id,
                     'Community Concern' as document_type,
-                    CONCAT('CONC-', LPAD(c.id, 6, '0')) as reference_number,
+                    CONCAT('CONC-', LPAD(c.id::text, 6, '0')) as reference_number,
                     CASE 
                         WHEN c.status IS NULL OR c.status = '' THEN 'New'
                         WHEN c.status = 'pending' THEN 'New'
@@ -1027,7 +1027,7 @@ function listTransactions($pdo) {
         $allTransactions = array_merge($allTransactions, $concerns);
         
         // Fetch emergency reports - Check if email column exists, if yes query directly by email, otherwise use JOIN
-        $checkEmailColumn = $pdo->query("SHOW COLUMNS FROM emergency_reports LIKE 'email'");
+        $checkEmailColumn = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'emergency_reports' AND column_name = 'email'");
         $hasEmailColumn = $checkEmailColumn->rowCount() > 0;
         
         if ($hasEmailColumn) {
@@ -1035,14 +1035,13 @@ function listTransactions($pdo) {
                 SELECT 
                     CONCAT('EMRG-', e.id) as id,
                     CONCAT('Emergency: ', e.emergency_type) as document_type,
-                    CONCAT('EMRG-', LPAD(e.id, 6, '0')) as reference_number,
+                    CONCAT('EMRG-', LPAD(e.id::text, 6, '0')) as reference_number,
                     CASE 
                         WHEN e.status IS NULL OR e.status = '' THEN 'New'
-                        WHEN e.status = 'New' THEN 'New'
-                        WHEN e.status = 'pending' THEN 'New'
-                        WHEN e.status = 'processing' THEN 'Processing'
-                        WHEN e.status = 'resolved' THEN 'Finished'
-                        WHEN e.status = 'cancelled' THEN 'cancelled'
+                        WHEN UPPER(e.status) IN ('NEW', 'PENDING') THEN 'New'
+                        WHEN UPPER(e.status) = 'PROCESSING' THEN 'Processing'
+                        WHEN UPPER(e.status) = 'RESOLVED' THEN 'Finished'
+                        WHEN UPPER(e.status) = 'CANCELLED' THEN 'cancelled'
                         ELSE e.status
                     END as status,
                     e.date_and_time as request_date,
@@ -1065,14 +1064,13 @@ function listTransactions($pdo) {
                 SELECT 
                     CONCAT('EMRG-', e.id) as id,
                     CONCAT('Emergency: ', e.emergency_type) as document_type,
-                    CONCAT('EMRG-', LPAD(e.id, 6, '0')) as reference_number,
+                    CONCAT('EMRG-', LPAD(e.id::text, 6, '0')) as reference_number,
                     CASE 
                         WHEN e.status IS NULL OR e.status = '' THEN 'New'
-                        WHEN e.status = 'New' THEN 'New'
-                        WHEN e.status = 'pending' THEN 'New'
-                        WHEN e.status = 'processing' THEN 'Processing'
-                        WHEN e.status = 'resolved' THEN 'Finished'
-                        WHEN e.status = 'cancelled' THEN 'cancelled'
+                        WHEN UPPER(e.status) IN ('NEW', 'PENDING') THEN 'New'
+                        WHEN UPPER(e.status) = 'PROCESSING' THEN 'Processing'
+                        WHEN UPPER(e.status) = 'RESOLVED' THEN 'Finished'
+                        WHEN UPPER(e.status) = 'CANCELLED' THEN 'cancelled'
                         ELSE e.status
                     END as status,
                     e.date_and_time as request_date,
@@ -1117,9 +1115,9 @@ function listTransactions($pdo) {
 
         $coeHasPurpose = transactions_form_table_has_column($pdo, 'coe_forms', 'purpose');
         $coeHasPosition = transactions_form_table_has_column($pdo, 'coe_forms', 'position');
-        $coeNotesFrag = $coeHasPosition ? 'position as notes' : 'NULL as notes';
+        $coeNotesFrag = $coeHasPosition ? '"position" as notes' : 'NULL as notes';
         $coePurposeFrag = $coeHasPurpose ? 'purpose as purpose' : 'NULL as purpose';
-        $coeNotesFragCoe = $coeHasPosition ? 'coe.position as notes' : 'NULL as notes';
+        $coeNotesFragCoe = $coeHasPosition ? 'coe."position" as notes' : 'NULL as notes';
         $coePurposeFragCoe = $coeHasPurpose ? 'coe.purpose as purpose' : 'NULL as purpose';
 
         $clrHasPurpose = transactions_form_table_has_column($pdo, 'clearance_forms', 'purpose');
@@ -1129,7 +1127,7 @@ function listTransactions($pdo) {
         $clrPurposeFragCl = $clrHasPurpose ? 'cl.purpose as purpose' : 'NULL as purpose';
         
         // Fetch indigency forms - Check if email column exists, if yes query directly by email, otherwise use JOIN
-        $checkEmailColumn = $pdo->query("SHOW COLUMNS FROM indigency_forms LIKE 'email'");
+        $checkEmailColumn = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'indigency_forms' AND column_name = 'email'");
         $hasEmailColumn = $checkEmailColumn->rowCount() > 0;
         
         if ($hasEmailColumn) {
@@ -1137,7 +1135,7 @@ function listTransactions($pdo) {
                 SELECT 
                     CONCAT('INDG-', id) as id,
                     'Certificate of Indigency' as document_type,
-                    CONCAT('INDG-', LPAD(id, 6, '0')) as reference_number,
+                    CONCAT('INDG-', LPAD(id::text, 6, '0')) as reference_number,
                     CASE 
                         WHEN status IS NULL OR status = '' THEN 'New'
                         WHEN status = 'pending' THEN 'New'
@@ -1166,7 +1164,7 @@ function listTransactions($pdo) {
                 SELECT 
                     CONCAT('INDG-', i.id) as id,
                     'Certificate of Indigency' as document_type,
-                    CONCAT('INDG-', LPAD(i.id, 6, '0')) as reference_number,
+                    CONCAT('INDG-', LPAD(i.id::text, 6, '0')) as reference_number,
                     CASE 
                         WHEN i.status IS NULL OR i.status = '' THEN 'New'
                         WHEN i.status = 'pending' THEN 'New'
@@ -1197,7 +1195,7 @@ function listTransactions($pdo) {
         $allTransactions = array_merge($allTransactions, $indigencyForms);
         
         // Fetch barangay ID forms - Check if email column exists, if yes query directly by email, otherwise use JOIN
-        $checkEmailColumn = $pdo->query("SHOW COLUMNS FROM barangay_id_forms LIKE 'email'");
+        $checkEmailColumn = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'barangay_id_forms' AND column_name = 'email'");
         $hasEmailColumn = $checkEmailColumn->rowCount() > 0;
         
         if ($hasEmailColumn) {
@@ -1205,7 +1203,7 @@ function listTransactions($pdo) {
                 SELECT 
                     CONCAT('BID-', id) as id,
                     'Barangay ID' as document_type,
-                    CONCAT('BID-', LPAD(id, 6, '0')) as reference_number,
+                    CONCAT('BID-', LPAD(id::text, 6, '0')) as reference_number,
                     CASE 
                         WHEN status IS NULL OR status = '' THEN 'New'
                         WHEN status = 'pending' THEN 'New'
@@ -1233,7 +1231,7 @@ function listTransactions($pdo) {
                 SELECT 
                     CONCAT('BID-', b.id) as id,
                     'Barangay ID' as document_type,
-                    CONCAT('BID-', LPAD(b.id, 6, '0')) as reference_number,
+                    CONCAT('BID-', LPAD(b.id::text, 6, '0')) as reference_number,
                     CASE 
                         WHEN b.status IS NULL OR b.status = '' THEN 'New'
                         WHEN b.status = 'pending' THEN 'New'
@@ -1263,7 +1261,7 @@ function listTransactions($pdo) {
         $allTransactions = array_merge($allTransactions, $barangayIdForms);
         
         // Fetch certification forms - Check if email column exists, if yes query directly by email, otherwise use JOIN
-        $checkEmailColumn = $pdo->query("SHOW COLUMNS FROM certification_forms LIKE 'email'");
+        $checkEmailColumn = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'certification_forms' AND column_name = 'email'");
         $hasEmailColumn = $checkEmailColumn->rowCount() > 0;
         
         if ($hasEmailColumn) {
@@ -1271,7 +1269,7 @@ function listTransactions($pdo) {
                 SELECT 
                     CONCAT('CERT-', id) as id,
                     'Certification' as document_type,
-                    CONCAT('CERT-', LPAD(id, 6, '0')) as reference_number,
+                    CONCAT('CERT-', LPAD(id::text, 6, '0')) as reference_number,
                     CASE 
                         WHEN status IS NULL OR status = '' THEN 'New'
                         WHEN status = 'pending' THEN 'New'
@@ -1300,7 +1298,7 @@ function listTransactions($pdo) {
                 SELECT 
                     CONCAT('CERT-', c.id) as id,
                     'Certification' as document_type,
-                    CONCAT('CERT-', LPAD(c.id, 6, '0')) as reference_number,
+                    CONCAT('CERT-', LPAD(c.id::text, 6, '0')) as reference_number,
                     CASE 
                         WHEN c.status IS NULL OR c.status = '' THEN 'New'
                         WHEN c.status = 'pending' THEN 'New'
@@ -1331,7 +1329,7 @@ function listTransactions($pdo) {
         $allTransactions = array_merge($allTransactions, $certificationForms);
         
         // Fetch COE forms - Check if email column exists, if yes query directly by email, otherwise use JOIN
-        $checkEmailColumn = $pdo->query("SHOW COLUMNS FROM coe_forms LIKE 'email'");
+        $checkEmailColumn = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'coe_forms' AND column_name = 'email'");
         $hasEmailColumn = $checkEmailColumn->rowCount() > 0;
         
         if ($hasEmailColumn) {
@@ -1339,7 +1337,7 @@ function listTransactions($pdo) {
                 SELECT 
                     CONCAT('COE-', id) as id,
                     'Certificate of Employment' as document_type,
-                    CONCAT('COE-', LPAD(id, 6, '0')) as reference_number,
+                    CONCAT('COE-', LPAD(id::text, 6, '0')) as reference_number,
                     CASE 
                         WHEN status IS NULL OR status = '' THEN 'New'
                         WHEN status = 'pending' THEN 'New'
@@ -1368,7 +1366,7 @@ function listTransactions($pdo) {
                 SELECT 
                     CONCAT('COE-', coe.id) as id,
                     'Certificate of Employment' as document_type,
-                    CONCAT('COE-', LPAD(coe.id, 6, '0')) as reference_number,
+                    CONCAT('COE-', LPAD(coe.id::text, 6, '0')) as reference_number,
                     CASE 
                         WHEN coe.status IS NULL OR coe.status = '' THEN 'New'
                         WHEN coe.status = 'pending' THEN 'New'
@@ -1399,7 +1397,7 @@ function listTransactions($pdo) {
         $allTransactions = array_merge($allTransactions, $coeForms);
         
         // Fetch clearance forms - Check if email column exists, if yes query directly by email, otherwise use JOIN
-        $checkEmailColumn = $pdo->query("SHOW COLUMNS FROM clearance_forms LIKE 'email'");
+        $checkEmailColumn = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'clearance_forms' AND column_name = 'email'");
         $hasEmailColumn = $checkEmailColumn->rowCount() > 0;
         
         if ($hasEmailColumn) {
@@ -1407,7 +1405,7 @@ function listTransactions($pdo) {
                 SELECT 
                     CONCAT('CLR-', id) as id,
                     'Clearance Certificate' as document_type,
-                    CONCAT('CLR-', LPAD(id, 6, '0')) as reference_number,
+                    CONCAT('CLR-', LPAD(id::text, 6, '0')) as reference_number,
                     CASE 
                         WHEN status IS NULL OR status = '' THEN 'New'
                         WHEN status = 'pending' THEN 'New'
@@ -1436,7 +1434,7 @@ function listTransactions($pdo) {
                 SELECT 
                     CONCAT('CLR-', cl.id) as id,
                     'Clearance Certificate' as document_type,
-                    CONCAT('CLR-', LPAD(cl.id, 6, '0')) as reference_number,
+                    CONCAT('CLR-', LPAD(cl.id::text, 6, '0')) as reference_number,
                     CASE 
                         WHEN cl.status IS NULL OR cl.status = '' THEN 'New'
                         WHEN cl.status = 'pending' THEN 'New'

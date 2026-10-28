@@ -66,10 +66,10 @@ function verifyMPIN($email, $mobile, $mpin) {
     try {
         // Build query based on email or mobile
         if ($email) {
-            $stmt = $pdo->prepare("SELECT email, mpin_password, email_verified FROM resident_information WHERE email = ? AND email_verified = 1");
+            $stmt = $pdo->prepare("SELECT email, mpin_password, email_verified FROM resident_information WHERE email = ? AND email_verified::text IN ('1', 'true', 't')");
             $stmt->execute([$email]);
         } else {
-            $stmt = $pdo->prepare("SELECT email, mobile, mpin_password, email_verified FROM resident_information WHERE mobile = ? AND email_verified = 1");
+            $stmt = $pdo->prepare("SELECT email, mobile, mpin_password, email_verified FROM resident_information WHERE mobile = ? AND email_verified::text IN ('1', 'true', 't')");
             $stmt->execute([$mobile]);
         }
         
@@ -95,7 +95,7 @@ function verifyMPIN($email, $mobile, $mpin) {
             if ($isValid) {
                 // Ensure mpin_password column can store the full hash.
                 try {
-                    $pdo->exec("ALTER TABLE resident_information MODIFY mpin_password VARCHAR(255) NULL");
+                    $pdo->exec("ALTER TABLE resident_information ALTER COLUMN mpin_password TYPE VARCHAR(255)");
                 } catch (PDOException $e) {
                     error_log("MPIN login: resize mpin_password skipped/failed: " . $e->getMessage());
                 }
@@ -104,10 +104,10 @@ function verifyMPIN($email, $mobile, $mpin) {
                 if ($newHash !== false) {
                     try {
                         if ($email) {
-                            $u = $pdo->prepare("UPDATE resident_information SET mpin_password = ?, updated_at = NOW() WHERE email = ? AND email_verified = 1");
+                            $u = $pdo->prepare("UPDATE resident_information SET mpin_password = ?, updated_at = NOW() WHERE email = ? AND email_verified::text IN ('1', 'true', 't')");
                             $u->execute([$newHash, $email]);
                         } else {
-                            $u = $pdo->prepare("UPDATE resident_information SET mpin_password = ?, updated_at = NOW() WHERE mobile = ? AND email_verified = 1");
+                            $u = $pdo->prepare("UPDATE resident_information SET mpin_password = ?, updated_at = NOW() WHERE mobile = ? AND email_verified::text IN ('1', 'true', 't')");
                             $u->execute([$newHash, $mobile]);
                         }
                     } catch (PDOException $e) {

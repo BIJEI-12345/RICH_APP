@@ -59,8 +59,7 @@ try {
         $contactPhone = null;
         $residentId = (int)($user['id'] ?? 0);
         try {
-            $tableCheck = $pdo->query("SHOW TABLES LIKE 'census_form'");
-            if ($tableCheck && $tableCheck->rowCount() > 0 && $residentId > 0) {
+            if (db_table_exists($pdo, 'census_form') && $residentId > 0) {
                 $censusLinkId = census_id_for_resident_pk($residentId);
                 $cStmt = $pdo->prepare(
                     "SELECT contact_number FROM census_form WHERE census_id = ? AND contact_number IS NOT NULL AND TRIM(COALESCE(contact_number, '')) != '' ORDER BY id ASC LIMIT 1"
@@ -91,13 +90,25 @@ try {
         // Convert id_image to base64 if it exists
         $id_image_base64 = null;
         if (isset($user['id_image']) && $user['id_image']) {
-            $id_image_base64 = base64_encode($user['id_image']);
+            $idImageData = is_resource($user['id_image'])
+                ? stream_get_contents($user['id_image'])
+                : $user['id_image'];
+            if ($idImageData === false) {
+                throw new RuntimeException('Failed to read resident ID image from database.');
+            }
+            $id_image_base64 = base64_encode($idImageData);
         }
         
         // Convert profile_pic to base64 if it exists
         $profile_pic_base64 = null;
         if (isset($user['profile_pic']) && $user['profile_pic']) {
-            $profile_pic_base64 = base64_encode($user['profile_pic']);
+            $profilePicData = is_resource($user['profile_pic'])
+                ? stream_get_contents($user['profile_pic'])
+                : $user['profile_pic'];
+            if ($profilePicData === false) {
+                throw new RuntimeException('Failed to read profile picture from database.');
+            }
+            $profile_pic_base64 = base64_encode($profilePicData);
         }
         
         $userData = [
@@ -131,11 +142,11 @@ try {
         ]);
     }
     
-} catch (PDOException $e) {
-    error_log("Database error: " . $e->getMessage());
+} catch (Throwable $e) {
+    error_log("User data retrieval failed: " . $e->getMessage());
     echo json_encode([
         'success' => false,
-        'message' => 'Database connection failed',
+        'message' => 'Failed to retrieve user data',
         'user' => null
     ]);
 }

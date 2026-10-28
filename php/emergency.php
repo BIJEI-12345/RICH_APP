@@ -69,17 +69,21 @@ function insertEmergencyReport($data) {
         // Handle image data (convert base64 to binary if present)
         $imageData = null;
         if (!empty($data['image_data'])) {
-            $imageData = base64_decode($data['image_data']);
+            $decodedImage = base64_decode($data['image_data'], true);
+            if ($decodedImage === false) {
+                return ['success' => false, 'message' => 'Invalid emergency image data'];
+            }
+            $imageData = db_bytea_parameter($decodedImage);
         }
         
         // Get email from data
         $email = $data['user_email'] ?? null;
         
         // Check if email column exists
-        $checkColumn = $pdo->query("SHOW COLUMNS FROM emergency_reports LIKE 'email'");
+        $checkColumn = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'emergency_reports' AND column_name = 'email'");
         $emailColumnExists = $checkColumn->rowCount() > 0;
 
-        $checkContactCol = $pdo->query("SHOW COLUMNS FROM emergency_reports LIKE 'contact'");
+        $checkContactCol = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'emergency_reports' AND column_name = 'contact'");
         $contactColumnExists = $checkContactCol && $checkContactCol->rowCount() > 0;
         $contactForDb = null;
         if (!empty($data['contact'])) {
@@ -113,7 +117,7 @@ function insertEmergencyReport($data) {
                     $imageData,
                     $data['location'] ?? null,
                     $data['landmark'] ?? null,
-                    'New'
+                    'NEW'
                 ]);
                 $result = $stmt->execute($execParams);
             } else {
@@ -132,7 +136,7 @@ function insertEmergencyReport($data) {
                     $imageData,
                     $data['location'] ?? null,
                     $data['landmark'] ?? null,
-                    'New'
+                    'NEW'
                 ]);
                 $result = $stmt->execute($execParams);
             }
@@ -159,7 +163,7 @@ function insertEmergencyReport($data) {
                         $philippineTime,
                         $data['description'],
                         $data['location'] ?? null,
-                        'New'
+                        'NEW'
                     ]);
                     $result = $stmt->execute($execParams);
                 } else {
@@ -176,7 +180,7 @@ function insertEmergencyReport($data) {
                         $philippineTime,
                         $data['description'],
                         $data['location'] ?? null,
-                        'New'
+                        'NEW'
                     ]);
                     $result = $stmt->execute($execParams);
                 }

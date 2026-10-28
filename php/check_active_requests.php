@@ -66,7 +66,7 @@ try {
         echo json_encode(['success' => false, 'message' => 'Database connection failed']);
         exit;
     }
-    // Ensure binary data (LONGBLOB) is returned correctly - don't stringify
+    // Ensure binary data is returned correctly - don't stringify
     $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
     $pdo->setAttribute(PDO::ATTR_STRINGIFY_FETCHES, false);
 
@@ -91,7 +91,7 @@ try {
     };
 
     // Barangay ID - Check if email column exists, if yes query directly by email, otherwise use JOIN
-    $checkEmailColumn = $pdo->query("SHOW COLUMNS FROM barangay_id_forms LIKE 'email'");
+    $checkEmailColumn = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'barangay_id_forms' AND column_name = 'email'");
     $hasEmailColumn = $checkEmailColumn->rowCount() > 0;
     
     if ($hasEmailColumn) {
@@ -125,7 +125,7 @@ try {
     }
 
     // Certification - Check if email column exists, if yes query directly by email, otherwise use JOIN
-    $checkEmailColumn = $pdo->query("SHOW COLUMNS FROM certification_forms LIKE 'email'");
+    $checkEmailColumn = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'certification_forms' AND column_name = 'email'");
     $hasEmailColumn = $checkEmailColumn->rowCount() > 0;
     
     if ($hasEmailColumn) {
@@ -160,7 +160,7 @@ try {
 
     // Job Seeker certification: allow only one submission per user (any status)
     $certificationJobSeekerUsed = false;
-    $checkJsEmailCol = $pdo->query("SHOW COLUMNS FROM certification_forms LIKE 'email'");
+    $checkJsEmailCol = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'certification_forms' AND column_name = 'email'");
     $certJsHasEmail = $checkJsEmailCol->rowCount() > 0;
     $jsPurposeCond = "(LOWER(TRIM(c.purpose)) IN ('jobseeker', 'job seeker'))";
     if ($certJsHasEmail) {
@@ -187,7 +187,7 @@ try {
     }
 
     // COE - Check if email column exists, if yes query directly by email, otherwise use JOIN
-    $checkEmailColumn = $pdo->query("SHOW COLUMNS FROM coe_forms LIKE 'email'");
+    $checkEmailColumn = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'coe_forms' AND column_name = 'email'");
     $hasEmailColumn = $checkEmailColumn->rowCount() > 0;
     
     if ($hasEmailColumn) {
@@ -221,7 +221,7 @@ try {
     }
 
     // Indigency - Check if email column exists, if yes query directly by email, otherwise use JOIN
-    $checkEmailColumn = $pdo->query("SHOW COLUMNS FROM indigency_forms LIKE 'email'");
+    $checkEmailColumn = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'indigency_forms' AND column_name = 'email'");
     $hasEmailColumn = $checkEmailColumn->rowCount() > 0;
     
     if ($hasEmailColumn) {
@@ -257,7 +257,7 @@ try {
     }
 
     // Clearance - Check if email column exists, if yes query directly by email, otherwise use JOIN
-    $checkEmailColumn = $pdo->query("SHOW COLUMNS FROM clearance_forms LIKE 'email'");
+    $checkEmailColumn = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'clearance_forms' AND column_name = 'email'");
     $hasEmailColumn = $checkEmailColumn->rowCount() > 0;
     
     if ($hasEmailColumn) {
@@ -291,7 +291,7 @@ try {
     }
 
     // Concerns - Check if email column exists, if yes query directly by email, otherwise use JOIN
-    $checkEmailColumn = $pdo->query("SHOW COLUMNS FROM concerns LIKE 'email'");
+    $checkEmailColumn = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'concerns' AND column_name = 'email'");
     $hasEmailColumn = $checkEmailColumn->rowCount() > 0;
     
     if ($hasEmailColumn) {
@@ -325,7 +325,7 @@ try {
     }
 
     // Emergency Reports - Check if email column exists, if yes query directly by email, otherwise use JOIN
-    $checkEmailColumn = $pdo->query("SHOW COLUMNS FROM emergency_reports LIKE 'email'");
+    $checkEmailColumn = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'emergency_reports' AND column_name = 'email'");
     $hasEmailColumn = $checkEmailColumn->rowCount() > 0;
     
     if ($hasEmailColumn) {
@@ -424,14 +424,14 @@ function serveAnnouncementImage($imageId) {
         echo "Database connection failed";
         exit;
     }
-    // Ensure binary data (LONGBLOB) is returned correctly - don't stringify
+    // Ensure binary data is returned correctly - don't stringify
     $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
     $pdo->setAttribute(PDO::ATTR_STRINGIFY_FETCHES, false);
     
     try {
         // CRITICAL: Fetch ONLY from the 'image' column in the announcements table
         // First verify the announcement exists and log its title for debugging
-        $verifyStmt = $pdo->prepare("SELECT `id`, `title` FROM `announcements` WHERE `id` = ?");
+        $verifyStmt = $pdo->prepare("SELECT id, title FROM announcements WHERE id = ?");
         $verifyStmt->execute([$imageId]);
         $announcementInfo = $verifyStmt->fetch(PDO::FETCH_ASSOC);
         
@@ -446,7 +446,7 @@ function serveAnnouncementImage($imageId) {
         error_log("Fetching image for Announcement ID: {$imageId}, Title: '{$announcementInfo['title']}'");
         
         // First check if image column has data (not NULL and not empty)
-        $checkStmt = $pdo->prepare("SELECT LENGTH(`image`) as img_length FROM `announcements` WHERE `id` = ?");
+        $checkStmt = $pdo->prepare("SELECT LENGTH(image) AS img_length FROM announcements WHERE id = ?");
         $checkStmt->execute([$imageId]);
         $imgLength = $checkStmt->fetchColumn(0);
         
@@ -457,23 +457,23 @@ function serveAnnouncementImage($imageId) {
         
         error_log("Image column has data: {$imgLength} bytes for ID {$imageId}");
         
-        // CRITICAL: Ensure PDO settings are correct for LONGBLOB
+        // Ensure PDO settings are correct for binary data
         $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
         $pdo->setAttribute(PDO::ATTR_STRINGIFY_FETCHES, false);
         
-        // IMPORTANT: Use fetchColumn first (more reliable for LONGBLOB)
+        // Use fetchColumn first (more reliable for binary data)
         // Create a fresh prepared statement to avoid any caching issues
-        $stmt = $pdo->prepare("SELECT `image` FROM `announcements` WHERE `id` = ?");
+        $stmt = $pdo->prepare("SELECT image FROM announcements WHERE id = ?");
         $stmt->execute([$imageId]);
         
-        // Try fetchColumn first (most reliable for LONGBLOB)
+        // Try fetchColumn first (most reliable for binary data)
         $imageData = $stmt->fetchColumn(0);
         
         // If fetchColumn returns false/null, try bindColumn as fallback
         if ($imageData === false || $imageData === null) {
             error_log("fetchColumn returned false/null for ID {$imageId}, trying bindColumn...");
             // Create a fresh statement
-            $stmt2 = $pdo->prepare("SELECT `image` FROM `announcements` WHERE `id` = ?");
+            $stmt2 = $pdo->prepare("SELECT image FROM announcements WHERE id = ?");
             $stmt2->execute([$imageId]);
             $stmt2->bindColumn(1, $imageData, PDO::PARAM_LOB);
             $result = $stmt2->fetch(PDO::FETCH_BOUND);
@@ -565,14 +565,14 @@ function fetchAnnouncements() {
         // We'll always use the API endpoint and let it handle checking for image existence
         $stmt = $pdo->prepare("
             SELECT 
-                `id`, 
-                `title`, 
-                `created_at`, 
-                `description`,
-                COALESCE(CRC32(`image`), 0) AS `_img_crc`,
-                COALESCE(LENGTH(`image`), 0) AS `_img_len`
-            FROM `announcements` 
-            ORDER BY `created_at` DESC
+                id,
+                title,
+                created_at,
+                description,
+                COALESCE(md5(image::text), '') AS _img_hash,
+                COALESCE(LENGTH(image), 0) AS _img_len
+            FROM announcements
+            ORDER BY created_at DESC
         ");
         $stmt->execute();
         
@@ -586,10 +586,10 @@ function fetchAnnouncements() {
             $announcement['formatted_time'] = $dateTime->format('h:i A');
             $announcement['days_ago'] = calculateDaysAgo($dateTime);
             
-            $imgCrc = (int)($announcement['_img_crc'] ?? 0);
+            $imgHash = (string)($announcement['_img_hash'] ?? '');
             $imgLen = (int)($announcement['_img_len'] ?? 0);
-            unset($announcement['_img_crc'], $announcement['_img_len']);
-            $cacheBuster = $imgCrc . '_' . $imgLen . '_' . $announcement['id'] . '_' . $listCacheBust;
+            unset($announcement['_img_hash'], $announcement['_img_len']);
+            $cacheBuster = $imgHash . '_' . $imgLen . '_' . $announcement['id'] . '_' . $listCacheBust;
             $announcement['image'] = 'php/check_active_requests.php?image_id=' . $announcement['id'] . '&t=' . $cacheBuster;
             error_log("Announcement ID {$announcement['id']} (Title: {$announcement['title']}): image URL cache buster: {$cacheBuster}");
         }

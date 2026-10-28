@@ -99,7 +99,8 @@ function verifyOTPAndSaveUser($email, $verificationCode) {
             INSERT INTO resident_information (
                 first_name, middle_name, last_name, suffix, email, age, sex, 
                 birthday, civil_status, address, valid_id, id_image, email_verified, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, decode(?, 'base64'), 1, NOW())
+            RETURNING id
         ");
         
         $stmt->execute([
@@ -114,10 +115,12 @@ function verifyOTPAndSaveUser($email, $verificationCode) {
             $registrationData['status'],
             $registrationData['address'],
             $registrationData['validId'],
-            $registrationData['idImageData']
+            isset($registrationData['idImageData']) && is_string($registrationData['idImageData'])
+                ? base64_encode($registrationData['idImageData'])
+                : null
         ]);
         
-        $userId = $pdo->lastInsertId();
+        $userId = $stmt->fetchColumn();
         
         // Delete the used OTP record
         $stmt = $pdo->prepare("DELETE FROM otp_verifications WHERE id = ?");
@@ -150,7 +153,9 @@ function verifyOTPAndSaveUser($email, $verificationCode) {
         ];
         
     } catch (PDOException $e) {
-        $pdo->rollBack();
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
         error_log("OTP verification failed: " . $e->getMessage());
         return ['success' => false, 'message' => 'Verification failed. Please try again.'];
     }

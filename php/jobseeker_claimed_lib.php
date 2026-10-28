@@ -6,8 +6,7 @@
 function jobseeker_claimed_table_exists(PDO $pdo): bool
 {
     try {
-        $r = $pdo->query("SHOW TABLES LIKE 'jobseeker_claimed'");
-        return $r && $r->rowCount() > 0;
+        return db_table_exists($pdo, 'jobseeker_claimed');
     } catch (Throwable $e) {
         return false;
     }
@@ -16,9 +15,7 @@ function jobseeker_claimed_table_exists(PDO $pdo): bool
 function jobseeker_claimed_column_exists(PDO $pdo, string $column): bool
 {
     try {
-        $st = $pdo->prepare('SHOW COLUMNS FROM jobseeker_claimed WHERE Field = ?');
-        $st->execute([$column]);
-        return $st->rowCount() > 0;
+        return db_column_exists($pdo, 'jobseeker_claimed', $column);
     } catch (Throwable $e) {
         return false;
     }

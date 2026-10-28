@@ -1522,10 +1522,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (data.error_details && String(data.error_details).trim()) {
                     errorMessage += '<br><br><small style="opacity:0.9">' + String(data.error_details).replace(/</g, '&lt;') + '</small>';
                 }
-                if (data.error_code === 'email_delivery_failed' && data.otp_code) {
-                    console.info('Registration: OTP could not be emailed. OTP for testing (check server policy):', data.otp_code);
-                }
-                
                 // Add debug information if available
                 if (data.debug) {
                     console.error('Server debug info:', data.debug);
@@ -1556,11 +1552,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Success - store user data for next step
             localStorage.setItem('registrationEmail', data.email);
-            
-            // If OTP code is provided (for testing), show it
-            if (data.otp_code) {
-                console.log('OTP Code for testing:', data.otp_code);
-            }
+            localStorage.setItem('registrationEmailSent', data.email_sent === false ? 'false' : 'true');
             
             // Redirect to email verification page
             window.location.href = 'email_verification.html';

@@ -350,7 +350,7 @@ function generateVerificationToken() {
     return bin2hex(random_bytes(32));
 }
 
-// Send OTP to email without storing any data
+// Save the OTP and registration session before attempting email delivery.
 function sendOTPToEmail($firstName, $middleName, $lastName, $suffix, $email, $age, $sex, $birthday, $status, $address, $validId, $hasNoMiddleName, $idImageData) {
     $pdo = getDBConnection();
     if (!$pdo) {
@@ -395,40 +395,11 @@ function sendOTPToEmail($firstName, $middleName, $lastName, $suffix, $email, $ag
                 verification_code, 
                 expires_at, 
                 created_at
-            ) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 3 MINUTE), NOW())
+            ) VALUES (?, ?, NOW() + INTERVAL '3 minutes', NOW())
         ");
         
         $stmt->execute([$email, $verificationCode]);
-        
-        // Send verification email
-        $fullName = trim($firstName . ' ' . $middleName . ' ' . $lastName);
-        $emailResult = sendVerificationEmail($email, $verificationCode, $fullName);
-        
-        // Always log the OTP code for testing purposes
-        error_log("=== OTP CODE FOR TESTING ===");
-        error_log("Email: " . $email);
-        error_log("OTP Code: " . $verificationCode);
-        error_log("Full Name: " . $fullName);
-        error_log("=============================");
-        
-        if (!$emailResult['success']) {
-            // Log detailed error
-            error_log("✗ Email sending failed during registration");
-            error_log("  - Email: " . $email);
-            error_log("  - Error: " . ($emailResult['error'] ?? $emailResult['message'] ?? 'Unknown error'));
-            error_log("  - OTP Code: " . $verificationCode . " (for manual testing)");
-            
-            // Return error with OTP for development/testing
-            return [
-                'success' => false,
-                'message' => 'Failed to send verification email: ' . ($emailResult['message'] ?? 'Unknown error'),
-                'error_details' => $emailResult['error'] ?? null,
-                'error_code' => 'email_delivery_failed',
-                'otp_code' => $verificationCode // Include OTP for testing if email fails
-            ];
-        }
-        
-        // Store form data in session for later use after verification
+
         session_start();
         $_SESSION['registration_data'] = [
             'firstName' => $firstName,
@@ -446,11 +417,22 @@ function sendOTPToEmail($firstName, $middleName, $lastName, $suffix, $email, $ag
             'idImageData' => $idImageData
         ];
         
+        // Send verification email
+        $fullName = trim($firstName . ' ' . $middleName . ' ' . $lastName);
+        $emailResult = sendVerificationEmail($email, $verificationCode, $fullName);
+
+        $emailSent = !empty($emailResult['success']);
+        if (!$emailResult['success']) {
+            error_log("Registration OTP saved but email delivery failed for {$email}: " . ($emailResult['error'] ?? $emailResult['message'] ?? 'Unknown error'));
+        }
+        
         return [
             'success' => true,
-            'message' => 'Verification code sent to your email',
+            'message' => $emailSent
+                ? 'Verification code sent to your email'
+                : 'Verification code saved. Email delivery failed; you can still verify using the code stored in the database.',
             'email' => $email,
-            'verification_code' => $verificationCode // For testing purposes
+            'email_sent' => $emailSent
         ];
         
     } catch (PDOException $e) {
@@ -494,15 +476,10 @@ function sendVerificationEmail($email, $code, $fullName) {
             error_log("Failed to send verification email to: " . $email . " - Error: " . $result['message']);
         }
         
-        // Always log the code for testing purposes
-        error_log("VERIFICATION CODE FOR TESTING: " . $code);
-        
         return $result;
         
     } catch (Exception $e) {
         error_log("Email sending error: " . $e->getMessage());
-        error_log("VERIFICATION CODE FOR TESTING: " . $code);
-        
         return [
             'success' => false,
             'message' => 'Email sending failed: ' . $e->getMessage(),
@@ -527,9 +504,7 @@ try {
         // 200 + success:false for email_delivery_failed so fetch() is not flagged as HTTP error in browser console (SMTP issue, not bad request).
         // 503 = DB unreachable / missing .env DB config (infrastructure).
         $ec = $result['error_code'] ?? '';
-        if ($ec === 'email_delivery_failed') {
-            http_response_code(200);
-        } elseif ($ec === 'email_taken') {
+        if ($ec === 'email_taken') {
             http_response_code(409);
         } elseif ($ec === 'db_config' || $ec === 'database_error') {
             http_response_code(503);
@@ -560,44 +535,44 @@ ob_end_flush();
 // Example database schema (create these tables in your database):
 /*
 CREATE TABLE temp_registrations (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     first_name VARCHAR(100) NOT NULL,
     middle_name VARCHAR(100),
     last_name VARCHAR(100) NOT NULL,
     suffix VARCHAR(10),
     email VARCHAR(255) NOT NULL,
     age INT NOT NULL,
-    sex ENUM('Male', 'Female') NOT NULL,
+    sex VARCHAR(10) NOT NULL CHECK (sex IN ('Male', 'Female')),
     birthday DATE NOT NULL,
-    civil_status ENUM('Single', 'Married', 'Divorced', 'Widowed') NOT NULL,
+    civil_status VARCHAR(20) NOT NULL CHECK (civil_status IN ('Single', 'Married', 'Divorced', 'Widowed')),
     address TEXT NOT NULL,
-    id_image LONGBLOB,
+    id_image BYTEA,
     verification_code VARCHAR(6) NOT NULL,
     expires_at TIMESTAMP NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE resident_information (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     first_name VARCHAR(100) NOT NULL,
     middle_name VARCHAR(100),
     last_name VARCHAR(100) NOT NULL,
     suffix VARCHAR(10),
     email VARCHAR(255) UNIQUE NOT NULL,
     age INT NOT NULL,
-    sex ENUM('Male', 'Female') NOT NULL,
+    sex VARCHAR(10) NOT NULL CHECK (sex IN ('Male', 'Female')),
     birthday DATE NOT NULL,
-    civil_status ENUM('Single', 'Married', 'Divorced', 'Widowed') NOT NULL,
+    civil_status VARCHAR(20) NOT NULL CHECK (civil_status IN ('Single', 'Married', 'Divorced', 'Widowed')),
     address TEXT NOT NULL,
     valid_id VARCHAR(50) NOT NULL,
-    id_image LONGBLOB,
+    id_image BYTEA,
     email_verified BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE registration_logs (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     email VARCHAR(255) NOT NULL,
     success BOOLEAN NOT NULL,
     ip_address VARCHAR(45),

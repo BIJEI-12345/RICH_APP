@@ -52,7 +52,8 @@ if ($autoloaderLoaded && class_exists('Dotenv\Dotenv')) {
 }
 
 // Check if critical variables were loaded by Dotenv
-$criticalVarsLoaded = !empty($_ENV['DB_HOST']) || !empty(getenv('DB_HOST'));
+$criticalVarsLoaded = !empty($_ENV['DB_HOST']) || !empty(getenv('DB_HOST'))
+    || !empty($_ENV['DB_HOST_AWS']) || !empty(getenv('DB_HOST_AWS'));
 if ($dotenvLoaded && !$criticalVarsLoaded) {
     error_log("Warning: Dotenv loaded but DB_HOST not found. Will try manual parsing.");
 }
@@ -129,9 +130,9 @@ if ($envFileFound && $envFileUsed) {
         error_log("Loaded $varsLoaded environment variables from .env file");
         
         // Verify critical variables were loaded
-        $dbHost = $_ENV['DB_HOST'] ?? getenv('DB_HOST') ?: null;
-        $dbUser = $_ENV['DB_USER'] ?? getenv('DB_USER') ?: null;
-        $dbName = $_ENV['DB_NAME'] ?? getenv('DB_NAME') ?: null;
+        $dbHost = $_ENV['DB_HOST'] ?? $_ENV['DB_HOST_AWS'] ?? getenv('DB_HOST') ?: getenv('DB_HOST_AWS') ?: null;
+        $dbUser = $_ENV['DB_USER'] ?? $_ENV['DB_USER_AWS'] ?? getenv('DB_USER') ?: getenv('DB_USER_AWS') ?: null;
+        $dbName = $_ENV['DB_NAME'] ?? $_ENV['DB_NAME_AWS'] ?? getenv('DB_NAME') ?: getenv('DB_NAME_AWS') ?: null;
         
         if (!$dbHost || !$dbUser || !$dbName) {
             error_log("ERROR: .env file exists but critical variables not loaded. File path: " . $envFileUsed);
@@ -158,6 +159,23 @@ if ($envFileFound && $envFileUsed) {
     error_log("Debug: Project root (dirname(__DIR__)): " . dirname(__DIR__));
     error_log("Debug: Current directory (__DIR__): " . __DIR__);
     error_log("Debug: Real path of php dir: " . realpath(__DIR__));
+}
+
+// Map the AWS-suffixed settings to the names used by existing application code.
+foreach ([
+    'DB_HOST' => 'DB_HOST_AWS',
+    'DB_PORT' => 'DB_PORT_AWS',
+    'DB_USER' => 'DB_USER_AWS',
+    'DB_PASS' => 'DB_PASS_AWS',
+    'DB_NAME' => 'DB_NAME_AWS',
+] as $standardName => $awsName) {
+    if (!isset($_ENV[$standardName]) && getenv($standardName) === false) {
+        $value = $_ENV[$awsName] ?? getenv($awsName);
+        if ($value !== false && $value !== null) {
+            $_ENV[$standardName] = $value;
+            putenv($standardName . '=' . $value);
+        }
+    }
 }
 
 /**
@@ -193,51 +211,104 @@ function getDBConnection() {
     
     if (!empty($missing)) {
         error_log("Database configuration error: Missing required environment variables: " . implode(', ', $missing));
-        error_log("Debug: Check .env file at: " . dirname(__DIR__) . '/.env');
+        error_log("Debug: Check the PostgreSQL settings in .env at: " . dirname(__DIR__) . '/.env');
         error_log("Debug: Current _ENV keys: " . implode(', ', array_keys($_ENV)));
         return null;
     }
     
     try {
-        // Set connection timeout for remote databases (AWS RDS); optional DB_PORT in .env (default 3306)
+        $driver = strtolower(trim((string) ($_ENV['DB_DRIVER'] ?? getenv('DB_DRIVER') ?: 'pgsql')));
         $port = $_ENV['DB_PORT'] ?? getenv('DB_PORT');
         if ($port === false || $port === null || $port === '') {
-            $port = '3306';
+            $port = '5432';
         }
-        $dsn = "mysql:host=$host;port=$port;dbname=$db;charset=utf8mb4";
+        if ($driver !== 'pgsql') {
+            throw new RuntimeException('Unsupported DB_DRIVER. This application requires pgsql.');
+        }
+        $sslMode = $_ENV['DB_SSLMODE'] ?? getenv('DB_SSLMODE') ?: 'require';
+        if (!in_array($sslMode, ['disable', 'allow', 'prefer', 'require', 'verify-ca', 'verify-full'], true)) {
+            throw new RuntimeException('Invalid DB_SSLMODE value.');
+        }
+        $dsn = "pgsql:host=$host;port=$port;dbname=$db;sslmode=$sslMode";
         $options = [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_TIMEOUT => 10, // 10 second timeout
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         ];
         
-        $pdo = new PDO($dsn, $user, $pass, $options);
-        // Philippine Standard Time (UTC+8) — affects DEFAULT CURRENT_TIMESTAMP, NOW(), at session timestamps
-        try {
-            $pdo->exec("SET time_zone = '+08:00'");
-        } catch (PDOException $e) {
-            error_log('MySQL SET time_zone: ' . $e->getMessage());
+        $maxAttempts = 3;
+        for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
+            try {
+                $pdo = new PDO($dsn, $user, $pass, $options);
+                $pdo->exec("SET TIME ZONE 'Asia/Manila'");
+                return $pdo;
+            } catch (PDOException $e) {
+                $errorMsg = $e->getMessage();
+                $errorInfo = $e->errorInfo ?? null;
+                $sqlState = is_array($errorInfo)
+                    ? (string) ($errorInfo[0] ?? $e->getCode())
+                    : (string) $e->getCode();
+                $isConnectionError = substr($sqlState, 0, 2) === '08';
+
+                if ($isConnectionError && $attempt < $maxAttempts) {
+                    usleep(200000 * $attempt);
+                    continue;
+                }
+
+                error_log("Database connection failed: " . $errorMsg);
+                error_log("Connection details - Host: $host, DB: $db, User: $user");
+
+                // Provide more specific error information
+                if (strpos($errorMsg, 'Unknown database') !== false || strpos($errorMsg, 'does not exist') !== false) {
+                    error_log("ERROR: Database '$db' does not exist on the configured PostgreSQL server.");
+                } elseif (strpos($errorMsg, 'password authentication failed') !== false) {
+                    error_log("ERROR: Access denied. Check DB_USER and DB_PASS in .env file.");
+                } elseif (strpos($errorMsg, 'Connection refused') !== false || strpos($errorMsg, 'No connection') !== false) {
+                    error_log("ERROR: Cannot connect to the configured database server.");
+                }
+
+                return null;
+            } catch (Exception $e) {
+                error_log("Unexpected error during database connection: " . $e->getMessage());
+                return null;
+            }
         }
-        return $pdo;
     } catch (PDOException $e) {
-        $errorMsg = $e->getMessage();
-        error_log("Database connection failed: " . $errorMsg);
-        error_log("Connection details - Host: $host, DB: $db, User: $user");
-        
-        // Provide more specific error information
-        if (strpos($errorMsg, 'Unknown database') !== false) {
-            error_log("ERROR: Database '$db' does not exist. Please create it in phpMyAdmin.");
-        } elseif (strpos($errorMsg, 'Access denied') !== false) {
-            error_log("ERROR: Access denied. Check DB_USER and DB_PASS in .env file.");
-        } elseif (strpos($errorMsg, 'Connection refused') !== false || strpos($errorMsg, 'No connection') !== false) {
-            error_log("ERROR: Cannot connect to MySQL. Is MySQL running in XAMPP?");
-        }
-        
+        error_log("Database connection failed: " . $e->getMessage());
         return null;
     } catch (Exception $e) {
         error_log("Unexpected error during database connection: " . $e->getMessage());
         return null;
     }
+    return null;
+}
+
+function db_table_exists(PDO $pdo, string $table): bool {
+    $stmt = $pdo->prepare(
+        'SELECT 1 FROM information_schema.tables WHERE table_schema = current_schema() AND table_name = ? LIMIT 1'
+    );
+    $stmt->execute([$table]);
+    return $stmt->fetchColumn() !== false;
+}
+
+function db_column_exists(PDO $pdo, string $table, string $column): bool {
+    $stmt = $pdo->prepare(
+        'SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = ? AND column_name = ? LIMIT 1'
+    );
+    $stmt->execute([$table, $column]);
+    return $stmt->fetchColumn() !== false;
+}
+
+function db_table_columns(PDO $pdo, string $table): array {
+    $stmt = $pdo->prepare(
+        'SELECT column_name AS "Field", data_type AS "Type", udt_name AS "Udt" FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = ? ORDER BY ordinal_position'
+    );
+    $stmt->execute([$table]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function db_bytea_parameter(?string $binary): ?string {
+    return $binary === null ? null : '\\x' . bin2hex($binary);
 }
 
 /**
@@ -331,4 +402,3 @@ function debugEnvStatus() {
     
     return $debug;
 }
-

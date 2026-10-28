@@ -151,12 +151,12 @@ if ($envFileFound && $envFileUsed) {
 }
 
 // Check environment variables
-$requiredVars = ['DB_HOST', 'DB_USER', 'DB_PASS', 'DB_NAME'];
+$requiredVars = ['DB_HOST_AWS', 'DB_PORT_AWS', 'DB_USER_AWS', 'DB_PASS_AWS', 'DB_NAME_AWS'];
 foreach ($requiredVars as $var) {
     $envValue = $_ENV[$var] ?? getenv($var);
     $diagnostics['environment_variables'][$var] = [
         'set' => $envValue !== false && $envValue !== null,
-        'value' => $var === 'DB_PASS' ? ($envValue ? '***HIDDEN***' : 'NOT SET') : ($envValue ?: 'NOT SET'),
+        'value' => $var === 'DB_PASS_AWS' ? ($envValue ? '***HIDDEN***' : 'NOT SET') : ($envValue ?: 'NOT SET'),
         'in_ENV' => isset($_ENV[$var]),
         'in_getenv' => getenv($var) !== false,
     ];
@@ -167,7 +167,7 @@ if (!$envFileFound) {
     $diagnostics['recommendations'][] = [
         'priority' => 'CRITICAL',
         'issue' => '.env file not found',
-        'solution' => "Create .env file at: {$projectRoot}/.env with the following format:\nDB_HOST=your_host\nDB_USER=your_user\nDB_PASS=your_password\nDB_NAME=your_database"
+        'solution' => "Create .env file at: {$projectRoot}/.env with DB_HOST_AWS, DB_PORT_AWS, DB_USER_AWS, DB_PASS_AWS, and DB_NAME_AWS."
     ];
 } else {
     if (!$diagnostics['env_file_status'][array_search($envFileUsed, $possibleEnvPaths)]['readable']) {
@@ -213,4 +213,3 @@ if (!$envFileFound) {
 }
 
 echo json_encode($diagnostics, JSON_PRETTY_PRINT);
-

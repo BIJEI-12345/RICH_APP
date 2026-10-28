@@ -43,7 +43,7 @@ function sendForgotMpinOTP($email) {
     
     try {
         // Check if email exists and is verified
-        $stmt = $pdo->prepare("SELECT id, first_name, last_name FROM resident_information WHERE email = ? AND email_verified = 1");
+        $stmt = $pdo->prepare("SELECT id, first_name, last_name FROM resident_information WHERE email = ? AND email_verified::text IN ('1', 'true', 't')");
         $stmt->execute([$email]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
         
@@ -65,7 +65,7 @@ function sendForgotMpinOTP($email) {
                 verification_code, 
                 expires_at, 
                 created_at
-            ) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 3 MINUTE), NOW())
+            ) VALUES (?, ?, NOW() + INTERVAL '3 minutes', NOW())
         ");
         
         $stmt->execute([$email, $verificationCode]);
@@ -117,4 +117,3 @@ if ($result['success']) {
     echo json_encode($result);
 }
 ?>
-

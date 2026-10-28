@@ -94,8 +94,7 @@ function censusIdentityDate($value): string {
 try {
     $pdo = getDBConnection();
     if ($pdo) {
-        // Set MySQL timezone to Philippine time (UTC+8)
-        $pdo->exec("SET time_zone = '+08:00'");
+        $pdo->exec("SET TIME ZONE 'Asia/Manila'");
     }
     
     if (!$pdo) {
@@ -149,23 +148,12 @@ try {
     $userAddress = trim($userInfo['address'] ?? '');
     
     // Check if census_form table exists (singular, not plural)
-    $tableExists = false;
-    try {
-        $checkTable = $pdo->query("SHOW TABLES LIKE 'census_form'");
-        $tableExists = $checkTable->rowCount() > 0;
-    } catch (PDOException $e) {
-        // Table doesn't exist yet
-        $tableExists = false;
-    }
+    $tableExists = db_table_exists($pdo, 'census_form');
     
     if ($tableExists) {
         // Discover archive-related columns first so we can evaluate archived rows safely.
         $archiveColumns = [];
-        $existingColumns = [];
-        $columnsStmt = $pdo->query("SHOW COLUMNS FROM census_form");
-        if ($columnsStmt) {
-            $existingColumns = $columnsStmt->fetchAll(PDO::FETCH_COLUMN);
-        }
+        $existingColumns = array_column(db_table_columns($pdo, 'census_form'), 'Field');
         foreach (['is_archived', 'archived', 'archive_status', 'status', 'record_status', 'state'] as $candidate) {
             if (in_array($candidate, $existingColumns, true)) {
                 $archiveColumns[] = $candidate;
@@ -273,4 +261,3 @@ try {
     ]);
 }
 ?>
-

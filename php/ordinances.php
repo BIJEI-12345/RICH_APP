@@ -5,7 +5,7 @@
  * - GET  php/ordinances.php?image_id=N  — serve bytes from `ordinance`.`image` (BLOB/path/URL in column)
  * - GET  php/ordinances.php             — JSON { success, ordinances: [{ id, caption, image_url }] }
  *
- * Table: `ordinance` or `ordinances`. Column `image` (required) — VARCHAR path or LONGBLOB.
+ * Table: `ordinance` or `ordinances`. Column `image` (required) — VARCHAR path or binary data.
  */
 if (!ob_get_level()) {
     ob_start();
@@ -17,21 +17,7 @@ ini_set('display_errors', '0');
  */
 function ordinance_table_columns(PDO $pdo, string $table): array
 {
-    $safe = preg_replace('/[^a-zA-Z0-9_]/', '', $table);
-    if ($safe === '') {
-        return [];
-    }
-    $stmt = $pdo->query('SHOW COLUMNS FROM `' . $safe . '`');
-    if (!$stmt) {
-        return [];
-    }
-    $out = [];
-    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-        if (!empty($row['Field'])) {
-            $out[] = $row['Field'];
-        }
-    }
-    return $out;
+    return array_column(db_table_columns($pdo, $table), 'Field');
 }
 
 /** @return array{type: string, field: string} field = 'image' or 'img' */
@@ -39,35 +25,39 @@ function ordinance_resolve_image_field(PDO $pdo, string $table): ?array
 {
     $cols = ordinance_table_columns($pdo, $table);
     if (in_array('image', $cols, true)) {
-        $stmt = $pdo->query("SHOW COLUMNS FROM `" . preg_replace('/[^a-zA-Z0-9_]/', '', $table) . "` LIKE 'image'");
-        $row = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
-        $type = $row ? strtolower((string) ($row['Type'] ?? '')) : '';
+        $columns = db_table_columns($pdo, $table);
+        $imageColumn = current(array_filter($columns, static function ($column) {
+            return ($column['Field'] ?? '') === 'image';
+        }));
+        $type = strtolower((string) ($imageColumn['Type'] ?? ''));
         return ['type' => $type, 'field' => 'image'];
     }
     if (in_array('img', $cols, true)) {
-        $stmt = $pdo->query("SHOW COLUMNS FROM `" . preg_replace('/[^a-zA-Z0-9_]/', '', $table) . "` LIKE 'img'");
-        $row = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
-        $type = $row ? strtolower((string) ($row['Type'] ?? '')) : '';
+        $columns = db_table_columns($pdo, $table);
+        $imageColumn = current(array_filter($columns, static function ($column) {
+            return ($column['Field'] ?? '') === 'img';
+        }));
+        $type = strtolower((string) ($imageColumn['Type'] ?? ''));
         return ['type' => $type, 'field' => 'img'];
     }
     return null;
 }
 
-function ordinance_column_is_blob(string $mysqlType): bool
+function ordinance_column_is_blob(string $databaseType): bool
 {
-    $t = strtolower($mysqlType);
+    $t = strtolower($databaseType);
     if (preg_match('/\b(tiny|medium|long)?blob\b/', $t)) {
         return true;
     }
     // Raw byte columns (same streaming/list behavior as BLOB)
-    if (strpos($t, 'varbinary') !== false) {
+    if (strpos($t, 'varbinary') !== false || $t === 'bytea') {
         return true;
     }
     return false;
 }
 
 /**
- * PDO/MySQL may return BLOB as string, stream resource, or (rare) other — normalize to raw bytes string.
+ * PDO may return binary data as a string, stream resource, or (rare) other — normalize to raw bytes string.
  *
  * @param mixed $v
  * @return string|null null if empty / unsupported
@@ -150,8 +140,7 @@ if (isset($_GET['image_id'])) {
 
     $table = null;
     foreach (['ordinance', 'ordinances'] as $candidate) {
-        $check = $pdo->query('SHOW TABLES LIKE ' . $pdo->quote($candidate));
-        if ($check && $check->rowCount() > 0) {
+        if (db_table_exists($pdo, $candidate)) {
             $table = $candidate;
             break;
         }
@@ -182,7 +171,7 @@ if (isset($_GET['image_id'])) {
     }
 
     $imgField = $imgMeta['field'];
-    $stmt = $pdo->prepare("SELECT `{$imgField}` FROM `{$table}` WHERE `{$idCol}` = ? LIMIT 1");
+    $stmt = $pdo->prepare("SELECT \"{$imgField}\" FROM \"{$table}\" WHERE \"{$idCol}\" = ? LIMIT 1");
     $stmt->execute([$imageId]);
     $imageData = ordinance_normalize_image_column_value($stmt->fetchColumn(0));
 
@@ -210,7 +199,7 @@ if (isset($_GET['image_id'])) {
     exit;
 }
 
-// ---------- JSON list (never embed binary from `image` BLOB) ----------
+// ---------- JSON list (never embed binary from `image`) ----------
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET');
@@ -238,8 +227,7 @@ if (!$pdo) {
 try {
     $table = null;
     foreach (['ordinance', 'ordinances'] as $candidate) {
-        $check = $pdo->query('SHOW TABLES LIKE ' . $pdo->quote($candidate));
-        if ($check && $check->rowCount() > 0) {
+        if (db_table_exists($pdo, $candidate)) {
             $table = $candidate;
             break;
         }
@@ -261,17 +249,17 @@ try {
 
     $select = [];
     if (in_array('id', $cols, true)) {
-        $select[] = '`id`';
+        $select[] = '"id"';
     } elseif (in_array('ordinance_id', $cols, true)) {
-        $select[] = '`ordinance_id` AS `id`';
+        $select[] = '"ordinance_id" AS "id"';
     }
     if ($isBlob) {
-        $select[] = 'COALESCE(LENGTH(`' . $imgField . '`), 0) AS `_img_len`';
+        $select[] = 'COALESCE(LENGTH("' . $imgField . '"), 0) AS "_img_len"';
     } else {
-        $select[] = '`' . $imgField . '` AS `image`';
+        $select[] = '"' . $imgField . '" AS "image"';
     }
     if (in_array('caption', $cols, true)) {
-        $select[] = '`caption`';
+        $select[] = '"caption"';
     }
 
     if ($select === []) {
@@ -279,18 +267,18 @@ try {
         exit;
     }
 
-    $sql = 'SELECT ' . implode(', ', $select) . ' FROM `' . $table . '`';
+    $sql = 'SELECT ' . implode(', ', $select) . ' FROM "' . $table . '"';
     if (in_array('is_active', $cols, true)) {
-        $sql .= ' WHERE `is_active` = 1';
+        $sql .= " WHERE is_active::text IN ('1', 'true', 't')";
     }
     $orderParts = [];
     if (in_array('sort_order', $cols, true)) {
-        $orderParts[] = '`sort_order` ASC';
+        $orderParts[] = '"sort_order" ASC';
     }
     if (in_array('id', $cols, true)) {
-        $orderParts[] = '`id` ASC';
+        $orderParts[] = '"id" ASC';
     } elseif (in_array('ordinance_id', $cols, true)) {
-        $orderParts[] = '`ordinance_id` ASC';
+        $orderParts[] = '"ordinance_id" ASC';
     }
     if (!empty($orderParts)) {
         $sql .= ' ORDER BY ' . implode(', ', $orderParts);

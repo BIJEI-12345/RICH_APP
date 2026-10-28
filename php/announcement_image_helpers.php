@@ -1,6 +1,6 @@
 <?php
 /**
- * Helpers for announcements.image column: LONGBLOB, project-relative path,
+ * Helpers for announcements.image column: binary data, project-relative path,
  * full URL, data URLs, base64 text, or binary with UTF-8 BOM / leading whitespace.
  */
 

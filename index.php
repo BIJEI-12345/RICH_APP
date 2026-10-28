@@ -157,7 +157,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $envExists = file_exists($envPath);
             
             if (!$envExists) {
-                return ['success' => false, 'message' => 'Database configuration missing. Please create a .env file in the project root with DB_HOST, DB_USER, DB_PASS, and DB_NAME.'];
+                return ['success' => false, 'message' => 'Database configuration missing. Please set DB_HOST_AWS, DB_PORT_AWS, DB_USER_AWS, DB_PASS_AWS, and DB_NAME_AWS in the project root .env file.'];
             }
             
             // Check which variables are missing
@@ -184,17 +184,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             // Try to get more specific error from logs or provide general guidance
             $errorMsg = 'Database connection failed. ';
-            $errorMsg .= 'Please check: 1) MySQL is running in XAMPP, 2) Database exists, 3) Credentials in .env file are correct.';
+            $errorMsg .= 'Please check: 1) PostgreSQL is reachable, 2) Database exists, 3) Credentials in .env file are correct.';
             $errorMsg .= ' Check PHP error logs for details.';
             return ['success' => false, 'message' => $errorMsg];
         }
         
         try {
             if ($loginType === 'email') {
-                $stmt = $pdo->prepare("SELECT email, email_verified FROM resident_information WHERE email = ? AND email_verified = '1'");
+                $stmt = $pdo->prepare("SELECT email, email_verified FROM resident_information WHERE email = ? AND email_verified::text IN ('1', 'true', 't')");
                 $stmt->execute([$credentials]);
             } else {
-                $stmt = $pdo->prepare("SELECT email, email_verified FROM resident_information WHERE mobile = ? AND email_verified = '1'");
+                $stmt = $pdo->prepare("SELECT email, email_verified FROM resident_information WHERE mobile = ? AND email_verified::text IN ('1', 'true', 't')");
                 $stmt->execute([$credentials]);
             }
             

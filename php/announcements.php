@@ -71,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 function getAnnouncementDBConnection() {
     $pdo = getDBConnection();
     if ($pdo) {
-        // Ensure binary data (LONGBLOB) is returned correctly - don't stringify
+        // Ensure binary data is returned correctly - don't stringify
         $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
         $pdo->setAttribute(PDO::ATTR_STRINGIFY_FETCHES, false);
     }
@@ -159,7 +159,7 @@ function serveAnnouncementImage($imageId) {
     try {
         // CRITICAL: Fetch ONLY from the 'image' column in the announcements table
         // First verify the announcement exists and log its title for debugging
-        $verifyStmt = $pdo->prepare("SELECT `id`, `title` FROM `announcements` WHERE `id` = ?");
+        $verifyStmt = $pdo->prepare("SELECT id, title FROM announcements WHERE id = ?");
         $verifyStmt->execute([$imageId]);
         $announcementInfo = $verifyStmt->fetch(PDO::FETCH_ASSOC);
         
@@ -171,7 +171,7 @@ function serveAnnouncementImage($imageId) {
         error_log("Fetching image for Announcement ID: {$imageId}, Title: '{$announcementInfo['title']}'");
         
         // First check if image column has data (not NULL and not empty)
-        $checkStmt = $pdo->prepare("SELECT LENGTH(`image`) as img_length FROM `announcements` WHERE `id` = ?");
+        $checkStmt = $pdo->prepare("SELECT LENGTH(image) AS img_length FROM announcements WHERE id = ?");
         $checkStmt->execute([$imageId]);
         $imgLength = $checkStmt->fetchColumn(0);
         
@@ -182,23 +182,23 @@ function serveAnnouncementImage($imageId) {
         
         error_log("Image column has data: {$imgLength} bytes for ID {$imageId}");
         
-        // CRITICAL: Ensure PDO settings are correct for LONGBLOB
+        // Ensure PDO settings are correct for binary data
         $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
         $pdo->setAttribute(PDO::ATTR_STRINGIFY_FETCHES, false);
         
-        // IMPORTANT: Use fetchColumn first (more reliable for LONGBLOB)
+        // Use fetchColumn first (more reliable for binary data)
         // Create a fresh prepared statement to avoid any caching issues
-        $stmt = $pdo->prepare("SELECT `image` FROM `announcements` WHERE `id` = ?");
+        $stmt = $pdo->prepare("SELECT image FROM announcements WHERE id = ?");
         $stmt->execute([$imageId]);
         
-        // Try fetchColumn first (most reliable for LONGBLOB)
+        // Try fetchColumn first (most reliable for binary data)
         $imageData = $stmt->fetchColumn(0);
         
         // If fetchColumn returns false/null, try bindColumn as fallback
         if ($imageData === false || $imageData === null) {
             error_log("fetchColumn returned false/null for ID {$imageId}, trying bindColumn...");
             // Create a fresh statement
-            $stmt2 = $pdo->prepare("SELECT `image` FROM `announcements` WHERE `id` = ?");
+            $stmt2 = $pdo->prepare("SELECT image FROM announcements WHERE id = ?");
             $stmt2->execute([$imageId]);
             $stmt2->bindColumn(1, $imageData, PDO::PARAM_LOB);
             $result = $stmt2->fetch(PDO::FETCH_BOUND);
@@ -254,7 +254,7 @@ function serveAnnouncementImage($imageId) {
         
         require_once __DIR__ . '/announcement_image_helpers.php';
 
-        // LONGBLOB, file path, URL, data URL, base64 text, or binary with BOM/leading whitespace
+        // Binary data, file path, URL, data URL, base64 text, or binary with BOM/leading whitespace
         if (!announcement_try_output_image_from_column_value($imageData, $imageId, $announcementInfo)) {
             serveDefaultImage();
         }
@@ -279,15 +279,15 @@ function fetchAnnouncements() {
         // We'll always use the API endpoint and let it handle checking for image existence
         $stmt = $pdo->prepare("
             SELECT 
-                `id`, 
-                `title`, 
-                `created_at`, 
-                `date_and_time`,
-                `description`,
-                COALESCE(CRC32(`image`), 0) AS `_img_crc`,
-                COALESCE(LENGTH(`image`), 0) AS `_img_len`
-            FROM `announcements` 
-            ORDER BY `created_at` DESC
+                id,
+                title,
+                created_at,
+                date_and_time,
+                description,
+                COALESCE(md5(image::text), '') AS _img_hash,
+                COALESCE(LENGTH(image), 0) AS _img_len
+            FROM announcements
+            ORDER BY created_at DESC
         ");
         $stmt->execute();
         
@@ -345,11 +345,11 @@ function fetchAnnouncements() {
             // Store formatted_date for backward compatibility (use created_at date)
             $announcement['formatted_date'] = $announcement['formatted_created_date'];
             
-            // Image URL: CRC32 + length + id (content fingerprint) + per-response token (beats stubborn browser/CDN caches)
-            $imgCrc = (int)($announcement['_img_crc'] ?? 0);
+            // Image URL: content hash + length + id + per-response token for cache busting
+            $imgHash = (string)($announcement['_img_hash'] ?? '');
             $imgLen = (int)($announcement['_img_len'] ?? 0);
-            unset($announcement['_img_crc'], $announcement['_img_len']);
-            $cacheBuster = $imgCrc . '_' . $imgLen . '_' . $announcement['id'] . '_' . $listCacheBust;
+            unset($announcement['_img_hash'], $announcement['_img_len']);
+            $cacheBuster = $imgHash . '_' . $imgLen . '_' . $announcement['id'] . '_' . $listCacheBust;
             $announcement['image'] = 'php/announcements.php?image_id=' . $announcement['id'] . '&t=' . $cacheBuster;
             error_log("Announcement ID {$announcement['id']} (Title: {$announcement['title']}): image URL cache buster: {$cacheBuster}");
         }

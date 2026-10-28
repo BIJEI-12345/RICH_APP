@@ -67,7 +67,7 @@ function verifyForgotMpinOTP($email, $otp) {
         }
         
         // Check if email exists and is verified
-        $stmt = $pdo->prepare("SELECT id FROM resident_information WHERE email = ? AND email_verified = 1");
+        $stmt = $pdo->prepare("SELECT id FROM resident_information WHERE email = ? AND email_verified::text IN ('1', 'true', 't')");
         $stmt->execute([$email]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
         
@@ -102,4 +102,3 @@ if ($result['success']) {
     echo json_encode($result);
 }
 ?>
-

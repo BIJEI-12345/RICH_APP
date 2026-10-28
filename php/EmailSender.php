@@ -102,13 +102,6 @@ class EmailSender {
             $subject = 'RICH Bigte - Email Verification Code';
             $message = $this->getOTPEmailTemplate($otpCode, $fullName);
             
-            // Always log the OTP for testing
-            error_log("=== OTP CODE FOR TESTING ===");
-            error_log("Email: " . $toEmail);
-            error_log("OTP Code: " . $otpCode);
-            error_log("Full Name: " . $fullName);
-            error_log("=============================");
-            
             // Try to send actual email using Gmail SMTP
             $result = $this->sendGmailSMTP($toEmail, $subject, $message);
             
@@ -116,21 +109,16 @@ class EmailSender {
                 error_log("✓ Email sent successfully via SMTP to: " . $toEmail);
                 return [
                     'success' => true,
-                    'message' => 'Verification email sent successfully to your email',
-                    'otp_code' => $otpCode // Include OTP for testing
+                    'message' => 'Verification email sent successfully to your email'
                 ];
             } else {
-                // Log detailed error but still provide OTP for testing
                 error_log("✗ PHPMailer failed!");
                 error_log("  - SMTP Error: " . $result['message']);
-                error_log("  - OTP Code: " . $otpCode . " (for manual testing)");
                 
-                // Return failure but include OTP for development/testing
                 return [
                     'success' => false,
                     'message' => 'Failed to send email. Please check server logs for OTP code or contact support.',
-                    'error' => 'Email delivery failed: ' . $result['message'],
-                    'otp_code' => $otpCode // Still include OTP for testing/debugging
+                    'error' => 'Email delivery failed: ' . $result['message']
                 ];
             }
             
@@ -140,8 +128,7 @@ class EmailSender {
             return [
                 'success' => false,
                 'message' => 'Email sending error occurred. Please check server logs for OTP code.',
-                'error' => $e->getMessage(),
-                'otp_code' => $otpCode // Still include OTP for testing/debugging
+                'error' => $e->getMessage()
             ];
         }
     }
@@ -246,20 +233,20 @@ class EmailSender {
             };
 
             $mail->isSMTP();
+            $mail->SMTPDebug = 0;
             $mail->Host = $this->smtpHost;
             $mail->SMTPAuth = true;
             $mail->Username = $this->smtpUsername;
             $mail->Password = $this->smtpPassword;
             $mail->CharSet = 'UTF-8';
             $mail->Timeout = 20;
-            $mail->SMTPTimeout = 20;
 
             if ($useImplicitSsl) {
                 $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS; // same as 'ssl'
                 $mail->Port = 465;
             } else {
                 $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS; // same as 'tls'
-                $mail->Port = (int) ($this->smtpPort ?: 587);
+                $mail->Port = 587;
             }
 
             $mail->SMTPOptions = [
@@ -291,7 +278,7 @@ class EmailSender {
             $errorMessage = $e->getMessage();
             error_log('✗ PHPMailer SMTP Error Details:');
             error_log('  - Error: ' . $errorMessage);
-            error_log('  - Mode: ' . ($useImplicitSsl ? 'SMTPS:465' : 'STARTTLS:' . (int) ($this->smtpPort ?: 587)));
+            error_log('  - Mode: ' . ($useImplicitSsl ? 'SMTPS:465' : 'STARTTLS:587'));
             error_log('  - SMTP Host: ' . $this->smtpHost);
             error_log('  - From Email: ' . $this->fromEmail);
             error_log('  - To Email: ' . $toEmail);

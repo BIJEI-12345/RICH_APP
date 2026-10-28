@@ -91,7 +91,7 @@ function resendOTPCode($email) {
                 verification_code, 
                 expires_at, 
                 created_at
-            ) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 3 MINUTE), NOW())
+            ) VALUES (?, ?, NOW() + INTERVAL '3 minutes', NOW())
         ");
         
         $stmt->execute([$email, $verificationCode]);
@@ -105,20 +105,18 @@ function resendOTPCode($email) {
         $emailResult = $emailSender->sendOTPEmail($email, $verificationCode, $fullName);
         
         if (!$emailResult['success']) {
-            return ['success' => false, 'message' => 'Failed to send verification email. Please try again.'];
+            error_log("Resent OTP saved but email delivery failed for {$email}: " . ($emailResult['error'] ?? $emailResult['message'] ?? 'Unknown error'));
+            return [
+                'success' => true,
+                'message' => 'Verification code saved, but email delivery failed.',
+                'email_sent' => false
+            ];
         }
-        
-        // Log the code for testing purposes
-        error_log("=== RESEND OTP CODE FOR TESTING ===");
-        error_log("Email: " . $email);
-        error_log("OTP Code: " . $verificationCode);
-        error_log("Full Name: " . $fullName);
-        error_log("====================================");
         
         return [
             'success' => true,
             'message' => 'New verification code sent to your email',
-            'verification_code' => $verificationCode // For testing purposes
+            'email_sent' => true
         ];
         
     } catch (PDOException $e) {

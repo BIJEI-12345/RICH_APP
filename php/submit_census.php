@@ -204,8 +204,8 @@ require_once __DIR__ . '/env_loader.php';
 try {
     $pdo = getDBConnection();
     if ($pdo) {
-        // Set MySQL timezone to Philippine time (UTC+8)
-        $pdo->exec("SET time_zone = '+08:00'");
+        // Use Philippine time for the connection.
+        $pdo->exec("SET TIME ZONE 'Asia/Manila'");
     }
     
     if (!$pdo) {
@@ -228,8 +228,7 @@ try {
     // Check if census_form table exists
     $tableExists = false;
     try {
-        $checkTable = $pdo->query("SHOW TABLES LIKE 'census_form'");
-        $tableExists = $checkTable->rowCount() > 0;
+        $tableExists = db_table_exists($pdo, 'census_form');
     } catch (PDOException $e) {
         $tableExists = false;
     }
@@ -245,7 +244,7 @@ try {
 
     $hasDisabilitiesColumn = false;
     try {
-        $dc = $pdo->query("SHOW COLUMNS FROM census_form LIKE 'disabilities'");
+        $dc = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'census_form' AND column_name = 'disabilities'");
         $hasDisabilitiesColumn = $dc && $dc->rowCount() > 0;
     } catch (PDOException $e) {
         $hasDisabilitiesColumn = false;
@@ -253,7 +252,7 @@ try {
 
     $hasStatusColumn = false;
     try {
-        $sc = $pdo->query("SHOW COLUMNS FROM census_form LIKE 'status'");
+        $sc = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'census_form' AND column_name = 'status'");
         $hasStatusColumn = $sc && $sc->rowCount() > 0;
     } catch (PDOException $e) {
         $hasStatusColumn = false;
@@ -261,7 +260,7 @@ try {
 
     $hasIndigenousColumn = false;
     try {
-        $ic = $pdo->query("SHOW COLUMNS FROM census_form LIKE 'indigenous'");
+        $ic = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'census_form' AND column_name = 'indigenous'");
         $hasIndigenousColumn = $ic && $ic->rowCount() > 0;
     } catch (PDOException $e) {
         $hasIndigenousColumn = false;
@@ -644,4 +643,3 @@ try {
     ]);
 }
 ?>
-

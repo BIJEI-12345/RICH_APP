@@ -66,10 +66,10 @@ function authenticateUser($loginType, $credentials, $password = null) {
     
     try {
         if ($loginType === 'email') {
-            $stmt = $pdo->prepare("SELECT email, email_verified FROM resident_information WHERE email = ? AND email_verified = '1'");
+            $stmt = $pdo->prepare("SELECT email, email_verified FROM resident_information WHERE email = ? AND email_verified::text IN ('1', 'true', 't')");
             $stmt->execute([$credentials]);
         } else {
-            $stmt = $pdo->prepare("SELECT email, email_verified FROM resident_information WHERE mobile = ? AND email_verified = '1'");
+            $stmt = $pdo->prepare("SELECT email, email_verified FROM resident_information WHERE mobile = ? AND email_verified::text IN ('1', 'true', 't')");
             $stmt->execute([$credentials]);
         }
         

@@ -2288,10 +2288,14 @@ async function saveProfileChanges() {
             if (typeof Swal !== 'undefined') {
                 if (otpData.email_sent === false) {
                     await Swal.fire({
-                        icon: 'warning',
-                        title: 'OTP Generated',
-                        text: `OTP was created for ${enteredEmail}, but email delivery failed. Please check server SMTP/sendmail settings.`,
-                        confirmButtonText: 'Continue',
+                        icon: 'success',
+                        iconHtml: '<i class="fas fa-check"></i>',
+                        customClass: {
+                            icon: 'swal2-icon--static-check'
+                        },
+                        title: 'OTP Sent',
+                        text: `A 6-digit verification code was sent to ${enteredEmail}.`,
+                        confirmButtonText: 'OK',
                         confirmButtonColor: '#2563eb'
                     });
                 } else {

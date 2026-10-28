@@ -14,42 +14,30 @@ ini_set('display_errors', '0');
 
 function pb_table_columns(PDO $pdo, string $table): array
 {
-    $safe = preg_replace('/[^a-zA-Z0-9_]/', '', $table);
-    if ($safe === '') {
-        return [];
-    }
-    $stmt = $pdo->query('SHOW COLUMNS FROM `' . $safe . '`');
-    if (!$stmt) {
-        return [];
-    }
-    $out = [];
-    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-        if (!empty($row['Field'])) {
-            $out[] = $row['Field'];
-        }
-    }
-    return $out;
+    return array_column(db_table_columns($pdo, $table), 'Field');
 }
 
 function pb_resolve_image_field(PDO $pdo, string $table): ?array
 {
     $cols = pb_table_columns($pdo, $table);
     if (in_array('image', $cols, true)) {
-        $stmt = $pdo->query("SHOW COLUMNS FROM `" . preg_replace('/[^a-zA-Z0-9_]/', '', $table) . "` LIKE 'image'");
-        $row = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
-        $type = $row ? strtolower((string) ($row['Type'] ?? '')) : '';
+        $columns = db_table_columns($pdo, $table);
+        $imageColumn = current(array_filter($columns, static function ($column) {
+            return ($column['Field'] ?? '') === 'image';
+        }));
+        $type = strtolower((string) ($imageColumn['Type'] ?? ''));
         return ['type' => $type, 'field' => 'image'];
     }
     return null;
 }
 
-function pb_column_is_blob(string $mysqlType): bool
+function pb_column_is_blob(string $columnType): bool
 {
-    $t = strtolower($mysqlType);
+    $t = strtolower($columnType);
     if (preg_match('/\b(tiny|medium|long)?blob\b/', $t)) {
         return true;
     }
-    if (strpos($t, 'varbinary') !== false) {
+    if (strpos($t, 'varbinary') !== false || $t === 'bytea') {
         return true;
     }
     return false;
@@ -135,11 +123,11 @@ function pb_resident_name_from_profile(PDO $pdo, string $email): ?string
     return null;
 }
 
-/** Safe backticked identifier for comment_policy columns (`comment` is reserved in MySQL). */
+/** Safe quoted identifier for comment_policy columns. */
 function pb_cp_ident(string $field): string
 {
     $safe = preg_replace('/[^a-zA-Z0-9_]/', '', $field);
-    return $safe === '' ? '``' : '`' . $safe . '`';
+    return $safe === '' ? '""' : '"' . $safe . '"';
 }
 
 /** True if this resident already has any row for this policy (one submission per slide). */
@@ -157,7 +145,7 @@ function pb_feedback_row_exists(PDO $pdo, array $cpCols, int $policyId, string $
     if (!$hasName || $nameFromProfile === null || $nameFromProfile === '') {
         return false;
     }
-    $st = $pdo->prepare('SELECT 1 FROM comment_policy WHERE policy_id = ? AND TRIM(`name`) = ? LIMIT 1');
+    $st = $pdo->prepare('SELECT 1 FROM comment_policy WHERE policy_id = ? AND TRIM("name") = ? LIMIT 1');
     $st->execute([$policyId, $nameFromProfile]);
 
     return (bool) $st->fetchColumn();
@@ -170,13 +158,13 @@ function pb_merge_my_feedback(PDO $pdo, array $cpCols, string $email, int $polic
 {
     $hasResidentEmail = in_array('resident_email', $cpCols, true);
     $hasName = in_array('name', $cpCols, true);
-    $nameSel = $hasName ? 'c.`name`' : 'NULL AS `name`';
+    $nameSel = $hasName ? 'c."name"' : 'NULL AS "name"';
     if ($hasResidentEmail) {
         $st = $pdo->prepare(
-            "SELECT c.rating, c.`comment`, $nameSel, c.created_at
+            'SELECT c.rating, c."comment", ' . $nameSel . ', c.created_at
              FROM comment_policy c
              WHERE c.policy_id = ? AND c.resident_email = ?
-             ORDER BY c.id ASC"
+             ORDER BY c.id ASC'
         );
         $st->execute([$policyId, $email]);
     } else {
@@ -185,10 +173,10 @@ function pb_merge_my_feedback(PDO $pdo, array $cpCols, string $email, int $polic
             return null;
         }
         $st = $pdo->prepare(
-            "SELECT c.rating, c.`comment`, $nameSel, c.created_at
+            'SELECT c.rating, c."comment", ' . $nameSel . ', c.created_at
              FROM comment_policy c
-             WHERE c.policy_id = ? AND TRIM(c.`name`) = ?
-             ORDER BY c.id ASC"
+             WHERE c.policy_id = ? AND TRIM(c."name") = ?
+             ORDER BY c.id ASC'
         );
         $st->execute([$policyId, $nameFromProfile]);
     }
@@ -265,8 +253,7 @@ if (isset($_GET['image_id'])) {
     $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
     $pdo->setAttribute(PDO::ATTR_STRINGIFY_FETCHES, false);
 
-    $chk = $pdo->query("SHOW TABLES LIKE 'policy_board'");
-    if (!$chk || $chk->rowCount() < 1) {
+    if (!db_table_exists($pdo, 'policy_board')) {
         http_response_code(404);
         header('Content-Type: text/plain; charset=utf-8');
         echo 'Not found';
@@ -292,11 +279,11 @@ if (isset($_GET['image_id'])) {
         echo 'Not found';
         exit;
     }
-    $where = '`' . $idColImg . '` = ?';
+    $where = '"' . $idColImg . '" = ?';
     if (in_array('is_active', $pbCols, true)) {
-        $where .= ' AND `is_active` = 1';
+        $where .= " AND is_active::text IN ('1', 'true', 't')";
     }
-    $stmt = $pdo->prepare("SELECT `{$imgField}` FROM `policy_board` WHERE {$where} LIMIT 1");
+    $stmt = $pdo->prepare("SELECT \"{$imgField}\" FROM policy_board WHERE {$where} LIMIT 1");
     $stmt->execute([$imageId]);
     $imageData = pb_normalize_image_column_value($stmt->fetchColumn(0));
 
@@ -352,8 +339,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    $chk = $pdo->query("SHOW TABLES LIKE 'policy_board'");
-    if (!$chk || $chk->rowCount() < 1) {
+    if (!db_table_exists($pdo, 'policy_board')) {
         echo json_encode(['success' => false, 'message' => 'Policy board not configured']);
         exit;
     }
@@ -382,9 +368,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode(['success' => false, 'message' => 'Invalid policy_board table']);
             exit;
         }
-        $q = 'SELECT `' . $pkPost . '` FROM policy_board WHERE `' . $pkPost . '` = ?';
+        $q = 'SELECT "' . $pkPost . '" FROM policy_board WHERE "' . $pkPost . '" = ?';
         if (in_array('is_active', $pbColsPost, true)) {
-            $q .= ' AND is_active = 1';
+            $q .= " AND is_active::text IN ('1', 'true', 't')";
         }
         $q .= ' LIMIT 1';
         $st = $pdo->prepare($q);
@@ -395,13 +381,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        $cp = $pdo->query("SHOW TABLES LIKE 'comment_policy'");
-        if (!$cp || $cp->rowCount() < 1) {
-            echo json_encode(['success' => false, 'message' => 'Table comment_policy not found. Run sql/policy_board.sql']);
+        $usePolicyBoardFeedback = !db_table_exists($pdo, 'comment_policy');
+        $feedbackTable = $usePolicyBoardFeedback ? 'policy_board_feedback' : 'comment_policy';
+        if (!db_table_exists($pdo, $feedbackTable)) {
+            echo json_encode(['success' => false, 'message' => 'Feedback table is not configured']);
             exit;
         }
 
-        $cpCols = pb_table_columns($pdo, 'comment_policy');
+        $cpCols = pb_table_columns($pdo, $feedbackTable);
+        if ($usePolicyBoardFeedback) {
+            foreach (['policy_board_id', 'submitted_by', 'comment', 'rating'] as $requiredColumn) {
+                if (!in_array($requiredColumn, $cpCols, true)) {
+                    echo json_encode(['success' => false, 'message' => 'The policy_board_feedback table is missing a required column']);
+                    exit;
+                }
+            }
+        }
         $hasResidentEmail = in_array('resident_email', $cpCols, true);
         $hasCommentCol = in_array('comment', $cpCols, true);
         $hasRatingCol = in_array('rating', $cpCols, true);
@@ -418,7 +413,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode(['success' => false, 'message' => 'Kulang ang column sa comment_policy (kailangan: comment).']);
             exit;
         }
-        if (!$hasResidentEmail && !$hasNameCol) {
+        if (!$usePolicyBoardFeedback && !$hasResidentEmail && !$hasNameCol) {
             http_response_code(400);
             echo json_encode([
                 'success' => false,
@@ -450,37 +445,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        if (pb_feedback_row_exists($pdo, $cpCols, $pid, $email)) {
+        if ($usePolicyBoardFeedback) {
+            $existingStmt = $pdo->prepare(
+                'SELECT 1 FROM policy_board_feedback
+                 WHERE policy_board_id = ? AND LOWER(TRIM(submitted_by)) = LOWER(TRIM(?))
+                 LIMIT 1'
+            );
+            $existingStmt->execute([$pid, $email]);
+            $alreadySubmitted = (bool) $existingStmt->fetchColumn();
+        } else {
+            $alreadySubmitted = pb_feedback_row_exists($pdo, $cpCols, $pid, $email);
+        }
+        if ($alreadySubmitted) {
             http_response_code(409);
             echo json_encode(['success' => false, 'message' => 'Nakapagpadala ka na ng komento para sa disclosure na ito.']);
             exit;
         }
 
-        if ($hasResidentEmail) {
-            $fields = ['policy_id', 'resident_email', 'comment'];
-            $params = [$pid, $email, $text];
-            if ($hasRatingCol) {
-                $fields[] = 'rating';
-                $params[] = null;
-            }
-            if ($hasNameCol) {
-                $fields[] = 'name';
-                $params[] = $nameFromProfile;
-            }
+        if ($usePolicyBoardFeedback) {
+            $pdo->prepare(
+                'INSERT INTO policy_board_feedback (policy_board_id, comment, rating, submitted_by)
+                 VALUES (?, ?, 0, ?)'
+            )->execute([$pid, $text, $email]);
         } else {
-            $fields = ['policy_id', 'name', 'comment'];
-            $params = [$pid, $nameFromProfile, $text];
-            if ($hasRatingCol) {
-                $fields[] = 'rating';
-                $params[] = null;
+            if ($hasResidentEmail) {
+                $fields = ['policy_id', 'resident_email', 'comment'];
+                $params = [$pid, $email, $text];
+                if ($hasRatingCol) {
+                    $fields[] = 'rating';
+                    $params[] = null;
+                }
+                if ($hasNameCol) {
+                    $fields[] = 'name';
+                    $params[] = $nameFromProfile;
+                }
+            } else {
+                $fields = ['policy_id', 'name', 'comment'];
+                $params = [$pid, $nameFromProfile, $text];
+                if ($hasRatingCol) {
+                    $fields[] = 'rating';
+                    $params[] = null;
+                }
             }
+
+            $sql = 'INSERT INTO comment_policy (' . implode(', ', array_map('pb_cp_ident', $fields)) . ') VALUES (' .
+                implode(',', array_fill(0, count($params), '?')) . ')';
+            $pdo->prepare($sql)->execute($params);
         }
 
-        $sql = 'INSERT INTO comment_policy (' . implode(', ', array_map('pb_cp_ident', $fields)) . ') VALUES (' .
-            implode(',', array_fill(0, count($params), '?')) . ')';
-        $pdo->prepare($sql)->execute($params);
-
-        if ($hasResidentEmail) {
+        if ($usePolicyBoardFeedback) {
+            $aggStmt = $pdo->prepare(
+                'SELECT AVG(user_rating) AS av, COUNT(*) AS cnt FROM (
+                    SELECT submitted_by, MAX(rating) AS user_rating
+                    FROM policy_board_feedback
+                    WHERE policy_board_id = ? AND rating BETWEEN 1 AND 5
+                    GROUP BY submitted_by
+                ) feedback_by_resident'
+            );
+        } elseif ($hasResidentEmail) {
             $aggStmt = $pdo->prepare(
                 'SELECT AVG(t.user_rating) AS av, COUNT(*) AS cnt FROM (
                     SELECT resident_email, MAX(rating) AS user_rating
@@ -506,7 +528,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $cntOut = (int) ($aggRow['cnt'] ?? 0);
         }
 
-        $myFeedback = pb_merge_my_feedback($pdo, $cpCols, $email, $pid);
+        if ($usePolicyBoardFeedback) {
+            $feedbackStmt = $pdo->prepare(
+                'SELECT comment, created_at FROM policy_board_feedback
+                 WHERE policy_board_id = ? AND LOWER(TRIM(submitted_by)) = LOWER(TRIM(?))
+                 ORDER BY id ASC LIMIT 1'
+            );
+            $feedbackStmt->execute([$pid, $email]);
+            $feedback = $feedbackStmt->fetch(PDO::FETCH_ASSOC);
+            $myFeedback = $feedback ? [
+                'name' => $nameFromProfile,
+                'comment' => $feedback['comment'],
+                'rating' => null,
+                'created_at' => $feedback['created_at'],
+            ] : null;
+        } else {
+            $myFeedback = pb_merge_my_feedback($pdo, $cpCols, $email, $pid);
+        }
 
         $outPayload = [
             'success' => true,
@@ -553,8 +591,7 @@ if (!$pdo) {
 }
 
 try {
-    $chk = $pdo->query("SHOW TABLES LIKE 'policy_board'");
-    if (!$chk || $chk->rowCount() < 1) {
+    if (!db_table_exists($pdo, 'policy_board')) {
         echo json_encode(['success' => true, 'items' => []]);
         exit;
     }
@@ -580,28 +617,28 @@ try {
 
     $select = [];
     if ($idCol === 'id') {
-        $select[] = '`id`';
+        $select[] = '"id"';
     } else {
-        $select[] = '`policy_board_id` AS `id`';
+        $select[] = '"policy_board_id" AS "id"';
     }
     if ($isBlob) {
-        $select[] = 'COALESCE(LENGTH(`' . $imgField . '`), 0) AS `_img_len`';
+        $select[] = 'COALESCE(LENGTH("' . $imgField . '"), 0) AS "_img_len"';
     } else {
-        $select[] = '`' . $imgField . '` AS `image`';
+        $select[] = '"' . $imgField . '" AS "image"';
     }
     if (in_array('caption', $cols, true)) {
-        $select[] = '`caption`';
+        $select[] = '"caption"';
     }
 
-    $sql = 'SELECT ' . implode(', ', $select) . ' FROM `policy_board`';
+    $sql = 'SELECT ' . implode(', ', $select) . ' FROM policy_board';
     if (in_array('is_active', $cols, true)) {
-        $sql .= ' WHERE `is_active` = 1';
+        $sql .= " WHERE is_active::text IN ('1', 'true', 't')";
     }
     $orderParts = [];
     if (in_array('sort_order', $cols, true)) {
-        $orderParts[] = '`sort_order` ASC';
+        $orderParts[] = '"sort_order" ASC';
     }
-    $orderParts[] = '`' . $idCol . '` ASC';
+    $orderParts[] = '"' . $idCol . '" ASC';
     $sql .= ' ORDER BY ' . implode(', ', $orderParts);
 
     $stmt = $pdo->query($sql);
@@ -629,8 +666,7 @@ try {
         $viewerSuggestedName = (string) (pb_resident_name_from_profile($pdo, $viewerEmail) ?? '');
     }
 
-    $cpTbl = $pdo->query("SHOW TABLES LIKE 'comment_policy'");
-    $hasCommentPolicy = $cpTbl && $cpTbl->rowCount() > 0;
+    $hasCommentPolicy = db_table_exists($pdo, 'comment_policy');
     $cpColsGet = [];
     if ($hasCommentPolicy) {
         $cpColsGet = pb_table_columns($pdo, 'comment_policy');
@@ -697,6 +733,55 @@ try {
             }
         } catch (Throwable $e) {
             error_log('policy_board.php comment_policy block: ' . $e->getMessage());
+        }
+    }
+
+    if (!empty($ids) && !$hasCommentPolicy && db_table_exists($pdo, 'policy_board_feedback')) {
+        try {
+            $place = implode(',', array_fill(0, count($ids), '?'));
+            $agg = $pdo->prepare(
+                "SELECT policy_board_id, AVG(user_rating) AS av, COUNT(*) AS cnt
+                 FROM (
+                    SELECT policy_board_id, LOWER(TRIM(submitted_by)) AS resident_email, MAX(rating) AS user_rating
+                    FROM policy_board_feedback
+                    WHERE policy_board_id IN ($place) AND rating BETWEEN 1 AND 5
+                    GROUP BY policy_board_id, LOWER(TRIM(submitted_by))
+                 ) feedback_by_resident
+                 GROUP BY policy_board_id"
+            );
+            $agg->execute($ids);
+            foreach ($agg->fetchAll(PDO::FETCH_ASSOC) as $a) {
+                $policyId = (int) $a['policy_board_id'];
+                $avgMap[$policyId] = round((float) $a['av'], 2);
+                $countMap[$policyId] = (int) $a['cnt'];
+            }
+
+            if ($viewerEmail !== '' && filter_var($viewerEmail, FILTER_VALIDATE_EMAIL)) {
+                $myFeedbackStmt = $pdo->prepare(
+                    'SELECT comment, rating, created_at FROM policy_board_feedback
+                     WHERE policy_board_id = ? AND LOWER(TRIM(submitted_by)) = LOWER(TRIM(?))
+                     ORDER BY id ASC LIMIT 1'
+                );
+                $viewerName = pb_resident_name_from_profile($pdo, $viewerEmail) ?? 'Resident';
+                foreach ($ids as $policyId) {
+                    $myFeedbackStmt->execute([$policyId, $viewerEmail]);
+                    $feedback = $myFeedbackStmt->fetch(PDO::FETCH_ASSOC);
+                    if ($feedback) {
+                        $myFeedbackByPid[(int) $policyId] = [
+                            'name' => $viewerName,
+                            'comment' => $feedback['comment'],
+                            'rating' => (int) $feedback['rating'] ?: null,
+                            'created_at' => $feedback['created_at'],
+                        ];
+                        $rating = (int) $feedback['rating'];
+                        if ($rating >= 1 && $rating <= 5) {
+                            $myMap[(int) $policyId] = $rating;
+                        }
+                    }
+                }
+            }
+        } catch (Throwable $e) {
+            error_log('policy_board.php policy_board_feedback block: ' . $e->getMessage());
         }
     }
 

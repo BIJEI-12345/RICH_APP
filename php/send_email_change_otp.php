@@ -74,15 +74,15 @@ try {
 
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS otp_verifications (
-            id INT AUTO_INCREMENT PRIMARY KEY,
+            id BIGSERIAL PRIMARY KEY,
             email VARCHAR(255) NOT NULL,
             verification_code VARCHAR(16) NOT NULL,
             expires_at TIMESTAMP NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_otp_email (email),
-            INDEX idx_otp_expires (expires_at)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
     ");
+    $pdo->exec('CREATE INDEX IF NOT EXISTS idx_otp_email ON otp_verifications (email)');
+    $pdo->exec('CREATE INDEX IF NOT EXISTS idx_otp_expires ON otp_verifications (expires_at)');
 
     $code = str_pad(random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
 
@@ -90,10 +90,10 @@ try {
     $stmt = $pdo->prepare('DELETE FROM otp_verifications WHERE email = ?');
     $stmt->execute([$newEmail]);
 
-    $stmt = $pdo->prepare('
+    $stmt = $pdo->prepare("
         INSERT INTO otp_verifications (email, verification_code, expires_at, created_at)
-        VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 3 MINUTE), NOW())
-    ');
+        VALUES (?, ?, NOW() + INTERVAL '3 minutes', NOW())
+    ");
     $stmt->execute([$newEmail, $code]);
 
     $fullName = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''));

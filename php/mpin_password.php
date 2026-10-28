@@ -69,13 +69,12 @@ function saveMPINPassword($email, $mpin) {
     
     try {
         // First, check if the table exists and create it if it doesn't
-        $tableCheck = $pdo->query("SHOW TABLES LIKE 'resident_information'");
-        if ($tableCheck->rowCount() == 0) {
+        if (!db_table_exists($pdo, 'resident_information')) {
             error_log("Table resident_information does not exist, creating it");
             
             $createTable = "
                 CREATE TABLE resident_information (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    id BIGSERIAL PRIMARY KEY,
                     first_name VARCHAR(100) NOT NULL,
                     last_name VARCHAR(100) NOT NULL,
                     email VARCHAR(255) UNIQUE NOT NULL,
@@ -84,10 +83,10 @@ function saveMPINPassword($email, $mpin) {
                     birthday DATE DEFAULT NULL,
                     civil_status VARCHAR(50) DEFAULT 'Not specified',
                     address TEXT DEFAULT 'Not specified',
-                    email_verified TINYINT(1) DEFAULT 0,
+                    email_verified BOOLEAN DEFAULT FALSE,
                     mpin_password VARCHAR(255) DEFAULT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             ";
             
@@ -96,7 +95,7 @@ function saveMPINPassword($email, $mpin) {
         } else {
             // Ensure mpin_password column is wide enough for password_hash
             try {
-                $pdo->exec("ALTER TABLE resident_information MODIFY mpin_password VARCHAR(255) NULL");
+                $pdo->exec("ALTER TABLE resident_information ALTER COLUMN mpin_password TYPE VARCHAR(255)");
             } catch (PDOException $e) {
                 // Ignore if ALTER fails (e.g., already correct); just log for debugging
                 error_log("ALTER TABLE resident_information mpin_password resize skipped/failed: " . $e->getMessage());
@@ -119,13 +118,13 @@ function saveMPINPassword($email, $mpin) {
                 first_name, last_name, email, age, sex, birthday, 
                 civil_status, address, email_verified, mpin_password, created_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
-            ON DUPLICATE KEY UPDATE 
-                mpin_password = VALUES(mpin_password),
+            ON CONFLICT (email) DO UPDATE SET
+                mpin_password = EXCLUDED.mpin_password,
                 updated_at = NOW()
         ");
         
         $result = $stmt->execute([
-            'User', 'User', $email, 21, 'Male', '2000-01-01', 'Single', 'Not specified', 1, $mpinHash
+            'User', 'User', $email, 21, 'Male', '2000-01-01', 'Single', 'Not specified', true, $mpinHash
         ]);
         
         if ($result) {

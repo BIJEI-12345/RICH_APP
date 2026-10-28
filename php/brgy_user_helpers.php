@@ -9,12 +9,7 @@ function is_email_brgy_user(PDO $pdo, $email) {
         return false;
     }
     try {
-        $t = $pdo->query("SHOW TABLES LIKE 'brgy_users'");
-        if (!$t || $t->rowCount() === 0) {
-            return false;
-        }
-        $c = $pdo->query("SHOW COLUMNS FROM brgy_users LIKE 'email'");
-        if (!$c || $c->rowCount() === 0) {
+        if (!db_table_exists($pdo, 'brgy_users') || !db_column_exists($pdo, 'brgy_users', 'email')) {
             return false;
         }
         $q = $pdo->prepare('SELECT 1 FROM brgy_users WHERE LOWER(TRIM(email)) = LOWER(?) LIMIT 1');
