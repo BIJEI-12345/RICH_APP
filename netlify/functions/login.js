@@ -1,4 +1,4 @@
-const { createClient } = require('@supabase/supabase-js');
+const { Pool } = require('pg');
 
 function json(statusCode, body, extraHeaders = {}) {
   return {
@@ -45,26 +45,27 @@ exports.handler = async (event) => {
     return json(400, { success: false, message: 'Invalid mobile number format' });
   }
 
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!supabaseUrl || !serviceRoleKey) {
+  const connectionString = process.env.DATABASE_URL;
+  const host = process.env.DB_HOST_AWS || process.env.DB_HOST;
+  const port = Number(process.env.DB_PORT_AWS || process.env.DB_PORT || 5432);
+  const user = process.env.DB_USER_AWS || process.env.DB_USER;
+  const password = process.env.DB_PASS_AWS || process.env.DB_PASS;
+  const database = process.env.DB_NAME_AWS || process.env.DB_NAME || 'postgres';
+
+  if (!connectionString && (!host || !user || password === undefined || !database)) {
     return json(500, { success: false, message: 'Server configuration error' });
   }
 
-  const supabase = createClient(supabaseUrl, serviceRoleKey, {
-    auth: { persistSession: false, autoRefreshToken: false }
-  });
+  const pool = connectionString
+    ? new Pool({ connectionString, ssl: { rejectUnauthorized: false } })
+    : new Pool({ host, port, user, password, database, ssl: { rejectUnauthorized: false } });
 
   try {
     const column = loginType === 'email' ? 'email' : 'mobile';
-    const { data: user, error } = await supabase
-      .from('resident_information')
-      .select('email,mobile,email_verified')
-      .eq(column, credentials)
-      .limit(1)
-      .maybeSingle();
+    const query = `SELECT email, mobile, email_verified FROM resident_information WHERE ${column} = $1 LIMIT 1`;
+    const result = await pool.query(query, [credentials]);
+    const user = result.rows[0];
 
-    if (error) throw error;
     if (!user || !isVerified(user.email_verified)) {
       return json(401, { success: false, message: 'User not found or account inactive' });
     }
@@ -75,7 +76,9 @@ exports.handler = async (event) => {
       user: { email: user.email, mobile: user.mobile || null }
     });
   } catch (error) {
-    console.error('Supabase login error:', error.message || error);
+    console.error('Login database error:', error.message || error);
     return json(500, { success: false, message: 'Database operation failed' });
+  } finally {
+    await pool.end();
   }
 };

@@ -1,5 +1,5 @@
 const bcrypt = require('bcryptjs');
-const { createClient } = require('@supabase/supabase-js');
+const { Pool } = require('pg');
 
 function json(statusCode, body) {
   return {
@@ -46,27 +46,30 @@ exports.handler = async (event) => {
     return json(400, { success: false, message: 'Invalid mobile number format' });
   }
 
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!supabaseUrl || !serviceRoleKey) {
+  const connectionString = process.env.DATABASE_URL;
+  const host = process.env.DB_HOST_AWS || process.env.DB_HOST;
+  const port = Number(process.env.DB_PORT_AWS || process.env.DB_PORT || 5432);
+  const dbUser = process.env.DB_USER_AWS || process.env.DB_USER;
+  const dbPassword = process.env.DB_PASS_AWS || process.env.DB_PASS;
+  const database = process.env.DB_NAME_AWS || process.env.DB_NAME || 'postgres';
+
+  if (!connectionString && (!host || !dbUser || dbPassword === undefined || !database)) {
     return json(500, { success: false, message: 'Server configuration error' });
   }
 
-  const supabase = createClient(supabaseUrl, serviceRoleKey, {
-    auth: { persistSession: false, autoRefreshToken: false }
-  });
+  const pool = connectionString
+    ? new Pool({ connectionString, ssl: { rejectUnauthorized: false } })
+    : new Pool({ host, port, user: dbUser, password: dbPassword, database, ssl: { rejectUnauthorized: false } });
 
   try {
     const column = email ? 'email' : 'mobile';
     const credentials = email || mobile;
-    const { data: user, error } = await supabase
-      .from('resident_information')
-      .select('id,email,mobile,mpin_password,email_verified')
-      .eq(column, credentials)
-      .limit(1)
-      .maybeSingle();
+    const result = await pool.query(
+      `SELECT id, email, mobile, mpin_password, email_verified FROM resident_information WHERE ${column} = $1 LIMIT 1`,
+      [credentials]
+    );
+    const user = result.rows[0];
 
-    if (error) throw error;
     if (!user || !isVerified(user.email_verified)) {
       return json(401, { success: false, message: 'User not found or email not verified' });
     }
@@ -88,12 +91,12 @@ exports.handler = async (event) => {
 
     if (legacyMatch) {
       const hash = await bcrypt.hash(mpin, 12);
-      const { error: updateError } = await supabase
-        .from('resident_information')
-        .update({ mpin_password: hash, updated_at: new Date().toISOString() })
-        .eq('id', user.id);
-
-      if (updateError) {
+      try {
+        await pool.query(
+          'UPDATE resident_information SET mpin_password = $1, updated_at = NOW() WHERE id = $2',
+          [hash, user.id]
+        );
+      } catch (updateError) {
         console.error('Legacy MPIN upgrade error:', updateError.message || updateError);
       }
     }
@@ -104,7 +107,9 @@ exports.handler = async (event) => {
       user: { email: user.email, mobile: user.mobile || null }
     });
   } catch (error) {
-    console.error('Supabase MPIN login error:', error.message || error);
+    console.error('MPIN login database error:', error.message || error);
     return json(500, { success: false, message: 'MPIN verification failed' });
+  } finally {
+    await pool.end();
   }
 };
