@@ -65,8 +65,8 @@ document.addEventListener('DOMContentLoaded', function() {
         loginBtn.classList.add('loading');
         loginBtn.textContent = 'Logging in...';
         
-        // Send login request to PHP backend
-        fetch('/.netlify/functions/login', {
+        // Send login request to the Netlify Supabase function
+        fetch('/.netlify/functions/login?v=20261028b', {
             method: 'POST',
             credentials: 'same-origin',
             headers: {
