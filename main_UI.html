@@ -9,9 +9,9 @@
     <link rel="stylesheet" href="styles/full_disclosure.css?v=20260418200000">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <!-- Immediate redirect check - redirect to index.php if no session -->
+    <!-- Immediate redirect check - redirect to index.html if no session -->
     <script>
-        // Check immediately if user has session, redirect to index.php if not
+        // Check immediately if user has session, redirect to index.html if not
         // This prevents showing content before redirect
         (function() {
             const userEmail = sessionStorage.getItem('user_email') || localStorage.getItem('user_email');
@@ -21,9 +21,9 @@
                                 window.location.hostname === '127.0.0.1' || 
                                 window.location.hostname === '';
             
-            // If no session and not in testing/localhost mode, redirect to index.php
+            // If no session and not in testing/localhost mode, redirect to index.html
             if (!userEmail && !testingMode && !isLocalhost) {
-                window.location.href = 'index.php';
+                window.location.href = 'index.html';
             }
         })();
     </script>

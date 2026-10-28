@@ -1598,12 +1598,12 @@ document.addEventListener('DOMContentLoaded', function() {
         if (window.history.length > 1) {
             window.history.back();
         } else {
-            window.location.href = 'index.php';
+            window.location.href = 'index.html';
         }
     };
 
     window.goToLogin = function() {
-        window.location.href = 'index.php';
+        window.location.href = 'index.html';
     };
 
     // Terms and Conditions links

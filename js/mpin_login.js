@@ -7,8 +7,8 @@ window.goBack = function() {
     sessionStorage.removeItem('loginMobile');
     sessionStorage.removeItem('user_email');
     sessionStorage.removeItem('user');
-    // Redirect to login page (index.php)
-    window.location.href = 'index.php';
+    // Redirect to login page (index.html)
+    window.location.href = 'index.html';
 };
 
 // Initialize function that works whether DOM is loaded or not
@@ -26,7 +26,7 @@ function initializeMPINLogin() {
     // Check if user came from login page
     if (!loginEmail && !loginMobile) {
         // Redirect back to login if no credentials found
-        window.location.href = 'index.php';
+        window.location.href = 'index.html';
         return;
     }
     

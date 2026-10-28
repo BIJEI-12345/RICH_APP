@@ -66,8 +66,9 @@ document.addEventListener('DOMContentLoaded', function() {
         loginBtn.textContent = 'Logging in...';
         
         // Send login request to PHP backend
-        fetch('index.php', {
+        fetch('./php/login.php', {
             method: 'POST',
+            credentials: 'same-origin',
             headers: {
                 'Content-Type': 'application/json',
             },
