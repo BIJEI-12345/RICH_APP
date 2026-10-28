@@ -1,0 +1,10 @@
+{
+  "name": "rich-app",
+  "private": true,
+  "version": "1.0.0",
+  "description": "RICH resident information and concern handling web system",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.57.4",
+    "bcryptjs": "^3.0.2"
+  }
+}

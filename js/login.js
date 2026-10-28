@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', function() {
         loginBtn.textContent = 'Logging in...';
         
         // Send login request to PHP backend
-        fetch('./php/login.php', {
+        fetch('/.netlify/functions/login', {
             method: 'POST',
             credentials: 'same-origin',
             headers: {

@@ -413,15 +413,31 @@ function initializeMPINLogin() {
         }
         
         // Send verification request
-        fetch('php/mpin_login.php', {
+        fetch('/.netlify/functions/mpin-login', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(requestData)
         })
-        .then(response => response.json())
-        .then(data => {
+        .then(async response => {
+            const responseText = await response.text();
+            const contentType = response.headers.get('content-type') || '';
+
+            if (!contentType.includes('application/json')) {
+                throw new Error(`Server error (${response.status}). Please try again.`);
+            }
+
+            let data;
+            try {
+                data = JSON.parse(responseText);
+            } catch (error) {
+                throw new Error('Invalid server response. Please try again.');
+            }
+
+            return { status: response.status, data };
+        })
+        .then(({ status, data }) => {
             if (data.success) {
                 // Store user email for main UI
                 if (loginEmail) {
