@@ -160,13 +160,15 @@ try {
             }
         }
 
-        // First, check if census exists for this exact resident identity (not just any household row).
-        $selectColumns = 'id, first_name, last_name, birthday, complete_address';
+        // Census rows submitted by a household may be stored under the head's census_id.
+        // Match the logged-in resident by identity and address across the whole table,
+        // not only by the account's resident primary key.
+        $selectColumns = 'id, census_id, first_name, last_name, birthday, complete_address';
         if (!empty($archiveColumns)) {
             $selectColumns .= ', ' . implode(', ', $archiveColumns);
         }
-        $stmt = $pdo->prepare("SELECT $selectColumns FROM census_form WHERE census_id = ?");
-        $stmt->execute([$censusLinkId]);
+        $stmt = $pdo->prepare("SELECT $selectColumns FROM census_form");
+        $stmt->execute();
         $censusRows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         $isArchived = false;
