@@ -187,15 +187,21 @@ try {
             if ($expectedBirthday !== '') {
                 $birthdayOk = censusIdentityDate($census['birthday'] ?? '') === $expectedBirthday;
             }
-            if (!$birthdayOk) {
-                continue;
+            $recordAddress = trim((string) ($census['complete_address'] ?? ''));
+            $addressOk = false;
+            if ($userAddress !== '' && $recordAddress !== '') {
+                $addressOk = censusAddressesLikelyMatch($userAddress, $recordAddress);
             }
 
-            if ($userAddress !== '') {
-                $recordAddress = trim((string) ($census['complete_address'] ?? ''));
-                if ($recordAddress !== '' && !censusAddressesLikelyMatch($userAddress, $recordAddress)) {
-                    continue;
-                }
+            // Same name is sufficient when the row belongs to this account/household.
+            // Otherwise, require either the same birthday or the same address to avoid
+            // treating a different household resident as the logged-in user.
+            $isOwnOrHouseholdLink = trim((string) ($census['census_id'] ?? '')) === $censusLinkId;
+            $identityMatch = $isOwnOrHouseholdLink
+                || ($expectedBirthday !== '' && $birthdayOk)
+                || ($addressOk && $recordAddress !== '');
+            if (!$identityMatch) {
+                continue;
             }
 
             if (isArchivedCensusRow($census)) {

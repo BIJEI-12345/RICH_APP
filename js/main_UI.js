@@ -82,7 +82,7 @@ function syncCensusReopenButtonAfterModalClose() {
 function openCensusFromHeaderButton() {
     localStorage.removeItem('census_remind_later');
     clearCensusReminderTimer();
-    showCensusModal();
+    checkCensusStatus();
 }
 
 // Initialize the application
