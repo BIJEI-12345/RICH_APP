@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Check if email exists
     if (!loginEmail) {
         // Redirect back to login if no email found
-        window.location.href = 'index.html';
+        window.location.href = 'index.php';
         return;
     }
     

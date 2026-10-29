@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Check if email exists
     if (!email) {
         // Redirect back to login if no email found
-        window.location.href = 'index.html';
+        window.location.href = 'index.php';
         return;
     }
     
@@ -255,7 +255,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     allowOutsideClick: false,
                     allowEscapeKey: false
                 }).then(() => {
-                    window.location.href = 'index.html';
+                    window.location.href = 'index.php';
                 });
             } else {
                 showError(data.message || 'Failed to reset MPIN. Please try again.');

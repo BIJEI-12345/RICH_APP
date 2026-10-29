@@ -7,8 +7,8 @@ window.goBack = function() {
     sessionStorage.removeItem('loginMobile');
     sessionStorage.removeItem('user_email');
     sessionStorage.removeItem('user');
-    // Redirect to login page (index.html)
-    window.location.href = 'index.html';
+    // Redirect to login page (index.php)
+    window.location.href = 'index.php';
 };
 
 // Initialize function that works whether DOM is loaded or not
@@ -26,7 +26,7 @@ function initializeMPINLogin() {
     // Check if user came from login page
     if (!loginEmail && !loginMobile) {
         // Redirect back to login if no credentials found
-        window.location.href = 'index.html';
+        window.location.href = 'index.php';
         return;
     }
     
@@ -413,31 +413,15 @@ function initializeMPINLogin() {
         }
         
         // Send verification request
-        fetch('/.netlify/functions/mpin-login', {
+        fetch('php/mpin_login.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(requestData)
         })
-        .then(async response => {
-            const responseText = await response.text();
-            const contentType = response.headers.get('content-type') || '';
-
-            if (!contentType.includes('application/json')) {
-                throw new Error(`Server error (${response.status}). Please try again.`);
-            }
-
-            let data;
-            try {
-                data = JSON.parse(responseText);
-            } catch (error) {
-                throw new Error('Invalid server response. Please try again.');
-            }
-
-            return { status: response.status, data };
-        })
-        .then(({ status, data }) => {
+        .then(response => response.json())
+        .then(data => {
             if (data.success) {
                 // Store user email for main UI
                 if (loginEmail) {

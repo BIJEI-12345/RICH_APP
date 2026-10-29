@@ -204,11 +204,11 @@ function initializeApp() {
                                 window.location.hostname === '';
             
             if (!isLocalhost) {
-                // No sessionStorage found - redirect to index.html
-                // index.html will check PHP session and either:
+                // No sessionStorage found - redirect to index.php
+                // index.php will check PHP session and either:
                 // 1. If PHP session exists, sync to sessionStorage and redirect back to main_UI.html
                 // 2. If no PHP session, show login page
-                window.location.href = 'index.html';
+                window.location.href = 'index.php';
                 return;
             }
         }
@@ -1600,7 +1600,7 @@ function logout() {
                 sessionStorage.removeItem('user_contact_phone_digits');
                 
                 // Redirect to login page with logout parameter to clear PHP session
-                window.location.href = 'index.html';
+                window.location.href = 'index.php?logout=true';
             })
             .catch(error => {
                 console.error('Logout error:', error);
@@ -1616,7 +1616,7 @@ function logout() {
                 sessionStorage.removeItem('user_contact_phone_digits');
                 
                 // Redirect to login page with logout parameter to clear PHP session
-                window.location.href = 'index.html';
+                window.location.href = 'index.php?logout=true';
             });
         }
     });
