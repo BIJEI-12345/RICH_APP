@@ -1422,7 +1422,7 @@ function insertClearanceForm($data) {
             $stmt = $pdo->prepare("
                 INSERT INTO clearance_forms 
                 (email, first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, age, gender, purpose, citizenship, business_name, location, start_year, valid_id, id_image, status, submitted_at) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             
             // Execute the insert
