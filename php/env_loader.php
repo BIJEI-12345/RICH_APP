@@ -307,6 +307,18 @@ function db_table_columns(PDO $pdo, string $table): array {
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
+function db_last_insert_id(PDO $pdo, string $table): ?string {
+    try {
+        $stmt = $pdo->prepare('SELECT currval(pg_get_serial_sequence(?, ?))');
+        $stmt->execute([$table, 'id']);
+        $id = $stmt->fetchColumn();
+        return $id !== false ? (string) $id : null;
+    } catch (PDOException $e) {
+        error_log("Could not resolve last inserted ID for $table: " . $e->getMessage());
+        return null;
+    }
+}
+
 function db_bytea_parameter(?string $binary): ?string {
     return $binary === null ? null : '\\x' . bin2hex($binary);
 }

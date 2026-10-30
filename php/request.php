@@ -24,6 +24,7 @@ function censusFormStatusIsBlocked(?string $status): bool {
     return strtolower(trim((string) ($status ?? ''))) === 'blocked';
 }
 
+
 /**
  * Server-side gate for document requests: same rules as validateRequesterAgainstCensus.
  * Skips when email is empty (legacy rows without account linkage).
@@ -257,6 +258,12 @@ function insertIndigencyForm($data) {
                 return ['success' => false, 'message' => "Missing required field: $field"];
             }
         }
+
+        $data['civil_status'] = strtoupper(str_replace(['-', ' '], '_', trim((string) $data['civil_status'])));
+        if ($data['civil_status'] === 'WIDOW') {
+            $data['civil_status'] = 'WIDOWED';
+        }
+        $data['gender'] = strtoupper(trim((string) $data['gender']));
         
         // Handle purpose - use custom value if "other" is selected
         $purpose = $data['purpose'];
@@ -578,7 +585,7 @@ function insertIndigencyForm($data) {
         }
         
         if ($result) {
-            $formId = $pdo->lastInsertId();
+            $formId = db_last_insert_id($pdo, 'indigency_forms');
             error_log("Indigency form inserted successfully with ID: $formId");
             return [
                 'success' => true,
@@ -748,7 +755,7 @@ function insertBarangayIdForm($data) {
         }
         
         if ($result) {
-            $formId = $pdo->lastInsertId();
+            $formId = db_last_insert_id($pdo, 'barangay_id_forms');
             error_log("Barangay ID form inserted successfully with ID: $formId");
             return [
                 'success' => true,
@@ -823,6 +830,12 @@ function insertCertificationForm($data) {
                 return ['success' => false, 'message' => "Missing required field: $field"];
             }
         }
+
+        $data['civil_status'] = strtoupper(str_replace(['-', ' '], '_', trim((string) $data['civil_status'])));
+        if ($data['civil_status'] === 'WIDOW') {
+            $data['civil_status'] = 'WIDOWED';
+        }
+        $data['gender'] = strtoupper(trim((string) $data['gender']));
         
         // Handle purpose - use custom value if "other" is selected
         $purpose = $data['purpose'];
@@ -1163,7 +1176,7 @@ function insertCertificationForm($data) {
         }
         
         if ($result) {
-            $formId = $pdo->lastInsertId();
+            $formId = db_last_insert_id($pdo, 'certification_forms');
             if ($isPermanentColumnExists && $formId) {
                 $updPerm = $pdo->prepare('UPDATE certification_forms SET is_permanent = ? WHERE id = ?');
                 $updPerm->execute([$isPermanentValue, $formId]);
@@ -1208,6 +1221,10 @@ function insertCoeForm($data) {
                 return ['success' => false, 'message' => "Missing required field: $field"];
             }
         }
+
+        $data['civil_status'] = strtoupper(str_replace(['-', ' '], '_', trim((string) $data['civil_status'])));
+        $data['gender'] = strtoupper(trim((string) $data['gender']));
+        $data['employment_type'] = strtoupper(str_replace(['-', ' '], '_', trim((string) $data['employment_type'])));
         
         // Handle valid_id - use custom value if "other" is selected
         $validId = $data['valid_id'] ?? '';
@@ -1285,7 +1302,7 @@ function insertCoeForm($data) {
             $stmt = $pdo->prepare("
                 INSERT INTO coe_forms 
                 (first_name, middle_name, last_name, address, age, gender, civil_status, employment_type, \"position\", date_started, monthly_salary, valid_id, id_image, status, submitted_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             
             // Execute the insert
@@ -1309,7 +1326,7 @@ function insertCoeForm($data) {
         }
         
         if ($result) {
-            $formId = $pdo->lastInsertId();
+            $formId = db_last_insert_id($pdo, 'coe_forms');
             error_log("COE form inserted successfully with ID: $formId");
             return [
                 'success' => true,
@@ -1349,6 +1366,12 @@ function insertClearanceForm($data) {
                 return ['success' => false, 'message' => "Missing required field: $field"];
             }
         }
+
+        $data['civil_status'] = strtoupper(str_replace(['-', ' '], '_', trim((string) $data['civil_status'])));
+        if ($data['civil_status'] === 'WIDOW') {
+            $data['civil_status'] = 'WIDOWED';
+        }
+        $data['gender'] = strtoupper(trim((string) $data['gender']));
         
         // Handle purpose - use custom value if "other" is selected
         $purpose = $data['purpose'];
@@ -1429,7 +1452,7 @@ function insertClearanceForm($data) {
             $stmt = $pdo->prepare("
                 INSERT INTO clearance_forms 
                 (first_name, middle_name, last_name, address, birth_date, birth_place, civil_status, age, gender, purpose, citizenship, business_name, location, start_year, valid_id, id_image, status, submitted_at) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             
             // Execute the insert
@@ -1456,7 +1479,7 @@ function insertClearanceForm($data) {
         }
         
         if ($result) {
-            $formId = $pdo->lastInsertId();
+            $formId = db_last_insert_id($pdo, 'clearance_forms');
             error_log("Clearance form inserted successfully with ID: $formId");
             return [
                 'success' => true,
